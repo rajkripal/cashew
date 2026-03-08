@@ -318,11 +318,19 @@ cashew/
 - Standard thoughts, subject to normal GC
 - Can be promoted to core or decayed
 
-### Decayed Nodes
+### Decayed Nodes (forgetting)
 - Below fitness threshold, marked as decayed
 - Not deleted — edges weakened, excluded from active traversal
 - Can be revived if a new thought reconnects to them
 - Represents "forgetting" — data exists, retrieval path degraded
+
+### Deconstructed Nodes (challenged beliefs)
+- Node remains fully in the graph with all its fragments
+- Confidence reduced, contradiction edges accumulated
+- No longer load-bearing — downstream nodes have rederived from alternative parents
+- Still visitable and traversable ("I used to believe this, here's why I stopped")
+- The fragments ARE the evidence — the rubble of the old belief is part of the story
+- Nothing is ever truly deleted from cashew. Deconstruction ≠ deletion.
 
 ## 11. Sleep Protocol
 
