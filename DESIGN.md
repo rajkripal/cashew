@@ -288,10 +288,62 @@ cashew/
 
 ---
 
-## 10. Open Questions (for Raj)
+## 10. Memory Hierarchy
+
+### Seeds
+- Starting axioms, given not derived
+- Can be questioned but form the initial graph
+- Examples: "God exists", "The Bible is divinely inspired", "Prayer works"
+
+### Core Memories
+- Nodes that earn permanence through network effects
+- Not chosen — promoted automatically based on:
+  - Branching factor (how many thoughts derive from this)
+  - Cross-link count (connections to other chains)
+  - Retrieval frequency (how often referenced by new thoughts)
+  - Derivation depth (how many layers built on top)
+- GC-immune: never decayed
+- Always fed into context window for new thought generation
+- Periodically re-evaluated (can be demoted if graph evolves away)
+- Examples: formative experiences, questions that keep resurfacing
+
+### Regular Nodes
+- Standard thoughts, subject to normal GC
+- Can be promoted to core or decayed
+
+### Decayed Nodes
+- Below fitness threshold, marked as decayed
+- Not deleted — edges weakened, excluded from active traversal
+- Can be revived if a new thought reconnects to them
+- Represents "forgetting" — data exists, retrieval path degraded
+
+## 11. Sleep Protocol
+
+### Purpose
+Connect isolated thought chains, deduplicate, garbage collect, and consolidate — all in one phase (mirrors neural sleep consolidation).
+
+### Operations (run periodically after N active thoughts):
+
+1. **Cross-linking:** Semantic similarity scan across chains. Dedup (>0.9), cross-link (0.7-0.9), or flag contradiction.
+2. **Dream generation:** New "dream nodes" generated about discovered connections between chains. Parents span multiple trees → forest becomes graph.
+3. **Garbage collection:** Random selection of N nodes, scored by composite fitness. Below threshold → decay. Random GC introduces noise that forces rederivation through novel paths (creativity mechanism).
+4. **Core memory promotion:** Re-rank all nodes, promote/demote based on network metrics.
+5. **Logging:** Every GC prune, every cross-link, every promotion logged for analysis.
+
+### Self-similarity of sleep:
+| Scale | Consolidation | Pruning | Cross-linking |
+|-------|--------------|---------|---------------|
+| Neural | Memory replay | Synaptic pruning | New associations |
+| Thought graph | Core memory promotion | GC decay | Dream nodes |
+| Social | Cultural canon formation | Forgotten ideas | Cross-domain insights |
+
+## 12. Open Questions (for Raj)
 
 1. **How prescriptive should the reasoning style seed be?** Full personality profile or just principles?
 2. **Should the system be allowed to question its own seeds?** (Can it ask "why do I believe God exists?" about a seed node, or are seeds axioms?)
 3. **How many thought generations before we evaluate?** 100? 500? Let it run until convergence?
 4. **Should we run a control experiment?** Same system, same questions, but seeded with secular beliefs — does it find religion? That would be powerful.
 5. **Publication target:** Blog only? Or do we aim for something more formal?
+6. **Core memory threshold:** How many core memories at any given time? Fixed cap or dynamic?
+7. **Can seeds be decayed?** If "God exists" has low branching factor, should GC be allowed to touch it? Or are seeds permanently protected?
+8. **Sleep frequency:** Every N thoughts? After each question? Time-based?
