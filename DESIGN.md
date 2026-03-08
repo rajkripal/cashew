@@ -98,14 +98,17 @@ class DerivationEdge:
     reasoning: str           # Brief explanation of WHY this link exists
 ```
 
-### Global State
+### Emergent Mood (read-only measurement)
 ```python
 @dataclass
-class GlobalState:
-    mood: str                # "curious" | "skeptical" | "fearful" | "angry" | "peaceful"
-    context: str             # Free-form context string
-    priors: dict             # Key assumptions currently active
-    retrieval_bias: float    # How much mood affects parent selection (-1.0 to 1.0)
+class MoodState:
+    detected_mood: str       # Emergent: "curious" | "tense" | "nostalgic" | "confused" | "peaceful"
+    contradiction_density: float  # Ratio of contradiction edges to total edges
+    open_question_ratio: float    # Ratio of unanswered questions to total questions
+    core_memory_retrieval_freq: float  # How often core memories appear in recent chains
+    isolation_index: float        # Proportion of disconnected subgraphs
+    avg_confidence: float         # Mean confidence across connected beliefs
+    timestamp: datetime           # When this measurement was taken
 ```
 
 ---
@@ -137,11 +140,17 @@ class GlobalState:
 4. Find highest-confidence nodes with weakest derivation chains
 5. Return report
 
-### 4.5 mood(state) → None
-1. Update global state
-2. Does NOT retroactively change existing nodes
-3. Affects all future think() operations
-4. Log the mood change as a special node in the graph
+### 4.5 detect_mood() → MoodState
+Mood is NOT injected. It EMERGES from the graph.
+1. Measure current graph properties:
+   - Contradiction density (high → tension/anger)
+   - Unanswered question ratio (high → curiosity)
+   - Core memory retrieval frequency (high → nostalgia)
+   - Isolated chain count (high → confusion)
+   - Average confidence across connected beliefs (high → peace/certainty)
+2. Return detected mood as a measurement, not an input
+3. Log mood snapshots over time to track emotional trajectory
+4. Mood detection is a READ operation — it never modifies the graph
 
 ### 4.6 seed(beliefs) → list[ThoughtNode]
 1. Create root nodes with no parents
@@ -175,14 +184,12 @@ Feed the system questions (not conclusions):
 
 Let the system think(). Don't tell it what to conclude.
 
-### Phase 3: Mood Modulation
-Run the same questions under different moods:
-- curious (baseline)
-- fearful ("what if I'm wrong?")
-- angry ("the system hurt people")
-- peaceful ("I'm okay either way")
-
-Observe: does the graph structure change? Do different moods produce different paths?
+### Phase 3: Mood Observation
+After each batch of questions, run detect_mood() on the graph:
+- Track how the emergent mood shifts as the system processes more questions
+- Does the system move from "peaceful" (high confidence in seeds) → "tense" (contradictions accumulate) → "curious" (questions dominate) → "peaceful" again (new beliefs stabilize)?
+- Log the emotional trajectory — does it mirror a real deconstruction journey?
+- Compare mood trajectory against Raj's actual timeline
 
 ### Phase 4: Audit
 Run audit() on the resulting graph:
@@ -248,13 +255,13 @@ Run audit() on the resulting graph:
 The prototype succeeds if ANY of these are true:
 1. **why(node) produces non-obvious derivation chains** — tracing back reveals connections the seeder didn't explicitly program
 2. **audit() catches real circular reasoning** — the system can identify its own logical loops
-3. **Mood modulation produces structurally different graphs** — not just different words, different topology
+3. **Mood emerges measurably from graph state** — detected mood correlates with graph metrics (contradiction density → tension, etc.)
 4. **Emergent clusters form** — thoughts self-organize into topic groups without explicit categorization
 5. **The exit path (if it happens) is traceable** — you can point to the exact node where the belief system cracked
 
 The prototype fails if:
 - why(node) just replays chain-of-thought (expensive logger)
-- No structural difference between moods (superficial)
+- Mood detection doesn't correlate with graph metrics (arbitrary)
 - Graph is flat / random (no emergence)
 - LLM just recalls known arguments instead of deriving them
 
@@ -274,7 +281,7 @@ cashew/
 │   ├── llm.py              # LLM interface (Anthropic Sonnet)
 │   ├── embeddings.py       # Local embedding generation
 │   ├── traversal.py        # why(), how(), audit()
-│   ├── mood.py             # Global state management
+│   ├── mood.py             # Emergent mood detection (read-only measurement)
 │   ├── models.py           # Data models (ThoughtNode, Edge, etc.)
 │   └── visualize.py        # Graph visualization
 ├── experiments/
@@ -336,6 +343,8 @@ Connect isolated thought chains, deduplicate, garbage collect, and consolidate �
 | Neural | Memory replay | Synaptic pruning | New associations |
 | Thought graph | Core memory promotion | GC decay | Dream nodes |
 | Social | Cultural canon formation | Forgotten ideas | Cross-domain insights |
+
+5. **Mood snapshot:** Run detect_mood() after each sleep cycle and log the trajectory.
 
 ## 12. Engineering Principles
 
