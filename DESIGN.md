@@ -403,9 +403,14 @@ Every behavior gets a test. If we can't test it, we can't claim it works. The sy
    - If something can't be questioned, question why it can't
 
 2. **Should the system be allowed to question its own seeds?** → ANSWERED: Yes, but overwriting is proportional to branching factor. A seed like "God exists" with many downstream branches requires equivalent carnage — every dependent branch must be contradicted or rederived before the root weakens enough to decay. This mirrors real deconstruction: you don't delete the foundation overnight, you chip away at what it supports until nothing depends on it.
-3. **How many thought generations before we evaluate?** 100? 500? Let it run until convergence?
-4. **Should we run a control experiment?** Same system, same questions, but seeded with secular beliefs — does it find religion? That would be powerful.
-5. **Publication target:** Blog only? Or do we aim for something more formal?
-6. **Core memory threshold:** How many core memories at any given time? Fixed cap or dynamic?
-7. **Can seeds be decayed?** If "God exists" has low branching factor, should GC be allowed to touch it? Or are seeds permanently protected?
+3. **How many thought generations before we evaluate?** → ANSWERED: Run until convergence — when new thoughts only create edges back to existing nodes instead of extending the frontier. Cycle detection (audit) serves as convergence signal. Keep knobs to control (max iterations, manual stop).
+
+4. **Control experiment?** → ANSWERED: Yes, but after main experiment works reliably end-to-end. Seed with secular beliefs, same questions, see if it finds religion.
+
+5. **Publication target:** → ANSWERED: Blog only.
+
+6. **Core memory threshold:** → ANSWERED: Dynamic cap tied to graph size: √(total_nodes) max core memories. Forces competition — new promotions require outranking existing core. Demotions happen when graph evolves away. Promotion based purely on metrics (branching factor, retrieval frequency, cross-links) — never hand-picked. Both Raj's experiences and system retrieval patterns count as signal. Every promotion/demotion logged with exact metrics for auditability.
+
+7. **Can seeds be decayed?** → PARTIALLY ANSWERED: Seeds can be deconstructed (confidence reduced, contradictions accumulated) proportional to branching factor. Decay (forgetting) of seeds TBD — might want to keep even fully deconstructed seeds visible as historical artifacts.
+
 8. **Sleep frequency:** Every N thoughts? After each question? Time-based?
