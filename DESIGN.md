@@ -386,8 +386,15 @@ Every behavior gets a test. If we can't test it, we can't claim it works. The sy
 
 ## 13. Open Questions (for Raj)
 
-1. **How prescriptive should the reasoning style seed be?** Full personality profile or just principles?
-2. **Should the system be allowed to question its own seeds?** (Can it ask "why do I believe God exists?" about a seed node, or are seeds axioms?)
+1. **How prescriptive should the reasoning style seed be?** → ANSWERED: Principles only. Not a personality profile. Chain of principles will emerge the whole reasoning.
+   - Always ask why
+   - Follow chains to their root
+   - Prefer simpler explanations
+   - Test claims against observable reality
+   - Trust moral intuitions
+   - If something can't be questioned, question why it can't
+
+2. **Should the system be allowed to question its own seeds?** → ANSWERED: Yes, but overwriting is proportional to branching factor. A seed like "God exists" with many downstream branches requires equivalent carnage — every dependent branch must be contradicted or rederived before the root weakens enough to decay. This mirrors real deconstruction: you don't delete the foundation overnight, you chip away at what it supports until nothing depends on it.
 3. **How many thought generations before we evaluate?** 100? 500? Let it run until convergence?
 4. **Should we run a control experiment?** Same system, same questions, but seeded with secular beliefs — does it find religion? That would be powerful.
 5. **Publication target:** Blog only? Or do we aim for something more formal?
