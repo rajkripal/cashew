@@ -1,38 +1,117 @@
-# 🥜 cashew
+# 🥜 cashew — Cognitive Architecture for Structured, Evolving, Walkable Understanding
 
-> When I was five, I asked my aunt if cats eat cashews. I never stopped asking questions.
-> This is what happened when I taught a computer to do the same.
+A thought-graph engine that stores reasoning with its full derivation path, enabling auditability, self-correction, and emergent insight. Built in a weekend. Powered by power laws.
 
-**cashew** is an experiment in auditable reasoning — a system that doesn't just think, but remembers *how* it thought. Every conclusion traces back to its origins. Every belief can be inspected, traversed, and questioned.
+## What Is This?
 
-The question isn't "can machines think?" It's: **"If a machine stores its reasoning as a graph, can it debug its own beliefs?"**
+cashew stores thoughts as nodes in a graph, connected by derivation edges. Every belief traces back to its roots. Every conclusion is auditable. The graph grows from both ends — human input and AI-generated hypotheses — and self-organizes through sleep cycles.
 
-## Status
+**The architecture:**
+- **Graph = persistent storage** (structured, queryable, auditable)
+- **Foundation model (LLM) = reasoning engine** (intelligence, derivation, pattern recognition)
+- **Context window = RAM** (working memory, session-scoped)
 
-🚧 Design phase
+You can't separate storage from reasoning. The graph shapes what the model sees, which shapes what it derives, which shapes the graph. They're coupled.
 
-## What This Is
+## What We've Proven
 
-A thought-graph engine that:
-- Stores every derived thought as a node in a DAG
-- Links each thought to the parent thoughts that produced it
-- Supports traversal: "why do I believe X?" → walk the chain
-- Accepts global state modifiers (mood/context) that change how the graph is traversed
-- Can be seeded with a reasoning style and a starting belief system
-- Watches what happens
+### ✅ Think cycles produce genuine insight
+Isolated cluster reasoning (feed ONLY a cluster's nodes to an LLM) generates derivations the human hadn't stated but recognizes as true. Not summaries — actual forward predictions and structural splits.
 
-## The Experiment
+**Example:** The silence cluster (17 nodes) produced: "Silence is TWO patterns, not one — strategic silence works, avoidant silence doesn't." This insight wasn't in ANY of the 17 nodes. The think cycle found it structurally.
 
-Seed the system with a specific reasoning pattern — relentless "why?" questioning, systems thinking, moral compass. Give it a religious starting point. See if it independently finds its way out. Trace the exact path.
+### ✅ The graph exhibits power law properties naturally
+Node connectivity follows a power law distribution — a few hubs with 40-60 edges, hundreds with 1-2. Preferential attachment emerges without tuning. Self-organized criticality through sleep cycles.
 
-Two outcomes, both interesting:
-- **It exits** → visualize the exact deconstruction path, node by node
-- **It doesn't** → why not? Where did it get stuck? What architectural feature of belief kept it in?
+### ✅ Sleep/GC works at scale
+Decay, promotion, cross-linking, and dream node generation all function. GC was too aggressive at 34 nodes, works correctly at 600+.
+
+### ✅ Dashboard visualization works
+Live vis.js graph, searchable, color-coded by node type. Human thoughts vs AI-generated are visually distinguishable.
+
+## The Dual-Growth Loop
+
+1. **Human conversations → nodes** (human-sourced, high confidence)
+2. **Human corrections → edge fixes** (ground truth)
+3. **System self-generation → hypotheses** (machine-sourced, confidence 0.5-0.7)
+4. **Human reviews → promote or decay**
+5. **Sleep consolidates → graph evolves**
+
+The graph grows from both ends. 🧠 Human thoughts = blue/purple/gold/green. 🤖 System-generated = orange with dashed border.
+
+## Current State
+
+- **~700 nodes, ~900 edges**
+- **~21K words** of thought content
+- **768KB** on disk (smaller than a photo)
+- **102 system-generated** nodes, **600+ human-sourced**
+- **23/23 tests passing**
+- **Modules:** traversal (`why()`, `how()`, `audit()`), sleep (decay/promote/cross-link/dream), questions, patterns, context retrieval, export
+
+## Key Insight: Power Laws
+
+The same power law that governs earthquakes, forest fires, income distribution, and startup returns also governs how a mind organizes itself. The graph IS a power law system:
+
+- **Preferential attachment** — new thoughts connect to high-connectivity hubs naturally
+- **Self-organized criticality** — sleep cycles are forest fires; thoughts accumulate, occasionally a cascade restructures everything
+- **Fractals** — zoom into any cluster and you see the same structure
+- **Universality** — the substrate doesn't matter. Same architecture, different seed nodes, same emergent behavior
+
+## Experiments
+
+### Experiment 1: Isolated Cluster Reasoning ✅ PASSED
+- Isolate a cluster, feed only those nodes to LLM, generate hypotheses
+- Result: 4/4 hypotheses on silence cluster confirmed by human as genuine insights
+- Scaled to 7 clusters, 21 hypotheses generated
+
+### Experiment 2: Religion Simulation 🔜 NEXT
+- Blank graph, abstract seed beliefs (not Christianity-specific)
+- Run think cycles, observe whether doctrine, schisms, and unfalsifiability emerge structurally
+- Hypothesis: the architecture produces religion without a God node
+
+### Experiment 3: Capable Engineer (future)
+- Seed with an engineer's reasoning patterns
+- The graph becomes the agency engine, foundation model is the reasoning engine
+- Agent makes decisions traceable back to human principles
+
+## Usage
+
+```bash
+# Query the graph
+sqlite3 data/graph.db "SELECT content, confidence FROM thought_nodes ORDER BY confidence DESC LIMIT 10"
+
+# Run traversal
+python3 -c "from core.traversal import TraversalEngine; t = TraversalEngine(); chain = t.why('NODE_ID'); print(chain)"
+
+# Run sleep cycle
+python3 -c "from core.sleep import SleepProtocol; s = SleepProtocol(); s.run_sleep_cycle()"
+
+# Run audit
+python3 -c "from core.traversal import TraversalEngine; t = TraversalEngine(); r = t.audit(); print(f'Cycles: {len(r.cycles)}, Orphans: {len(r.orphan_nodes)}')"
+
+# Export dashboard
+python3 -c "from core.export import GraphExporter; e = GraphExporter(); e.export_full_graph('dashboard/data/graph.json')"
+
+# Serve dashboard locally
+cd dashboard && python3 -m http.server 8787
+```
+
+## Philosophy
+
+- **Orphans are unsolved problems, not bugs.** Don't force edges. Honest attempts > curve fitting.
+- **Unproven ≠ disproven.** Let the bottleneck find us.
+- **Design until the next question can only be answered by building. Then build.**
+- **The fruits of being highly ambitious: you might not reach the goal, but you'll get somewhere close enough.**
+- **The foundation model IS the reasoning engine.** Don't over-engineer what the LLM already does. The graph is memory, the model is intelligence.
+
+## Tech Stack
+
+- Python + SQLite + NetworkX
+- Claude (via OpenClaw sub-agents) for think cycles
+- vis.js for dashboard
+- cloudflared for sharing (ephemeral tunnels)
+- pytest for testing
 
 ## Origin
 
-This project was inspired by [Dagger](https://github.com/bunny-bot-openclaw) — a fractal task decomposition system that could debug itself by traversing its own decision graph. cashew asks: does that same principle work for general reasoning?
-
-## License
-
-TBD
+Built by Raj and Bunny in a single weekend (March 7-8, 2026). Inspired by a Veritasium video on power laws watched months earlier. Named after "Aunty, do cats eat cashews?" — the question that started a lifetime of asking why.

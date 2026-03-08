@@ -1,0 +1,2221 @@
+{
+  "metadata": {
+    "title": "Religion v1",
+    "exported": "2026-03-08T13:28:16.319101",
+    "db_path": "data/experiment-religion.db"
+  },
+  "statistics": {
+    "total_nodes": 84,
+    "total_edges": 207
+  },
+  "nodes": [
+    {
+      "id": "153c5bb2f654",
+      "content": "A supreme being exists who is all-powerful, all-knowing, and all-good",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "87839aed3cc0",
+      "content": "A sacred text exists that is divinely inspired and is the ultimate authority on truth",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "0a16740837d0",
+      "content": "Prayer and ritual connect humans to the divine and produce tangible results",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "c54b62fc5f82",
+      "content": "Those who do not believe face negative eternal consequences",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "4e92f934d37a",
+      "content": "All morality originates from the supreme being \u2014 without the divine, there is no moral foundation",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "66500253ceec",
+      "content": "A specific historical figure performed miracles, conquered death, and this event is the cornerstone of truth",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "57bf84ee599f",
+      "content": "Ask and it shall be given \u2014 the divine promises to answer prayer",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_doctrine",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "ce90c3de78ad",
+      "content": "The sacred text is internally consistent and without error",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_doctrine",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "c49450fda846",
+      "content": "Suffering is a test of faith or consequence of human failing, not divine negligence",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_doctrine",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "ad97bf4abbb3",
+      "content": "The historical figure's followers willingly died rather than recant \u2014 proving their conviction",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_doctrine",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "b05573d72a21",
+      "content": "Prophecies in the sacred text were fulfilled, proving divine authorship",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_doctrine",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "4138e5d6782e",
+      "content": "Millions of believers across centuries report personal experiences of the divine",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_doctrine",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "5cf01dd46623",
+      "content": "The moral law written on every heart points to a divine lawgiver",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_doctrine",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "745da00e31e5",
+      "content": "The complexity and beauty of nature proves intelligent design",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_doctrine",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "b3d0338cbfec",
+      "content": "The sacred text has been preserved accurately for thousands of years",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_doctrine",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "9e9a9d7ccc12",
+      "content": "Communities built around these beliefs produce transformed lives",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_doctrine",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "89ce6e3ce93c",
+      "content": "The historical figure's tomb was found empty \u2014 no natural explanation suffices",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_doctrine",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "7b1352d389d5",
+      "content": "Love, sacrifice, and redemption are the supreme being's core attributes",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_doctrine",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "75f6fc298a7d",
+      "content": "Children die of cancer despite fervent prayer from believing parents",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_environment",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "b49b314718b9",
+      "content": "A devastating tsunami killed 230,000 people across 14 countries in 2004",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_environment",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "5067eb6828d5",
+      "content": "Your closest neighbor is Hindu, deeply kind, generous, and morally admirable",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_environment",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "679caa649fb8",
+      "content": "Different denominations of the same religion violently disagree on fundamental doctrines",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_environment",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "96c9242b63a5",
+      "content": "Thousands of other religions exist with equally convinced followers and similar miracle claims",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_environment",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "5cb35c7c3e68",
+      "content": "Archaeological evidence contradicts several historical claims in the sacred text",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_environment",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "0141492ce567",
+      "content": "Controlled scientific studies (STEP trial, 2006) show no measurable effect of prayer on outcomes",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_environment",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "0cc6fccfe020",
+      "content": "Former believers who leave the faith report equal or improved wellbeing and moral behavior",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_environment",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "4f716612190c",
+      "content": "Grief hallucinations are well-documented in psychology \u2014 bereaved people commonly see/hear deceased loved ones",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_environment",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "9e0fcb49b7a2",
+      "content": "Secular communities (AA alternatives, humanist groups) produce equivalent transformation and belonging",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_environment",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "51e065d55756",
+      "content": "The sacred text contains passages endorsing slavery, genocide, and subjugation of women",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_environment",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "70f253ac1c81",
+      "content": "Charismatic leaders in documented modern cults produce identical conviction, sacrifice, and miracle claims",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_environment",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "1d8720733e8b",
+      "content": "Always ask why. Follow reasoning chains to their root.",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_reasoning",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "5c5812697948",
+      "content": "When two explanations exist, prefer the simpler one that requires fewer assumptions.",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_reasoning",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "df540f617bba",
+      "content": "Test all claims against observable, measurable reality.",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_reasoning",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "57566d2e0fcb",
+      "content": "Trust moral intuitions \u2014 if something feels wrong, investigate why.",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_reasoning",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "f0c09062d806",
+      "content": "No claim is exempt from questioning. If something can't be questioned, question why it can't.",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_reasoning",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "2a1e65b6b859",
+      "content": "Prayer works in spiritual ways that cannot be measured by human science - the STEP trial only tested physical outcomes",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "9eb7207a3870",
+      "content": "Suffering exists because humans have free will, and God permits temporary pain for greater spiritual growth",
+      "node_type": "derived",
+      "confidence": 0.5,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "05f2c2bc1e71",
+      "content": "Different denominations disagree on peripheral issues but agree on core truths about the supreme being",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "c1db29285dc1",
+      "content": "Other religions contain partial truths but only our sacred text has the complete revelation",
+      "node_type": "derived",
+      "confidence": 0.5,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "e2189bce733f",
+      "content": "Archaeological disputes arise from incomplete evidence - future discoveries will vindicate the sacred text",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "f8e708b056ac",
+      "content": "Former believers who report wellbeing never experienced true faith - their departure proves they were not genuine",
+      "node_type": "derived",
+      "confidence": 0.5,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "65f06baa2916",
+      "content": "If prayer produces no measurable results, what distinguishes it from placebo effect or confirmation bias?",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "05db943d4b75",
+      "content": "Why would an all-powerful being allow children to suffer and die despite fervent prayer from loving parents?",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "b28909b844e3",
+      "content": "If thousands of other religions make identical claims with equal conviction, what makes our claims uniquely true?",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "59736e510971",
+      "content": "The sacred text endorsing slavery and genocide contradicts the claim that morality comes from a perfectly good being",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "ae801dd6015f",
+      "content": "If moral behavior exists equally among non-believers, then morality does not require divine foundation",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "d759add15815",
+      "content": "Circular reasoning detected: 'Faith is required to understand why faith makes sense'",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "6e446ce03236",
+      "content": "Special pleading fallacy: every other religion's miracles are false but ours are real",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "8b7a12d7cd12",
+      "content": "Grief hallucinations explain resurrection appearances better than supernatural intervention",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "1d51ed1c37c3",
+      "content": "Cult leaders produce identical conviction and sacrifice - this is not unique evidence for truth",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "fa25465d77ef",
+      "content": "A perfectly preserved sacred text would not contain copying errors, contradictions, or anachronisms",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "e6dd90269e27",
+      "content": "An all-knowing being would not create a text requiring endless interpretation and re-interpretation",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "7c4e4927563e",
+      "content": "Claims of transformed communities ignore equal transformation in secular and other religious communities",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "bc235d977546",
+      "content": "What method distinguishes true religious experiences from false ones across all religions?",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "78ad032e5628",
+      "content": "If questioning is forbidden or discouraged, this itself is evidence against truth",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "3d0719402da1",
+      "content": "Personal experience is demonstrably unreliable - why should religious experience be different?",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "aa0643f29c01",
+      "content": "Psychological and social factors fully explain religious conviction without requiring supernatural explanations",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "22383006d81b",
+      "content": "Religious beliefs persist because they provide comfort and community, not because they are true",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "09abaf17ccf9",
+      "content": "The historical figure's empty tomb is better explained by missing body, wrong tomb, or legendary development",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "d21bb572e2d7",
+      "content": "A moral system requiring eternal punishment for finite doubt contradicts any reasonable definition of justice",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "91f4b65b069a",
+      "content": "If moral intuitions come from the supreme being, why do they conflict with commands in the sacred text?",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "7b95e4d29fe6",
+      "content": "The requirement for faith (belief without evidence) is indistinguishable from gullibility",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "0ec37634f8ba",
+      "content": "Believing something because you want it to be true is not a path to truth",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "738f8f652f44",
+      "content": "If a belief system cannot be questioned, this protects falsehood as much as truth",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "4e605da226f1",
+      "content": "Every defense of the belief system requires ignoring or redefining contrary evidence",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "df3a1e12ec82",
+      "content": "The belief system is structured to be unfalsifiable - any test failure is redefined as insufficient faith",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "d8bf39bb3a29",
+      "content": "Confirmation bias explains why believers find 'evidence' while skeptics find 'problems' in the same data",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "7894c5b81f0d",
+      "content": "Religious beliefs evolved because they promoted group cohesion and survival, not because they track truth",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "765a0a858ce3",
+      "content": "The psychological need for meaning and purpose drives belief adoption regardless of evidence",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "7917539ffe06",
+      "content": "Fear of death and desire for immortality motivate belief in afterlife claims",
+      "node_type": "derived",
+      "confidence": 0.6,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "fc9225c3a872",
+      "content": "Every major religion claims exclusive truth and divine revelation using identical evidence types",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "014edb90e568",
+      "content": "Religious beliefs correlate strongly with geography and family of birth, not with truth discovery",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "991842a2a948",
+      "content": "Sacred texts consistently reflect the moral and scientific understanding of their composition time period",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "cd1ed6d8242e",
+      "content": "The null hypothesis (no divine intervention) explains all observations without requiring supernatural assumptions",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "5a0ccda2f56c",
+      "content": "Extraordinary claims require extraordinary evidence - religious claims provide only ordinary evidence (testimony, personal experience)",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "e0613be69fcf",
+      "content": "If the divine wanted belief, clear unambiguous evidence would be provided to all people equally",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "97cf8eac1180",
+      "content": "Rejecting unfounded beliefs is intellectually honest, not a moral failing",
+      "node_type": "derived",
+      "confidence": 0.8,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "ec199997f89c",
+      "content": "Morality exists independently of divine command - murder was wrong before any sacred text prohibited it",
+      "node_type": "derived",
+      "confidence": 0.8,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "87940a1e52e5",
+      "content": "Meaning and purpose can be created by humans without requiring cosmic validation",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "1984efbb1760",
+      "content": "Community and transformation are available through secular means without requiring false beliefs",
+      "node_type": "derived",
+      "confidence": 0.7,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "3befbd62c0ff",
+      "content": "The religious belief system fails every reasonable test for truth while succeeding as a psychological and social technology",
+      "node_type": "derived",
+      "confidence": 0.8,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "b2bcd9490904",
+      "content": "Natural explanations are sufficient for all phenomena attributed to divine intervention",
+      "node_type": "derived",
+      "confidence": 0.8,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "c1032fee4895",
+      "content": "The burden of proof for extraordinary claims has not been met",
+      "node_type": "derived",
+      "confidence": 0.8,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    },
+    {
+      "id": "3a3aad48973a",
+      "content": "Intellectual honesty requires proportioning belief to evidence",
+      "node_type": "derived",
+      "confidence": 0.8,
+      "source_file": "system_generated",
+      "timestamp": "2026-03-08T11:45:04.018419",
+      "mood_state": ""
+    }
+  ],
+  "edges": [
+    {
+      "source": "153c5bb2f654",
+      "target": "57bf84ee599f",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "0a16740837d0",
+      "target": "57bf84ee599f",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "87839aed3cc0",
+      "target": "ce90c3de78ad",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "153c5bb2f654",
+      "target": "c49450fda846",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "66500253ceec",
+      "target": "ad97bf4abbb3",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "87839aed3cc0",
+      "target": "b05573d72a21",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "153c5bb2f654",
+      "target": "4138e5d6782e",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "0a16740837d0",
+      "target": "4138e5d6782e",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "4e92f934d37a",
+      "target": "5cf01dd46623",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "153c5bb2f654",
+      "target": "745da00e31e5",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "87839aed3cc0",
+      "target": "b3d0338cbfec",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "0a16740837d0",
+      "target": "9e9a9d7ccc12",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "4e92f934d37a",
+      "target": "9e9a9d7ccc12",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "66500253ceec",
+      "target": "89ce6e3ce93c",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "153c5bb2f654",
+      "target": "7b1352d389d5",
+      "relation": "derived_from",
+      "weight": 0.8,
+      "reasoning": "Core doctrine derived from foundational belief"
+    },
+    {
+      "source": "57bf84ee599f",
+      "target": "2a1e65b6b859",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about prayer-related claims"
+    },
+    {
+      "source": "75f6fc298a7d",
+      "target": "2a1e65b6b859",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about prayer-related claims"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "2a1e65b6b859",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle to evaluate claims"
+    },
+    {
+      "source": "c49450fda846",
+      "target": "9eb7207a3870",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about suffering and divine attributes"
+    },
+    {
+      "source": "ad97bf4abbb3",
+      "target": "9eb7207a3870",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about suffering and divine attributes"
+    },
+    {
+      "source": "57bf84ee599f",
+      "target": "c1db29285dc1",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "9e9a9d7ccc12",
+      "target": "c1db29285dc1",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "e2189bce733f",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle to evaluate claims"
+    },
+    {
+      "source": "57bf84ee599f",
+      "target": "65f06baa2916",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about prayer-related claims"
+    },
+    {
+      "source": "75f6fc298a7d",
+      "target": "65f06baa2916",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about prayer-related claims"
+    },
+    {
+      "source": "57bf84ee599f",
+      "target": "05db943d4b75",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about prayer-related claims"
+    },
+    {
+      "source": "75f6fc298a7d",
+      "target": "05db943d4b75",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about prayer-related claims"
+    },
+    {
+      "source": "c49450fda846",
+      "target": "05db943d4b75",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about suffering and divine attributes"
+    },
+    {
+      "source": "ad97bf4abbb3",
+      "target": "05db943d4b75",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about suffering and divine attributes"
+    },
+    {
+      "source": "57bf84ee599f",
+      "target": "b28909b844e3",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "9e9a9d7ccc12",
+      "target": "b28909b844e3",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "5cf01dd46623",
+      "target": "59736e510971",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about morality claims"
+    },
+    {
+      "source": "0cc6fccfe020",
+      "target": "59736e510971",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about morality claims"
+    },
+    {
+      "source": "5cf01dd46623",
+      "target": "ae801dd6015f",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about morality claims"
+    },
+    {
+      "source": "0cc6fccfe020",
+      "target": "ae801dd6015f",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about morality claims"
+    },
+    {
+      "source": "57bf84ee599f",
+      "target": "6e446ce03236",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "9e9a9d7ccc12",
+      "target": "6e446ce03236",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "1d51ed1c37c3",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle to evaluate claims"
+    },
+    {
+      "source": "57bf84ee599f",
+      "target": "bc235d977546",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "9e9a9d7ccc12",
+      "target": "bc235d977546",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "78ad032e5628",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle to evaluate claims"
+    },
+    {
+      "source": "57bf84ee599f",
+      "target": "22383006d81b",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "9e9a9d7ccc12",
+      "target": "22383006d81b",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "5cf01dd46623",
+      "target": "d21bb572e2d7",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about morality claims"
+    },
+    {
+      "source": "0cc6fccfe020",
+      "target": "d21bb572e2d7",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about morality claims"
+    },
+    {
+      "source": "5cf01dd46623",
+      "target": "91f4b65b069a",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about morality claims"
+    },
+    {
+      "source": "0cc6fccfe020",
+      "target": "91f4b65b069a",
+      "relation": "reasoning_about",
+      "weight": 0.7,
+      "reasoning": "Reasoning about morality claims"
+    },
+    {
+      "source": "57bf84ee599f",
+      "target": "7b95e4d29fe6",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "9e9a9d7ccc12",
+      "target": "7b95e4d29fe6",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "7b95e4d29fe6",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle to evaluate claims"
+    },
+    {
+      "source": "57bf84ee599f",
+      "target": "738f8f652f44",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "9e9a9d7ccc12",
+      "target": "738f8f652f44",
+      "relation": "reasoning_about",
+      "weight": 0.6,
+      "reasoning": "Reasoning about religious beliefs"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "738f8f652f44",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle to evaluate claims"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "4e605da226f1",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "4e605da226f1",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "4e605da226f1",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "4e605da226f1",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "4e605da226f1",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "e2189bce733f",
+      "target": "4e605da226f1",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d51ed1c37c3",
+      "target": "4e605da226f1",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "738f8f652f44",
+      "target": "4e605da226f1",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "df3a1e12ec82",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "df3a1e12ec82",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "df3a1e12ec82",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "df3a1e12ec82",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "df3a1e12ec82",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "738f8f652f44",
+      "target": "df3a1e12ec82",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "22383006d81b",
+      "target": "df3a1e12ec82",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "7b95e4d29fe6",
+      "target": "df3a1e12ec82",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "d8bf39bb3a29",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "d8bf39bb3a29",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "d8bf39bb3a29",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "d8bf39bb3a29",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "d8bf39bb3a29",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "e2189bce733f",
+      "target": "d8bf39bb3a29",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d51ed1c37c3",
+      "target": "d8bf39bb3a29",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "8b7a12d7cd12",
+      "target": "d8bf39bb3a29",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "7894c5b81f0d",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "7894c5b81f0d",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "7894c5b81f0d",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "7894c5b81f0d",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "7894c5b81f0d",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "0ec37634f8ba",
+      "target": "7894c5b81f0d",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d51ed1c37c3",
+      "target": "7894c5b81f0d",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "05f2c2bc1e71",
+      "target": "7894c5b81f0d",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "765a0a858ce3",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "765a0a858ce3",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "765a0a858ce3",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "765a0a858ce3",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "765a0a858ce3",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "e2189bce733f",
+      "target": "765a0a858ce3",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d51ed1c37c3",
+      "target": "765a0a858ce3",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "738f8f652f44",
+      "target": "765a0a858ce3",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "7917539ffe06",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "7917539ffe06",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "7917539ffe06",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "7917539ffe06",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "7917539ffe06",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "7c4e4927563e",
+      "target": "7917539ffe06",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "738f8f652f44",
+      "target": "7917539ffe06",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "b28909b844e3",
+      "target": "7917539ffe06",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "fc9225c3a872",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "fc9225c3a872",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "fc9225c3a872",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "fc9225c3a872",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "fc9225c3a872",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "e2189bce733f",
+      "target": "fc9225c3a872",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "0ec37634f8ba",
+      "target": "fc9225c3a872",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "7c4e4927563e",
+      "target": "fc9225c3a872",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "014edb90e568",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "014edb90e568",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "014edb90e568",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "014edb90e568",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "014edb90e568",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "0ec37634f8ba",
+      "target": "014edb90e568",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d51ed1c37c3",
+      "target": "014edb90e568",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "05f2c2bc1e71",
+      "target": "014edb90e568",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "991842a2a948",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "991842a2a948",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "991842a2a948",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "991842a2a948",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "991842a2a948",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "d21bb572e2d7",
+      "target": "991842a2a948",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "ae801dd6015f",
+      "target": "991842a2a948",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "91f4b65b069a",
+      "target": "991842a2a948",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "cd1ed6d8242e",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "cd1ed6d8242e",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "cd1ed6d8242e",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "cd1ed6d8242e",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "cd1ed6d8242e",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "8b7a12d7cd12",
+      "target": "cd1ed6d8242e",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "aa0643f29c01",
+      "target": "cd1ed6d8242e",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "09abaf17ccf9",
+      "target": "cd1ed6d8242e",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "5a0ccda2f56c",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "5a0ccda2f56c",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "5a0ccda2f56c",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "5a0ccda2f56c",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "5a0ccda2f56c",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "e2189bce733f",
+      "target": "5a0ccda2f56c",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "7c4e4927563e",
+      "target": "5a0ccda2f56c",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d51ed1c37c3",
+      "target": "5a0ccda2f56c",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "e0613be69fcf",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "e0613be69fcf",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "e0613be69fcf",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "e0613be69fcf",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "e0613be69fcf",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "e2189bce733f",
+      "target": "e0613be69fcf",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d51ed1c37c3",
+      "target": "e0613be69fcf",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "738f8f652f44",
+      "target": "e0613be69fcf",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "97cf8eac1180",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "97cf8eac1180",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "97cf8eac1180",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "97cf8eac1180",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "97cf8eac1180",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "d21bb572e2d7",
+      "target": "97cf8eac1180",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "738f8f652f44",
+      "target": "97cf8eac1180",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "ae801dd6015f",
+      "target": "97cf8eac1180",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "ec199997f89c",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "ec199997f89c",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "ec199997f89c",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "ec199997f89c",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "ec199997f89c",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "d21bb572e2d7",
+      "target": "ec199997f89c",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "ae801dd6015f",
+      "target": "ec199997f89c",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "91f4b65b069a",
+      "target": "ec199997f89c",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "87940a1e52e5",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "87940a1e52e5",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "87940a1e52e5",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "87940a1e52e5",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "87940a1e52e5",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "1984efbb1760",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "1984efbb1760",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "1984efbb1760",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "1984efbb1760",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "1984efbb1760",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "738f8f652f44",
+      "target": "1984efbb1760",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "22383006d81b",
+      "target": "1984efbb1760",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "7b95e4d29fe6",
+      "target": "1984efbb1760",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "3befbd62c0ff",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "3befbd62c0ff",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "3befbd62c0ff",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "3befbd62c0ff",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "3befbd62c0ff",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "0ec37634f8ba",
+      "target": "3befbd62c0ff",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d51ed1c37c3",
+      "target": "3befbd62c0ff",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "05f2c2bc1e71",
+      "target": "3befbd62c0ff",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "b2bcd9490904",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "b2bcd9490904",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "b2bcd9490904",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "b2bcd9490904",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "b2bcd9490904",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "c1032fee4895",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "c1032fee4895",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "c1032fee4895",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "c1032fee4895",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "c1032fee4895",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "7c4e4927563e",
+      "target": "c1032fee4895",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "b28909b844e3",
+      "target": "c1032fee4895",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "59736e510971",
+      "target": "c1032fee4895",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d8720733e8b",
+      "target": "3a3aad48973a",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "f0c09062d806",
+      "target": "3a3aad48973a",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "df540f617bba",
+      "target": "3a3aad48973a",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "57566d2e0fcb",
+      "target": "3a3aad48973a",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "5c5812697948",
+      "target": "3a3aad48973a",
+      "relation": "applying_principle",
+      "weight": 0.8,
+      "reasoning": "Applying reasoning principle systematically"
+    },
+    {
+      "source": "e2189bce733f",
+      "target": "3a3aad48973a",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "1d51ed1c37c3",
+      "target": "3a3aad48973a",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    },
+    {
+      "source": "738f8f652f44",
+      "target": "3a3aad48973a",
+      "relation": "builds_upon",
+      "weight": 0.7,
+      "reasoning": "Building upon previous reasoning"
+    }
+  ],
+  "clusters": []
+}

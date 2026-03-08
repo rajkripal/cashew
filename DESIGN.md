@@ -252,18 +252,31 @@ Run audit() on the resulting graph:
 
 ## 8. Success Criteria
 
-The prototype succeeds if ANY of these are true:
-1. **why(node) produces non-obvious derivation chains** — tracing back reveals connections the seeder didn't explicitly program
-2. **audit() catches real circular reasoning** — the system can identify its own logical loops
-3. **Mood emerges measurably from graph state** — detected mood correlates with graph metrics (contradiction density → tension, etc.)
-4. **Emergent clusters form** — thoughts self-organize into topic groups without explicit categorization
-5. **The exit path (if it happens) is traceable** — you can point to the exact node where the belief system cracked
+### Phase 1: Personal Thought Graph ✅ ACHIEVED
+1. ✅ **why(node) produces non-obvious derivation chains** — tracing back reveals connections the seeder didn't explicitly program
+2. ✅ **audit() catches real circular reasoning** — the system identifies logical loops
+3. ✅ **Emergent clusters form** — thoughts self-organize into topic groups without explicit categorization
+4. ✅ **Think cycles produce genuine insight** — isolated cluster reasoning generates derivations the human hadn't stated but recognizes as true (silence cluster: 4/4 confirmed)
+5. ✅ **Graph exhibits power law properties** — preferential attachment, self-organized criticality through sleep cycles
 
-The prototype fails if:
-- why(node) just replays chain-of-thought (expensive logger)
-- Mood detection doesn't correlate with graph metrics (arbitrary)
-- Graph is flat / random (no emergence)
+### Phase 2: Religion Simulation 🔜 NEXT
+1. [ ] Blank graph with abstract seed beliefs produces emergent doctrine
+2. [ ] Schisms emerge from contradiction accumulation + sleep cycles
+3. [ ] Unfalsifiability emerges structurally (cycles in the graph)
+4. [ ] The system produces "supernatural" explanations without being seeded with them
+5. [ ] The exit path (if it happens) is traceable node by node
+
+### Phase 3: Agency Engine (future)
+1. [ ] Graph seeded with an engineer's reasoning patterns drives agent decisions
+2. [ ] Every agent action traces back to human seed principles via why()
+3. [ ] The agent's cognitive style matches the human's (not just knowledge, but reasoning approach)
+4. [ ] Human can audit and correct the graph, agent improves
+
+### The prototype fails if:
+- Think cycles only summarize what's already in the graph (expensive logger)
+- Graph is flat / random (no emergence) — compare against random graph metrics
 - LLM just recalls known arguments instead of deriving them
+- Forced edges reduce orphans but don't reflect genuine relationships (curve fitting)
 
 ---
 
@@ -413,4 +426,34 @@ Every behavior gets a test. If we can't test it, we can't claim it works. The sy
 
 7. **Can seeds be decayed?** → PARTIALLY ANSWERED: Seeds can be deconstructed (confidence reduced, contradictions accumulated) proportional to branching factor. Decay (forgetting) of seeds TBD — might want to keep even fully deconstructed seeds visible as historical artifacts.
 
-8. **Sleep frequency:** Every N thoughts? After each question? Time-based?
+8. **Sleep frequency:** → ANSWERED: Every N thoughts — tunable knob. Start with N=10, adjust based on what produces interesting cross-links vs noise.
+
+9. **Self-generated questions:** → ANSWERED: Run as cron job (sub-agent examines graph, generates questions, logs as question nodes). Track usefulness: did the question lead to new derivations or dead-end? Dead-end ratio = quality metric. Tune question frequency based on hit rate.
+
+---
+
+## 14. MVP Definition ("Done")
+
+**Done = You look at the graph and it surprises you.** ✅ ACHIEVED (March 8, 2026)
+
+Concrete checklist:
+1. ✅ Graph seeded — existing memory files parsed into nodes/edges in SQLite
+2. ✅ Sleep runs — cross-links, dedup, GC, dream generation all fire. Tuned: too aggressive at 34 nodes, works at 600+.
+3. ✅ Self-generated questions work — question generator finds gaps (leaf, contradiction, orphan, cycle). 25+ questions generated.
+4. ✅ Visual dashboard — vis.js graph with search, color-coded by type, served via cloudflared tunnel.
+5. ✅ `why(node)` works — full derivation chain back to axioms.
+6. ✅ Think cycles produce genuine insight — isolated cluster reasoning confirmed by human.
+
+### What MVP Taught Us
+- **The foundation model IS the reasoning engine.** Don't build a Python think() module — the LLM reasoning over structured graph context IS the think cycle. The only tooling needed is plumbing (pull nodes, insert results).
+- **Orphans are unsolved problems, not bugs.** Don't force connections. Honest attempts > curve fitting.
+- **Design until building is the only way to answer the next question. Then build until design is the only way to answer the next question.** Know which mode you're in.
+- **The graph exhibits power law properties naturally.** Same architecture as earthquakes, forest fires, income distribution. Universality applies.
+- **Unproven ≠ disproven.** The next success criterion is hitting a real bottleneck, not checking a feature box.
+
+### Current Goals
+1. **Religion simulation** — blank graph, abstract seeds, think cycles. Does doctrine emerge?
+2. **Agency engine** — can the graph drive an agent's decisions with auditable reasoning?
+3. **Hit a real bottleneck** — the wall tells us what this thing actually is.
+
+**Stance:** The fruits of being highly ambitious: we might not reach the goal, but we'll get somewhere close enough. Ship, learn, iterate.
