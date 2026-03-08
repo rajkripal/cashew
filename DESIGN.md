@@ -337,7 +337,45 @@ Connect isolated thought chains, deduplicate, garbage collect, and consolidate �
 | Thought graph | Core memory promotion | GC decay | Dream nodes |
 | Social | Cultural canon formation | Forgotten ideas | Cross-domain insights |
 
-## 12. Open Questions (for Raj)
+## 12. Engineering Principles
+
+### Testing Philosophy
+"I don't want an unfalsifiable system." — Raj
+
+Every behavior gets a test. If we can't test it, we can't claim it works. The system that exposes unfalsifiable claims must itself be falsifiable.
+
+**Test categories:**
+1. **Unit tests** — every function, every edge case
+   - Graph store: CRUD, dedup, edge creation, integrity constraints
+   - Traversal: `why()` returns correct chains, `audit()` catches cycles
+   - GC: correct fitness scoring, decay behavior, revival
+   - Core memory promotion: correct ranking, threshold behavior
+
+2. **Behavioral tests** — does the system do what we claim?
+   - "Thought A derives from Thought B" → `why(A)` includes B
+   - "Contradicting thoughts exist" → `audit()` flags them
+   - "Mood changes traversal" → same input, different mood, measurably different output
+   - "GC preserves high-branching nodes" → prune cycle doesn't kill hubs
+   - "Sleep cross-links independent chains" → forest becomes graph
+
+3. **Falsifiability tests** — can we prove our claims wrong?
+   - "Structure emerges" → compare graph metrics against random graph. If indistinguishable, no emergence.
+   - "Core memories are load-bearing" → remove one, measure impact on graph connectivity
+   - "Mood affects structure not just words" → compare topology metrics across moods, not just content
+
+4. **Regression tests** — don't break what works
+   - Every bug gets a test before the fix
+   - Every experiment run is reproducible (seeded randomness)
+
+**Framework:** pytest. Run on every commit. No merge without green.
+
+### Code Standards
+- Type hints everywhere
+- Docstrings on public functions
+- No magic numbers — constants named and documented
+- Git hygiene: specific `git add`, one feature per PR, never push to main
+
+## 13. Open Questions (for Raj)
 
 1. **How prescriptive should the reasoning style seed be?** Full personality profile or just principles?
 2. **Should the system be allowed to question its own seeds?** (Can it ask "why do I believe God exists?" about a seed node, or are seeds axioms?)
