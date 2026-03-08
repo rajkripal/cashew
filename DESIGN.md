@@ -29,12 +29,6 @@ cashew combines persistent derivation, global state modifiers, and auditability 
 ## 2. Architecture
 
 ```
-                    ┌─────────────┐
-                    │  Global State │ (mood / context / priors)
-                    │  Modifier     │
-                    └──────┬──────┘
-                           │ biases retrieval + generation
-                           ▼
 ┌──────────┐    ┌──────────────────┐    ┌─────────────┐
 │  Input    │───▶│  Thought Engine   │───▶│  Graph Store │
 │  (query,  │    │                    │    │  (SQLite +   │
@@ -46,8 +40,7 @@ cashew combines persistent derivation, global state modifiers, and auditability 
                 │  3. Create node    │    │  - embedding  │
                 │  4. Link to parents│    │  - timestamp  │
                 │  5. Store          │    │  - metadata   │
-                └──────────────────┘    │  - mood_state  │
-                                         │              │
+                └──────────────────┘    │              │
                                          │  Edges:      │
                                          │  - parent_id  │
                                          │  - child_id   │
@@ -55,18 +48,20 @@ cashew combines persistent derivation, global state modifiers, and auditability 
                                          │  - relation   │
                                          └─────────────┘
                                                 │
-                                    ┌───────────┴───────────┐
-                                    │                       │
-                              ┌─────▼─────┐          ┌─────▼─────┐
-                              │  Traversal │          │  Visualizer│
-                              │  Engine    │          │  (D3.js /  │
-                              │            │          │   Pyvis)   │
-                              │  why(node) │          │            │
-                              │  how(A→B)  │          │  Graph     │
-                              │  roots()   │          │  render    │
-                              │  cycles()  │          │  clusters  │
-                              │  audit()   │          │  timeline  │
-                              └───────────┘          └───────────┘
+                                ┌───────────┬───┴───────────┐
+                                │           │               │
+                          ┌─────▼─────┐ ┌───▼─────┐  ┌─────▼─────┐
+                          │  Traversal │ │  Mood    │  │  Visualizer│
+                          │  Engine    │ │  Detector│  │  (later)   │
+                          │            │ │ (read-   │  │            │
+                          │  why(node) │ │  only)   │  │  Graph     │
+                          │  how(A→B)  │ │          │  │  render    │
+                          │  roots()   │ │ Measures │  │  clusters  │
+                          │  cycles()  │ │ graph    │  │  timeline  │
+                          │  audit()   │ │ state →  │  └───────────┘
+                          └───────────┘ │ detects   │
+                                        │ mood      │
+                                        └──────────┘
 ```
 
 ---
