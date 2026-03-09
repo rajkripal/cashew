@@ -10,7 +10,7 @@ import logging
 from typing import List, Dict, Optional, Any
 from pathlib import Path
 
-from core.session import start_session, end_session, think_cycle, SessionContext, ExtractionResult, ThinkResult
+from core.session import start_session, end_session, think_cycle, tension_detection, SessionContext, ExtractionResult, ThinkResult
 
 
 def _load_anthropic_api_key() -> Optional[str]:
@@ -202,6 +202,39 @@ def run_think_cycle(db_path: str, focus_domain: Optional[str] = None) -> Dict[st
             "new_edges": 0,
             "cluster_topic": "Failed",
             "summary": f"Think cycle failed: {e}"
+        }
+
+
+def run_tension_detection(db_path: str, focus_domain: Optional[str] = None) -> Dict[str, Any]:
+    """Run tension detection on the thought graph."""
+    try:
+        if not os.path.exists(db_path):
+            raise ValueError(f"Database not found at {db_path}")
+        
+        model_fn = _create_anthropic_model_fn()
+        if not model_fn:
+            raise ValueError("Failed to create Anthropic model function")
+        
+        result = tension_detection(db_path, model_fn, focus_domain)
+        
+        return {
+            "success": True,
+            "new_nodes": len(result.new_nodes),
+            "new_edges": len(result.new_edges),
+            "cluster_topic": result.cluster_topic,
+            "node_ids": result.new_nodes,
+            "edges": result.new_edges,
+            "summary": f"Tension detection: {len(result.new_nodes)} tensions found"
+        }
+    except Exception as e:
+        logging.error(f"Error in tension detection: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "new_nodes": 0,
+            "new_edges": 0,
+            "cluster_topic": "Failed",
+            "summary": f"Tension detection failed: {e}"
         }
 
 

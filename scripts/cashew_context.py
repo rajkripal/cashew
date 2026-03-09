@@ -16,7 +16,7 @@ logger = logging.getLogger("cashew")
 # Add the parent directory to the path so we can import cashew modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from integration.openclaw import generate_session_context, extract_from_conversation, run_think_cycle
+from integration.openclaw import generate_session_context, extract_from_conversation, run_think_cycle, run_tension_detection
 
 
 def cmd_context(args):
@@ -88,16 +88,25 @@ def cmd_extract(args):
 def cmd_think(args):
     """Run a think cycle"""
     domain = args.domain if args.domain else None
+    mode = getattr(args, 'mode', 'general')
     
-    if domain:
-        print(f"🤔 Running think cycle focused on domain: {domain}")
+    if mode == "tension":
+        print("⚡ Running tension detection...")
+        if domain:
+            print(f"   Focused on domain: {domain}")
+        print()
+        t0 = time.time()
+        result = run_tension_detection(args.db, domain)
+        elapsed = time.time() - t0
     else:
-        print("🤔 Running general think cycle...")
-    print()
-    
-    t0 = time.time()
-    result = run_think_cycle(args.db, domain)
-    elapsed = time.time() - t0
+        if domain:
+            print(f"🤔 Running think cycle focused on domain: {domain}")
+        else:
+            print("🤔 Running general think cycle...")
+        print()
+        t0 = time.time()
+        result = run_think_cycle(args.db, domain)
+        elapsed = time.time() - t0
     
     print(json.dumps(result, indent=2))
     
@@ -231,6 +240,8 @@ def main():
     # Think command
     think_parser = subparsers.add_parser("think", help="Run a think cycle")
     think_parser.add_argument("--domain", help="Focus domain (e.g., 'career')")
+    think_parser.add_argument("--mode", choices=["general", "tension"], default="general",
+                             help="Think mode: general (default) or tension (find contradictions)")
     think_parser.set_defaults(func=cmd_think)
     
     # Sleep command

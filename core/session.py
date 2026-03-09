@@ -644,6 +644,182 @@ JSON format:
             cluster_topic=f"Failed: {cluster_topic}"
         )
 
+
+def tension_detection(db_path: str, model_fn: Callable[[str], str],
+                     focus_domain: Optional[str] = None) -> ThinkResult:
+    """
+    Find and articulate tensions/contradictions in the thought graph.
+    Uses embeddings to find semantically close but potentially contradictory nodes.
+    """
+    _ensure_schema(db_path)
+    
+    conn = _get_connection(db_path)
+    cursor = conn.cursor()
+    
+    # Get nodes with embeddings
+    domain_filter = ""
+    params = []
+    if focus_domain:
+        domain_filter = "AND json_extract(tn.metadata, '$.domain') = ?"
+        params.append(focus_domain)
+    
+    cursor.execute(f"""
+        SELECT tn.id, tn.content, tn.node_type, 
+               COALESCE(json_extract(tn.metadata, '$.domain'), 'unknown') as domain,
+               e.vector
+        FROM thought_nodes tn
+        JOIN embeddings e ON tn.id = e.node_id
+        WHERE (tn.decayed IS NULL OR tn.decayed = 0)
+        {domain_filter}
+    """, params)
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    if len(rows) < 4:
+        return ThinkResult(new_nodes=[], new_edges=[], cluster_topic="Not enough nodes for tension detection")
+    
+    # Find pairs with moderate similarity (0.4-0.8 range = same topic, different stance)
+    import numpy as np
+    import struct
+    
+    nodes = []
+    embeddings = []
+    for row in rows:
+        nodes.append({"id": row[0], "content": row[1], "type": row[2], "domain": row[3]})
+        vec_blob = row[4]
+        if isinstance(vec_blob, bytes):
+            emb = list(struct.unpack(f'{len(vec_blob)//4}f', vec_blob))
+        elif isinstance(vec_blob, str):
+            emb = json.loads(vec_blob)
+        else:
+            emb = list(vec_blob)
+        embeddings.append(np.array(emb, dtype=np.float32))
+    
+    embeddings = np.array(embeddings)
+    # Normalize
+    norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+    norms[norms == 0] = 1
+    embeddings = embeddings / norms
+    
+    # Compute similarity matrix
+    sim_matrix = embeddings @ embeddings.T
+    
+    # Find tension candidates: moderate similarity (same topic area, potentially different views)
+    # Exclude near-duplicates (>0.85) and unrelated (<0.30)
+    tension_pairs = []
+    n = len(nodes)
+    for i in range(n):
+        for j in range(i+1, n):
+            sim = float(sim_matrix[i][j])
+            if np.isnan(sim) or np.isinf(sim):
+                continue
+            if 0.30 <= sim <= 0.70:
+                # Prefer different node types (more likely to be genuine tensions)
+                type_bonus = 0.05 if nodes[i]["type"] != nodes[j]["type"] else 0
+                # Prefer different domains (cross-domain tensions are more interesting)
+                domain_bonus = 0.05 if nodes[i]["domain"] != nodes[j]["domain"] else 0
+                score = abs(sim - 0.50) * -1 + type_bonus + domain_bonus  # Lower = better
+                tension_pairs.append((i, j, sim, score))
+    
+    # Sort by score (lower = better tension candidate)
+    tension_pairs.sort(key=lambda x: x[3])
+    
+    # Take top 10 candidate pairs
+    candidates = [(i, j, sim) for i, j, sim, _ in tension_pairs[:10]]
+    
+    if not candidates:
+        return ThinkResult(new_nodes=[], new_edges=[], cluster_topic="No tension candidates found")
+    
+    # Build prompt with candidate pairs
+    pairs_text = ""
+    for idx, (i, j, sim) in enumerate(candidates):
+        pairs_text += f"\nPair {idx+1} (similarity: {sim:.2f}):\n"
+        pairs_text += f"  A [{nodes[i]['type']}]: {nodes[i]['content']}\n"
+        pairs_text += f"  B [{nodes[j]['type']}]: {nodes[j]['content']}\n"
+    
+    tension_prompt = f"""You are a tension detector for a personal knowledge graph. You're looking at pairs of thoughts from the same person that might be in tension with each other — contradictions, unresolved conflicts, competing values, or beliefs that pull in opposite directions.
+
+CANDIDATE PAIRS:
+{pairs_text}
+
+For each pair that has a GENUINE tension (not all will), articulate what the tension is. Skip pairs that are simply different topics or complementary ideas.
+
+A tension is:
+- A contradiction the person hasn't resolved
+- Two values or goals that compete for the same resources (time, energy, identity)
+- A stated belief vs observed behavior pattern
+- An aspiration that conflicts with a comfort zone
+
+Respond with ONLY a JSON array. Each item:
+{{"pair": <pair_number>, "tension": "specific articulation of the tension", "type": "contradiction|competing_values|belief_behavior_gap|aspiration_comfort", "confidence": 0.7, "resolution_hint": "optional brief suggestion"}}
+
+If no genuine tensions exist, return an empty array [].
+Only include tensions you're confident about (>= 0.75).
+"""
+    
+    try:
+        response = model_fn(tension_prompt)
+        
+        # Parse response - strip markdown fences if present
+        clean = response.strip()
+        if clean.startswith("```"):
+            clean = re.sub(r'^```\w*\n?', '', clean)
+            clean = re.sub(r'\n?```$', '', clean)
+        
+        tensions = json.loads(clean) if clean.strip().startswith('[') else []
+        
+        # Filter by confidence
+        tensions = [t for t in tensions if t.get("confidence", 0) >= 0.75]
+        
+        if not tensions:
+            return ThinkResult(new_nodes=[], new_edges=[], cluster_topic="tension detection (no high-confidence tensions found)")
+        
+        # Create tension nodes
+        new_nodes = []
+        new_edges = []
+        
+        for t in tensions:
+            pair_idx = t.get("pair", 1) - 1
+            if pair_idx < 0 or pair_idx >= len(candidates):
+                continue
+                
+            i, j, sim = candidates[pair_idx]
+            
+            content = f"TENSION ({t.get('type', 'unknown')}): {t['tension']}"
+            if t.get("resolution_hint"):
+                content += f" [Resolution hint: {t['resolution_hint']}]"
+            
+            node_id = _create_node(
+                db_path, content, "tension",
+                "tension_detection", t.get("confidence", 0.75)
+            )
+            new_nodes.append(node_id)
+            
+            # Connect to both source nodes
+            _create_edge(db_path, nodes[i]["id"], node_id, "Tension detection")
+            _create_edge(db_path, nodes[j]["id"], node_id, "Tension detection")
+            new_edges.append((nodes[i]["id"], node_id, "Tension detection"))
+            new_edges.append((nodes[j]["id"], node_id, "Tension detection"))
+        
+        # Embed new nodes
+        embed_nodes(db_path)
+        
+        return ThinkResult(
+            new_nodes=new_nodes,
+            new_edges=new_edges,
+            cluster_topic=f"tension detection ({len(new_nodes)} tensions found)"
+        )
+    
+    except Exception as e:
+        logging.error(f"Tension detection failed: {e}")
+        return ThinkResult(
+            new_nodes=[],
+            new_edges=[],
+            cluster_topic=f"Failed: tension detection ({e})"
+        )
+
+
 def main():
     """CLI interface for session management"""
     parser = argparse.ArgumentParser(description="Cashew Session Integration")
