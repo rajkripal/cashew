@@ -247,7 +247,8 @@ def _extract_with_heuristics(conversation_text: str) -> List[Dict[str, str]]:
     return sorted(extractions, key=lambda x: x["confidence"], reverse=True)[:5]
 
 def _create_node(db_path: str, content: str, node_type: str, 
-                session_id: str, confidence: float = 0.7) -> str:
+                session_id: str, confidence: float = 0.7,
+                domain: str = 'bunny') -> str:
     """Create a new thought node and return its ID"""
     # Generate deterministic ID based on content
     node_id = hashlib.sha256(content.encode()).hexdigest()[:12]
@@ -267,9 +268,9 @@ def _create_node(db_path: str, content: str, node_type: str,
     cursor.execute("""
         INSERT INTO thought_nodes 
         (id, content, node_type, timestamp, confidence, source_file, 
-         last_accessed, access_count)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
-    """, (node_id, content, node_type, now, confidence, f"session_{session_id}", now))
+         last_accessed, access_count, domain)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)
+    """, (node_id, content, node_type, now, confidence, f"session_{session_id}", now, domain))
     
     conn.commit()
     conn.close()
@@ -531,21 +532,23 @@ def think_cycle(db_path: str, model_fn: Callable[[str], str],
     if focus_domain:
         cluster_topic += f" in {focus_domain} domain"
     
-    thinking_prompt = f"""
-Analyze these connected thoughts and look for new patterns, connections, or insights:
+    thinking_prompt = f"""You are analyzing a cluster of connected thoughts from a personal knowledge graph. Your job is to find non-obvious connections and generate genuine insights.
 
+THOUGHTS:
 {cluster_description}
 
-What new connections, patterns, tensions, or derived insights do you see? 
-Consider:
-1. Cross-domain connections between these ideas
-2. Missing links or gaps in reasoning
-3. Potential contradictions that need resolution  
-4. Higher-level patterns or principles
+Look for:
+- Patterns that connect these ideas in ways the author might not have noticed
+- Tensions or contradictions worth naming
+- A higher-level principle that unifies seemingly unrelated thoughts
 
-Generate 1-3 new derived thoughts that synthesize or extend these ideas.
-Format as JSON array:
-[{{"content": "...", "type": "insight|derived|connection", "confidence": 0.0-1.0}}]
+Respond with ONLY a JSON array (no markdown, no explanation). Each insight must be a specific, substantive statement — not a meta-comment about the thoughts.
+
+BAD: "These thoughts share common themes about growth"
+GOOD: "The silence pattern at work and the silence during faith transition are the same defense mechanism — withdrawal when the gap between performance and identity becomes visible"
+
+JSON format:
+[{{"content": "your specific insight here", "type": "insight", "confidence": 0.7}}]
 """
     
     try:
