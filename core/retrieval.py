@@ -37,36 +37,75 @@ def _get_connection(db_path: str) -> sqlite3.Connection:
     """Get database connection"""
     return sqlite3.connect(db_path)
 
-def _load_node_details(db_path: str, node_ids: List[str]) -> Dict[str, Dict]:
-    """Load node details for multiple node IDs"""
+def _load_node_details(db_path: str, node_ids: List[str], domain_filter: Optional[str] = None) -> Dict[str, Dict]:
+    """Load node details for multiple node IDs with optional domain filtering"""
     if not node_ids:
         return {}
     
     conn = _get_connection(db_path)
     cursor = conn.cursor()
     
+    # Check if domain column exists
+    cursor.execute("PRAGMA table_info(thought_nodes)")
+    columns = [row[1] for row in cursor.fetchall()]
+    has_domain_column = 'domain' in columns
+    
     placeholders = ','.join(['?'] * len(node_ids))
-    cursor.execute(f"""
-        SELECT id, content, node_type, COALESCE(metadata, '{{}}') as metadata
-        FROM thought_nodes 
-        WHERE id IN ({placeholders})
-        AND (decayed IS NULL OR decayed = 0)
-    """, node_ids)
+    
+    if has_domain_column:
+        if domain_filter:
+            cursor.execute(f"""
+                SELECT id, content, node_type, COALESCE(metadata, '{{}}') as metadata, domain
+                FROM thought_nodes 
+                WHERE id IN ({placeholders})
+                AND (decayed IS NULL OR decayed = 0)
+                AND domain = ?
+            """, node_ids + [domain_filter])
+        else:
+            cursor.execute(f"""
+                SELECT id, content, node_type, COALESCE(metadata, '{{}}') as metadata, COALESCE(domain, 'unknown') as domain
+                FROM thought_nodes 
+                WHERE id IN ({placeholders})
+                AND (decayed IS NULL OR decayed = 0)
+            """, node_ids)
+    else:
+        # Backwards compatibility: no domain column
+        cursor.execute(f"""
+            SELECT id, content, node_type, COALESCE(metadata, '{{}}') as metadata
+            FROM thought_nodes 
+            WHERE id IN ({placeholders})
+            AND (decayed IS NULL OR decayed = 0)
+        """, node_ids)
     
     nodes = {}
     for row in cursor.fetchall():
-        node_id, content, node_type, metadata = row
+        if has_domain_column:
+            node_id, content, node_type, metadata, domain = row
+        else:
+            node_id, content, node_type, metadata = row
+            domain = None
+        
         try:
             metadata_dict = json.loads(metadata) if metadata else {}
         except (json.JSONDecodeError, TypeError):
             metadata_dict = {}
         
-        domain = metadata_dict.get('domain', 'unknown')
+        # Get domain: prefer domain column, fall back to metadata, then 'unknown'
+        if has_domain_column and domain:
+            final_domain = domain
+        else:
+            final_domain = metadata_dict.get('domain', 'unknown')
+        
+        # If domain filtering is requested but this is an old DB without domain column,
+        # filter based on metadata
+        if domain_filter and not has_domain_column:
+            if final_domain != domain_filter:
+                continue
         
         nodes[node_id] = {
             "content": content,
             "node_type": node_type,
-            "domain": domain
+            "domain": final_domain
         }
     
     conn.close()
@@ -142,7 +181,7 @@ def _graph_walk(db_path: str, entry_points: List[str], walk_depth: int = 2) -> D
     
     return found_nodes
 
-def retrieve(db_path: str, query: str, top_k: int = 5, walk_depth: int = 2) -> List[RetrievalResult]:
+def retrieve(db_path: str, query: str, top_k: int = 5, walk_depth: int = 2, domain: Optional[str] = None) -> List[RetrievalResult]:
     """
     Hybrid retrieval combining embeddings and graph walking
     
@@ -151,6 +190,7 @@ def retrieve(db_path: str, query: str, top_k: int = 5, walk_depth: int = 2) -> L
         query: Search query
         top_k: Number of top results to return
         walk_depth: Graph walk depth from embedding entry points
+        domain: Optional domain filter ('raj', 'bunny', etc.). If None, returns all domains.
         
     Returns:
         List of RetrievalResult objects ranked by hybrid score
@@ -173,8 +213,8 @@ def retrieve(db_path: str, query: str, top_k: int = 5, walk_depth: int = 2) -> L
     # Step 3: Collect all unique nodes
     all_node_ids = set(embedding_scores.keys()) | set(walked_nodes.keys())
     
-    # Load node details
-    node_details = _load_node_details(db_path, list(all_node_ids))
+    # Load node details (with domain filtering if specified)
+    node_details = _load_node_details(db_path, list(all_node_ids), domain)
     
     # Step 4: Calculate hybrid scores
     results = []
@@ -233,12 +273,9 @@ def format_context(results: List[RetrievalResult], include_paths: bool = False) 
     context_lines = ["=== RELEVANT CONTEXT ==="]
     
     for i, result in enumerate(results, 1):
-        # Basic info line
-        lines = [f"{i}. [{result.node_type.upper()}] {result.content}"]
-        
-        # Add domain if available and not unknown
-        if result.domain and result.domain != "unknown":
-            lines.append(f"   Domain: {result.domain}")
+        # Basic info line with domain inline
+        domain_str = f" (Domain: {result.domain})" if result.domain and result.domain != "unknown" else ""
+        lines = [f"{i}. [{result.node_type.upper()}] {result.content}{domain_str}"]
         
         # Add path if requested and meaningful
         if include_paths and len(result.path) > 1:
@@ -320,6 +357,7 @@ def main():
     parser.add_argument("--query", required=True, help="Search query")
     parser.add_argument("--top-k", type=int, default=5, help="Number of results")
     parser.add_argument("--walk-depth", type=int, default=2, help="Graph walk depth")
+    parser.add_argument("--domain", help="Filter results to specific domain (raj, bunny, etc.)")
     parser.add_argument("--include-paths", action="store_true", help="Include paths in output")
     
     args = parser.parse_args()
@@ -328,7 +366,7 @@ def main():
         print(f"🔍 Hybrid retrieval for: {args.query}")
         print()
         
-        results = retrieve(args.db, args.query, args.top_k, args.walk_depth)
+        results = retrieve(args.db, args.query, args.top_k, args.walk_depth, args.domain)
         
         if results:
             context = format_context(results, args.include_paths)

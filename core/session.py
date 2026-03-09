@@ -123,7 +123,7 @@ def _update_access_tracking(db_path: str, node_ids: List[str]):
     conn.commit()
     conn.close()
 
-def start_session(db_path: str, session_id: str, hints: Optional[List[str]] = None) -> SessionContext:
+def start_session(db_path: str, session_id: str, hints: Optional[List[str]] = None, domain: Optional[str] = None) -> SessionContext:
     """
     Start a session and inject relevant context
     
@@ -131,6 +131,7 @@ def start_session(db_path: str, session_id: str, hints: Optional[List[str]] = No
         db_path: Path to SQLite database
         session_id: Unique session identifier
         hints: Optional topics/keywords for this session
+        domain: Optional domain filter for context retrieval
         
     Returns:
         SessionContext with context string, node IDs, and token estimate
@@ -144,7 +145,7 @@ def start_session(db_path: str, session_id: str, hints: Optional[List[str]] = No
     top_k = get_top_k()
     walk_depth = get_walk_depth()
     
-    results = retrieve(db_path, query, top_k, walk_depth)
+    results = retrieve(db_path, query, top_k, walk_depth, domain)
     
     if not results:
         logging.info(f"No relevant context found for session {session_id}")

@@ -222,6 +222,96 @@ def get_technical_context(db_path: str) -> str:
     return generate_session_context(db_path, ["engineering", "technical", "programming", "software", "architecture"])
 
 
+def get_bunny_context(db_path: str, hints: Optional[List[str]] = None) -> str:
+    """
+    Get context from Bunny's operational knowledge domain only
+    
+    Args:
+        db_path: Path to the SQLite database
+        hints: Optional list of topic hints for context retrieval
+        
+    Returns:
+        Formatted context string from bunny domain only
+    """
+    try:
+        # Check if database exists
+        if not os.path.exists(db_path):
+            logging.warning(f"Database not found at {db_path}")
+            return ""
+        
+        from core.retrieval import retrieve
+        
+        # Build query from hints or use default
+        query = " ".join(hints) if hints else "operational knowledge patterns decisions"
+        
+        # Retrieve only bunny domain nodes
+        results = retrieve(db_path, query, top_k=10, walk_depth=1, domain="bunny")
+        
+        if not results:
+            return ""
+        
+        # Format with proper header
+        from core.retrieval import format_context
+        context_str = format_context(results, include_paths=False)
+        
+        formatted_context = f"""## Bunny's Operational Knowledge
+
+{context_str}
+
+*Retrieved {len(results)} bunny domain nodes*"""
+        
+        return formatted_context
+        
+    except Exception as e:
+        logging.error(f"Error generating bunny context: {e}")
+        return ""
+
+
+def get_raj_context(db_path: str, hints: Optional[List[str]] = None) -> str:
+    """
+    Get context from Raj's thought domain only
+    
+    Args:
+        db_path: Path to the SQLite database
+        hints: Optional list of topic hints for context retrieval
+        
+    Returns:
+        Formatted context string from raj domain only
+    """
+    try:
+        # Check if database exists
+        if not os.path.exists(db_path):
+            logging.warning(f"Database not found at {db_path}")
+            return ""
+        
+        from core.retrieval import retrieve
+        
+        # Build query from hints or use default
+        query = " ".join(hints) if hints else "thoughts insights patterns decisions"
+        
+        # Retrieve only raj domain nodes
+        results = retrieve(db_path, query, top_k=10, walk_depth=2, domain="raj")
+        
+        if not results:
+            return ""
+        
+        # Format with proper header
+        from core.retrieval import format_context
+        context_str = format_context(results, include_paths=False)
+        
+        formatted_context = f"""## Raj's Thoughts and Insights
+
+{context_str}
+
+*Retrieved {len(results)} raj domain nodes*"""
+        
+        return formatted_context
+        
+    except Exception as e:
+        logging.error(f"Error generating raj context: {e}")
+        return ""
+
+
 def run_work_think_cycle(db_path: str) -> Dict[str, Any]:
     """Run a think cycle focused on work-related insights"""
     return run_think_cycle(db_path, "work")
