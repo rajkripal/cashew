@@ -16,7 +16,7 @@ import sys
 import argparse
 
 from .config import config, get_token_budget, get_top_k, get_walk_depth
-from .retrieval import retrieve, RetrievalResult
+from .retrieval import retrieve, retrieve_dfs, RetrievalResult
 from .embeddings import embed_text, embed_nodes
 
 @dataclass
@@ -141,11 +141,10 @@ def start_session(db_path: str, session_id: str, hints: Optional[List[str]] = No
     # Build query from hints or use default
     query = " ".join(hints) if hints else "recent relevant context"
     
-    # Retrieve relevant nodes using hybrid approach
+    # Retrieve relevant nodes using DFS hierarchical approach
     top_k = get_top_k()
-    walk_depth = get_walk_depth()
     
-    results = retrieve(db_path, query, top_k, walk_depth, domain)
+    results = retrieve_dfs(db_path, query, top_k, domain)
     
     if not results:
         logging.info(f"No relevant context found for session {session_id}")
@@ -270,7 +269,7 @@ def _create_node(db_path: str, content: str, node_type: str,
         (id, content, node_type, timestamp, confidence, source_file, 
          last_accessed, access_count, domain)
         VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)
-    """, (node_id, content, node_type, now, confidence, f"session_{session_id}", now, domain))
+    """, (node_id, content, node_type, now, confidence, session_id, now, domain))
     
     conn.commit()
     conn.close()
@@ -442,44 +441,98 @@ Conversation to extract from:
     )
 
 def _find_cluster_for_thinking(db_path: str, focus_domain: Optional[str] = None) -> List[str]:
-    """Find a coherent cluster of nodes for think cycle"""
+    """Find a coherent cluster of nodes for think cycle with random walk diversity"""
     conn = _get_connection(db_path)
     cursor = conn.cursor()
     
     if focus_domain:
         # Look for nodes in specific domain
         cursor.execute("""
-            SELECT id, last_accessed, access_count
+            SELECT id, last_accessed, access_count, node_type, COALESCE(domain, 'unknown') as domain
             FROM thought_nodes 
             WHERE (decayed IS NULL OR decayed = 0)
-            AND json_extract(metadata, '$.domain') = ?
+            AND COALESCE(domain, 'unknown') = ?
             ORDER BY COALESCE(access_count, 0) ASC, last_accessed ASC
+            LIMIT 20
+        """, (focus_domain,))
+        high_activation_candidates = cursor.fetchall()
+        
+        # Also get some random walk candidates from other domains
+        cursor.execute("""
+            SELECT id, last_accessed, access_count, node_type, COALESCE(domain, 'unknown') as domain
+            FROM thought_nodes
+            WHERE (decayed IS NULL OR decayed = 0)
+            AND COALESCE(domain, 'unknown') != ?
+            AND node_type != 'seed'
+            ORDER BY RANDOM()
             LIMIT 10
         """, (focus_domain,))
+        random_walk_candidates = cursor.fetchall()
     else:
-        # Find least recently accessed nodes
+        # Find high-activation candidates (least recently accessed)
         cursor.execute("""
-            SELECT id, last_accessed, access_count
+            SELECT id, last_accessed, access_count, node_type, COALESCE(domain, 'unknown') as domain
             FROM thought_nodes
             WHERE (decayed IS NULL OR decayed = 0)
             AND node_type != 'seed'
             ORDER BY COALESCE(access_count, 0) ASC, last_accessed ASC
-            LIMIT 10
+            LIMIT 20
         """)
-    
-    candidates = cursor.fetchall()
-    
-    if not candidates:
-        conn.close()
-        return []
-    
-    # Pick a random subset for thinking
-    import random
-    cluster_size = min(config.think_cycle_nodes, len(candidates))
-    selected = random.sample(candidates, cluster_size)
+        high_activation_candidates = cursor.fetchall()
+        
+        # Find underrepresented domains/types for random walk
+        cursor.execute("""
+            SELECT node_type, COALESCE(domain, 'unknown') as domain, COUNT(*) as cnt
+            FROM thought_nodes 
+            WHERE (decayed IS NULL OR decayed = 0)
+            AND timestamp > datetime('now', '-30 days')
+            AND source_file LIKE '%system_generated%'
+            GROUP BY node_type, domain
+            ORDER BY cnt ASC
+        """)
+        underrep_stats = cursor.fetchall()
+        
+        # Get random walk candidates from underrepresented areas
+        random_walk_candidates = []
+        for node_type, domain, _ in underrep_stats[:3]:  # Top 3 underrepresented
+            cursor.execute("""
+                SELECT id, last_accessed, access_count, node_type, COALESCE(domain, 'unknown') as domain
+                FROM thought_nodes
+                WHERE (decayed IS NULL OR decayed = 0)
+                AND node_type = ? AND COALESCE(domain, 'unknown') = ?
+                AND source_file NOT LIKE '%system_generated%'  -- Prefer human-authored content
+                ORDER BY RANDOM()
+                LIMIT 2
+            """, (node_type, domain))
+            random_walk_candidates.extend(cursor.fetchall())
     
     conn.close()
-    return [node_id for node_id, _, _ in selected]
+    
+    if not high_activation_candidates:
+        return []
+    
+    # Combine high-activation and random walk candidates
+    # Target: ~70% high-activation, ~30% random walk for diversity
+    import random
+    total_size = min(config.think_cycle_nodes, 8)  # Cap at 8 for manageability
+    
+    high_activation_size = max(1, int(total_size * 0.7))
+    random_walk_size = max(1, total_size - high_activation_size)
+    
+    # Sample from each pool
+    selected_high = random.sample(
+        high_activation_candidates, 
+        min(high_activation_size, len(high_activation_candidates))
+    )
+    
+    selected_random = random.sample(
+        random_walk_candidates,
+        min(random_walk_size, len(random_walk_candidates))
+    ) if random_walk_candidates else []
+    
+    # Combine and extract node IDs
+    all_selected = selected_high + selected_random
+    return [node_id for node_id, _, _, _, _ in all_selected]
 
 def think_cycle(db_path: str, model_fn: Callable[[str], str], 
                focus_domain: Optional[str] = None) -> ThinkResult:
@@ -600,6 +653,52 @@ JSON format:
                 cluster_topic=cluster_topic
             )
         
+        # Diversity check: filter out thoughts too similar to existing nodes
+        DIVERSITY_THRESHOLD = 0.85
+        diversity_filtered = []
+        
+        for thought in filtered:
+            content = thought.get("content", "")
+            if not content:
+                continue
+            
+            # Check similarity to existing nodes using embeddings search
+            try:
+                from .embeddings import search
+                
+                # Search for similar existing nodes using the proposed content as query
+                similar_nodes = search(db_path, content, top_k=5)
+                
+                # Check if any existing node is too similar
+                max_similarity = 0.0
+                if similar_nodes:
+                    max_similarity = max(score for _, score in similar_nodes)
+                
+                if max_similarity > DIVERSITY_THRESHOLD:
+                    logging.info(f"Think cycle: skipping thought due to high similarity ({max_similarity:.3f}) to existing node")
+                    continue
+                
+                diversity_filtered.append(thought)
+                
+            except Exception as e:
+                # If similarity check fails, be permissive and include the thought
+                logging.warning(f"Think cycle: diversity check failed for thought, including anyway: {e}")
+                diversity_filtered.append(thought)
+        
+        diversity_skipped = len(filtered) - len(diversity_filtered)
+        if diversity_skipped > 0:
+            logging.info(f"Think cycle: filtered out {diversity_skipped}/{len(filtered)} thoughts due to similarity")
+        
+        if not diversity_filtered:
+            logging.info("Think cycle: all thoughts too similar to existing nodes")
+            return ThinkResult(
+                new_nodes=[],
+                new_edges=[],
+                cluster_topic=cluster_topic
+            )
+        
+        filtered = diversity_filtered
+        
         # Create new nodes (only high-confidence thoughts)
         new_nodes = []
         new_edges = []
@@ -613,7 +712,7 @@ JSON format:
                 db_path, 
                 thought["content"],
                 thought.get("type", "insight"),
-                "think_cycle",
+                "system_generated",  # Use consistent tag for dashboard styling
                 thought.get("confidence", 0.7)
             )
             new_nodes.append(derived_id)
@@ -792,7 +891,7 @@ Only include tensions you're confident about (>= 0.75).
             
             node_id = _create_node(
                 db_path, content, "tension",
-                "tension_detection", t.get("confidence", 0.75)
+                "system_generated", t.get("confidence", 0.75)
             )
             new_nodes.append(node_id)
             

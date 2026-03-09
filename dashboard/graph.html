@@ -16,171 +16,122 @@
             height: 100dvh;
         }
 
-        /* === GRAPH === */
-        #graph {
-            touch-action: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
+        /* === PASSWORD GATE === */
+        #gate {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #0a0a0a; z-index: 9999;
         }
+        #gate .emoji { font-size: 64px; margin-bottom: 20px; }
+        #gate h1 { font-size: 22px; color: #f5c542; margin-bottom: 6px; font-weight: 600; }
+        #gate .subtitle { font-size: 14px; color: #666; margin-bottom: 30px; }
+        #gate input {
+            width: 260px; padding: 12px 16px; background: #1a1a1a;
+            border: 1px solid #333; border-radius: 10px; color: #e0e0e0;
+            font-size: 16px; text-align: center; outline: none;
+            letter-spacing: 2px;
+        }
+        #gate input:focus { border-color: #f5c542; }
+        #gate input::placeholder { color: #444; letter-spacing: 0; }
+        #gate .error { color: #ff4444; font-size: 12px; margin-top: 10px; opacity: 0; transition: opacity 0.3s; }
+        #gate .error.show { opacity: 1; }
+        #gate .hint { color: #333; font-size: 11px; margin-top: 20px; }
+
+        /* === GRAPH (hidden until auth) === */
+        #app { display: none; }
+
+        #graph { touch-action: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
         svg { width: 100%; height: 100%; }
         .node { cursor: pointer; }
         .node circle { stroke-width: 1.5; transition: r 0.2s; }
         .node.selected circle { stroke: #fff; stroke-width: 3; }
-        .node text {
-            font-size: 9px;
-            fill: #999;
-            pointer-events: none;
-            text-anchor: middle;
-            dy: -12px;
-        }
+        .node text { font-size: 9px; fill: #999; pointer-events: none; text-anchor: middle; }
         .link { stroke-opacity: 0.3; }
         .link.contradicts { stroke: #ff4444; stroke-dasharray: 4,2; }
         .link.supports { stroke: #44aa44; }
         .link.derived_from { stroke: #4488cc; }
+        .link.questions { stroke: #22d3ee; stroke-dasharray: 2,3; }
+        .link.influences { stroke: #da77f2; }
 
-        /* === TOP BAR === */
         #topbar {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            height: 44px;
-            background: rgba(17,17,17,0.92);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            display: flex;
-            align-items: center;
-            padding: 0 12px;
-            z-index: 100;
-            border-bottom: 1px solid #222;
-            gap: 10px;
+            position: fixed; top: 0; left: 0; right: 0; height: 44px;
+            background: rgba(17,17,17,0.92); backdrop-filter: blur(12px);
+            display: flex; align-items: center; padding: 0 12px; z-index: 100;
+            border-bottom: 1px solid #222; gap: 10px;
         }
         #topbar .logo { font-size: 18px; }
         #topbar .title { font-size: 14px; font-weight: 600; color: #f5c542; }
-        #topbar .stats {
-            font-size: 11px; color: #666;
-            margin-left: auto;
-            display: flex; gap: 8px;
-        }
+        #topbar .stats { font-size: 11px; color: #666; margin-left: auto; display: flex; gap: 8px; }
         #topbar .stats b { color: #f5c542; }
 
-        /* === SEARCH === */
-        #search-wrap {
-            position: fixed;
-            top: 52px; left: 8px; right: 8px;
-            z-index: 90;
+        #filters {
+            position: fixed; top: 44px; left: 0; right: 0; height: 40px;
+            background: rgba(17,17,17,0.88); backdrop-filter: blur(8px);
+            display: flex; align-items: center; padding: 0 10px; gap: 6px;
+            z-index: 95; border-bottom: 1px solid #1a1a1a; overflow-x: auto;
         }
+        .filter-btn {
+            padding: 4px 10px; border-radius: 14px; font-size: 11px;
+            border: 1px solid #333; background: transparent; color: #999;
+            cursor: pointer; white-space: nowrap; transition: all 0.2s;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .filter-btn:hover { border-color: #555; color: #ccc; }
+        .filter-btn.active { border-color: var(--fc); color: var(--fc); background: color-mix(in srgb, var(--fc) 15%, transparent); }
+        .filter-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .layout-btn {
+            padding: 4px 10px; border-radius: 14px; font-size: 11px;
+            border: 1px solid #444; background: #1a1a1a; color: #aaa;
+            cursor: pointer; margin-left: auto; white-space: nowrap;
+        }
+        .layout-btn.active { border-color: #f5c542; color: #f5c542; background: rgba(245,197,66,0.1); }
+
+        #search-wrap { position: fixed; top: 92px; left: 8px; right: 8px; z-index: 90; }
         #search {
-            width: 100%;
-            padding: 10px 14px;
-            background: rgba(30,30,30,0.92);
-            backdrop-filter: blur(8px);
-            border: 1px solid #333;
-            border-radius: 10px;
-            color: #e0e0e0;
-            font-size: 15px;
-            outline: none;
+            width: 100%; padding: 10px 14px;
+            background: rgba(30,30,30,0.92); backdrop-filter: blur(8px);
+            border: 1px solid #333; border-radius: 10px;
+            color: #e0e0e0; font-size: 15px; outline: none;
         }
         #search:focus { border-color: #f5c542; }
         #search::placeholder { color: #555; }
 
-        /* === BOTTOM PANEL === */
         #panel {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: rgba(17,17,17,0.95);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-top: 1px solid #333;
-            border-radius: 16px 16px 0 0;
-            z-index: 100;
-            transform: translateY(calc(100% - 36px));
-            transition: transform 0.3s ease;
-            max-height: 80vh;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(17,17,17,0.95); backdrop-filter: blur(16px);
+            border-top: 1px solid #333; border-radius: 16px 16px 0 0;
+            z-index: 100; transform: translateY(calc(100% - 36px));
+            transition: transform 0.3s ease; max-height: 80vh;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
         }
         #panel.open { transform: translateY(0); }
-        #panel-handle {
-            width: 40px; height: 5px;
-            background: #666;
-            border-radius: 3px;
-            margin: 0 auto;
-            padding: 0;
-            cursor: grab;
-        }
-        #panel-handle-zone {
-            padding: 12px 0 8px;
-            text-align: center;
-        }
+        #panel-handle { width: 40px; height: 5px; background: #666; border-radius: 3px; margin: 0 auto; cursor: grab; }
+        #panel-handle-zone { padding: 12px 0 8px; text-align: center; }
         #panel-content { padding: 4px 16px 24px; }
-        .panel-label {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #666;
-            margin: 12px 0 6px;
-        }
-        .panel-text {
-            font-size: 14px;
-            line-height: 1.5;
-            color: #ddd;
-        }
-        .panel-meta {
-            font-size: 11px;
-            color: #888;
-            margin-top: 4px;
-        }
-        .chain-step {
-            padding: 8px 0;
-            border-bottom: 1px solid #1a1a1a;
-        }
+        .panel-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #666; margin: 12px 0 6px; }
+        .panel-text { font-size: 14px; line-height: 1.5; color: #ddd; }
+        .panel-meta { font-size: 11px; color: #888; margin-top: 4px; }
+        .chain-step { padding: 8px 0; border-bottom: 1px solid #1a1a1a; }
         .chain-step:last-child { border-bottom: none; }
-        .chain-reason {
-            font-size: 11px;
-            color: #f5c542;
-            font-style: italic;
-            margin-top: 2px;
-        }
+        .chain-reason { font-size: 11px; color: #f5c542; font-style: italic; margin-top: 2px; }
         .chain-content { font-size: 13px; color: #ccc; }
         .node-type-badge {
-            display: inline-block;
-            font-size: 9px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-left: 6px;
+            display: inline-block; font-size: 9px; padding: 2px 6px;
+            border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 6px;
         }
 
-        /* === LEGEND === */
         #legend {
-            position: fixed;
-            bottom: 44px; right: 8px;
-            background: rgba(17,17,17,0.85);
-            border-radius: 8px;
-            padding: 8px 10px;
-            font-size: 10px;
-            z-index: 90;
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
+            position: fixed; bottom: 44px; right: 8px;
+            background: rgba(17,17,17,0.85); border-radius: 8px;
+            padding: 8px 10px; font-size: 10px; z-index: 90;
+            display: flex; flex-direction: column; gap: 3px;
         }
         .legend-row { display: flex; align-items: center; gap: 6px; }
-        .legend-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-        /* Desktop */
         @media (min-width: 768px) {
             #search-wrap { left: 16px; right: auto; width: 300px; }
-            #panel {
-                left: auto; right: 0; top: 0; bottom: 0;
-                width: 380px;
-                border-radius: 0;
-                transform: translateX(100%);
-                max-height: 100vh;
-            }
+            #panel { left: auto; right: 0; top: 0; bottom: 0; width: 380px; border-radius: 0; transform: translateX(100%); max-height: 100vh; }
             #panel.open { transform: translateX(0); }
             #panel-handle { display: none; }
             #legend { bottom: 16px; right: 16px; }
@@ -189,117 +140,313 @@
 </head>
 <body>
 
-<div id="topbar">
-    <span class="logo">🥜</span>
-    <span class="title">cashew</span>
-    <div class="stats">
-        <span><b id="stat-nodes">0</b> nodes</span>
-        <span><b id="stat-edges">0</b> edges</span>
+<!-- PASSWORD GATE -->
+<div id="gate">
+    <div class="emoji">🧠</div>
+    <h1>You have arrived at Raj's brain</h1>
+    <div class="subtitle">Enter password to continue</div>
+    <input type="password" id="gate-pw" placeholder="password" autocomplete="off" autofocus>
+    <div class="error" id="gate-error">Wrong password</div>
+    <div class="hint">cashew thought-graph engine</div>
+</div>
+
+<!-- DASHBOARD (hidden) -->
+<div id="app">
+    <div id="topbar">
+        <span class="logo">🥜</span>
+        <span class="title">cashew · raj's brain</span>
+        <div class="stats">
+            <span><b id="stat-nodes">0</b> nodes</span>
+            <span><b id="stat-edges">0</b> edges</span>
+            <button id="analytics-btn" style="background:none;border:1px solid #333;border-radius:8px;color:#888;font-size:10px;padding:2px 8px;cursor:pointer;margin-left:4px;">📊</button>
+        </div>
     </div>
-</div>
 
-<div id="search-wrap">
-    <input type="text" id="search" placeholder="Search thoughts...">
-</div>
+    <div id="filters">
+        <button class="filter-btn active" data-domain="all" style="--fc:#fff"><span class="filter-dot" style="background:#fff"></span>All</button>
+        <button class="filter-btn" data-domain="raj" style="--fc:#74c0fc"><span class="filter-dot" style="background:#74c0fc"></span>🧠 Raj <span class="filter-count" data-domain="raj"></span></button>
+        <button class="filter-btn" data-domain="bunny" style="--fc:#ff8c42"><span class="filter-dot" style="background:#ff8c42"></span>🐰 Bunny <span class="filter-count" data-domain="bunny"></span></button>
+        <span style="width:1px;background:#222;margin:0 4px;align-self:stretch;"></span>
+        <button class="filter-btn" data-type="belief" style="--fc:#f5c542"><span class="filter-dot" style="background:#f5c542"></span>Belief <span class="filter-count" data-type="belief"></span></button>
+        <button class="filter-btn" data-type="insight" style="--fc:#74c0fc"><span class="filter-dot" style="background:#74c0fc"></span>Insight <span class="filter-count" data-type="insight"></span></button>
+        <button class="filter-btn" data-type="observation" style="--fc:#da77f2"><span class="filter-dot" style="background:#da77f2"></span>Observation <span class="filter-count" data-type="observation"></span></button>
+        <button class="filter-btn" data-type="decision" style="--fc:#22d3ee"><span class="filter-dot" style="background:#22d3ee"></span>Decision <span class="filter-count" data-type="decision"></span></button>
+        <button class="filter-btn" data-type="fact" style="--fc:#44aa44"><span class="filter-dot" style="background:#44aa44"></span>Fact <span class="filter-count" data-type="fact"></span></button>
+        <button class="layout-btn" id="timeline-btn">⏱ Timeline</button>
+    </div>
 
-<div id="graph"></div>
+    <div id="analytics" style="display:none; padding:12px 16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px;">Analytics</span>
+            <button id="analytics-close" style="background:none; border:none; color:#555; cursor:pointer; font-size:14px;">✕</button>
+        </div>
+        <div id="metrics-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:8px; margin-bottom:12px;"></div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:200px;">
+                <div style="font-size:10px; color:#555; margin-bottom:6px; text-transform:uppercase;">Type Distribution</div>
+                <div id="type-bars"></div>
+            </div>
+            <div style="flex:1; min-width:200px;">
+                <div style="font-size:10px; color:#555; margin-bottom:6px; text-transform:uppercase;">Most Connected</div>
+                <div id="top-nodes" style="font-size:11px; color:#999;"></div>
+            </div>
+            <div style="flex:1; min-width:200px;">
+                <div style="font-size:10px; color:#555; margin-bottom:6px; text-transform:uppercase;">Domain Breakdown</div>
+                <div id="domain-bars"></div>
+            </div>
+        </div>
+    </div>
 
-<div id="legend">
-    <div class="legend-row"><div class="legend-dot" style="background:#f5c542"></div> Seed</div>
-    <div class="legend-row"><div class="legend-dot" style="background:#da77f2"></div> Core Memory</div>
-    <div class="legend-row"><div class="legend-dot" style="background:#74c0fc"></div> Derived</div>
-    <div class="legend-row"><div class="legend-dot" style="background:#51cf66"></div> Belief</div>
-    <div class="legend-row"><div class="legend-dot" style="background:#ff8c42;border:1px dashed #cc6b2e"></div> AI Generated</div>
-</div>
+    <div id="search-wrap">
+        <input type="text" id="search" placeholder="Search thoughts...">
+    </div>
 
-<div id="panel">
-    <div id="panel-handle-zone"><div id="panel-handle"></div></div>
-    <div id="panel-content">
-        <div style="color:#666;font-size:13px;text-align:center;padding:20px 0;">
-            Tap a node to inspect it
+    <div id="graph"></div>
+
+    <div id="legend">
+        <div style="font-size:9px;color:#555;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.5px;">🧠 Raj</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#f5c542"></div> Belief</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#74c0fc"></div> Insight</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#da77f2"></div> Observation</div>
+        <div style="font-size:9px;color:#555;margin:6px 0 3px;text-transform:uppercase;letter-spacing:0.5px;">🐰 Bunny</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#ff8c42"></div> Observation</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#ff6b6b"></div> Decision</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#ffd43b"></div> Fact</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#ffa94d"></div> Belief</div>
+    </div>
+
+    <div id="panel">
+        <div id="panel-handle-zone"><div id="panel-handle"></div></div>
+        <div id="panel-content">
+            <div style="color:#666;font-size:13px;text-align:center;padding:20px 0;">
+                Tap a node to inspect it
+            </div>
         </div>
     </div>
 </div>
 
 <script>
+// === PASSWORD GATE ===
+const HASH = '8c24cd43fafd4ec0c3c799d53a5fb884832cfdab5322b3280cc3844eed9a4ab7';
+
+async function sha256(text) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+document.getElementById('gate-pw').addEventListener('keydown', async (e) => {
+    if (e.key !== 'Enter') return;
+    const hash = await sha256(e.target.value);
+    if (hash === HASH) {
+        document.getElementById('gate').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        initDashboard();
+    } else {
+        document.getElementById('gate-error').classList.add('show');
+        e.target.value = '';
+        setTimeout(() => document.getElementById('gate-error').classList.remove('show'), 2000);
+    }
+});
+
+// === DASHBOARD ===
 const COLORS = {
-    seed: '#f5c542',
-    core_memory: '#da77f2',
+    belief: '#f5c542',
+    insight: '#74c0fc',
     derived: '#74c0fc',
-    belief: '#51cf66',
+    observation: '#da77f2',
+    decision: '#22d3ee',
+    fact: '#44aa44',
+    core_memory: '#e599f7',
+    cross_link: '#b197fc',
     question: '#22d3ee',
-    dream: '#22d3ee',
-    decayed: '#555',
-    system_generated: '#ff8c42'
+    implication: '#20c997',
+    prediction: '#66d9e8',
+    tension: '#ff6b6b',
+    meta: '#868e96',
+    seed: '#f5c542',
+    dream: '#b197fc'
+};
+
+const BUNNY_COLORS = {
+    observation: '#ff8c42',
+    decision: '#ff6b6b',
+    fact: '#ffd43b',
+    belief: '#ffa94d'
 };
 
 function getNodeColor(d) {
-    if (d.source_file === 'system_generated') return COLORS.system_generated;
+    if (d.domain === 'bunny') return BUNNY_COLORS[d.type] || '#ff8c42';
     return COLORS[d.type] || '#888';
 }
 
-let graphData, simulation, svg, g, link, node, labels;
+let graphData, simulation, svg, g, link, node, labels, zoom;
 let selectedNode = null;
+let activeFilter = 'all';
+let activeDomain = null;
+let timelineMode = false;
+let allNodes, allEdges, degree;
 
-async function init() {
+function buildAnalytics(counts) {
+    // Metric cards
+    const degMap = {};
+    allNodes.forEach(n => degMap[n.id] = 0);
+    allEdges.forEach(e => {
+        const s = typeof e.source === 'object' ? e.source.id : e.source;
+        const t = typeof e.target === 'object' ? e.target.id : e.target;
+        degMap[s] = (degMap[s] || 0) + 1;
+        degMap[t] = (degMap[t] || 0) + 1;
+    });
+    const degrees = Object.values(degMap);
+    const avgDeg = (degrees.reduce((a,b) => a+b, 0) / degrees.length).toFixed(1);
+    const maxDeg = Math.max(...degrees);
+    const orphans = degrees.filter(d => d === 0).length;
+    const domains = {};
+    allNodes.forEach(n => { const dom = n.domain || 'untagged'; domains[dom] = (domains[dom] || 0) + 1; });
+    const domCount = Object.keys(domains).length;
+
+    const metricsHTML = [
+        { v: allNodes.length, l: 'Nodes' },
+        { v: allEdges.length, l: 'Edges' },
+        { v: avgDeg, l: 'Avg Degree' },
+        { v: maxDeg, l: 'Max Degree' },
+        { v: orphans, l: 'Orphans' },
+        { v: domCount, l: 'Domains' }
+    ].map(m => `<div style="background:#111;border:1px solid #1a1a1a;border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#f5c542;">${m.v}</div>
+        <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">${m.l}</div>
+    </div>`).join('');
+    document.getElementById('metrics-grid').innerHTML = metricsHTML;
+
+    // Type distribution bars
+    const maxCount = Math.max(...Object.values(counts));
+    const typeHTML = Object.entries(counts)
+        .sort((a,b) => b[1] - a[1])
+        .map(([type, count]) => {
+            const pct = (count / maxCount * 100).toFixed(0);
+            const color = COLORS[type] || '#888';
+            return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                <span style="width:70px;font-size:10px;color:${color};text-align:right;">${type}</span>
+                <div style="flex:1;background:#1a1a1a;border-radius:3px;height:14px;overflow:hidden;">
+                    <div style="width:${pct}%;background:${color};height:100%;border-radius:3px;transition:width 0.3s;"></div>
+                </div>
+                <span style="font-size:10px;color:#666;width:30px;">${count}</span>
+            </div>`;
+        }).join('');
+    document.getElementById('type-bars').innerHTML = typeHTML;
+
+    // Top connected nodes
+    const sorted = Object.entries(degMap).sort((a,b) => b[1] - a[1]).slice(0, 8);
+    const topHTML = sorted.map(([id, deg]) => {
+        const n = allNodes.find(x => x.id === id);
+        const label = n ? (n.content || n.id).slice(0, 50) : id.slice(0, 8);
+        const color = n ? (COLORS[n.type] || '#888') : '#888';
+        return `<div style="display:flex;gap:6px;align-items:baseline;margin-bottom:3px;cursor:pointer;" onclick="selectNode(allNodes.find(x=>x.id==='${id}'))">
+            <span style="color:#f5c542;font-weight:700;width:20px;text-align:right;">${deg}</span>
+            <span style="color:${color};">·</span>
+            <span style="color:#ccc;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</span>
+        </div>`;
+    }).join('');
+    document.getElementById('top-nodes').innerHTML = topHTML;
+
+    // Domain breakdown
+    const domSorted = Object.entries(domains).sort((a,b) => b[1] - a[1]);
+    const domMax = Math.max(...domSorted.map(d => d[1]));
+    const domHTML = domSorted.map(([dom, count]) => {
+        const pct = (count / domMax * 100).toFixed(0);
+        return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="width:70px;font-size:10px;color:#999;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${dom}</span>
+            <div style="flex:1;background:#1a1a1a;border-radius:3px;height:14px;overflow:hidden;">
+                <div style="width:${pct}%;background:#f5c542;height:100%;border-radius:3px;opacity:0.6;"></div>
+            </div>
+            <span style="font-size:10px;color:#666;width:30px;">${count}</span>
+        </div>`;
+    }).join('');
+    document.getElementById('domain-bars').innerHTML = domHTML;
+}
+
+async function initDashboard() {
     const resp = await fetch('./data/graph.json');
-    graphData = await resp.json();
-
-    const nodes = graphData.nodes.map(n => ({...n}));
-    const edges = graphData.edges.map(e => ({
-        source: e.source,
-        target: e.target,
-        relation: e.relation,
-        weight: e.weight,
-        reasoning: e.reasoning
+    const graphData = await resp.json();
+    allNodes = graphData.nodes.map(n => ({...n, type: n.type || n.node_type}));
+    allEdges = graphData.edges.map(e => ({
+        source: e.source, target: e.target,
+        relation: e.relation, weight: e.weight, reasoning: e.reasoning
     }));
 
-    // Filter edges to only valid node pairs
-    const nodeIds = new Set(nodes.map(n => n.id));
-    const validEdges = edges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
+    const nodeIds = new Set(allNodes.map(n => n.id));
+    allEdges = allEdges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
 
-    document.getElementById('stat-nodes').textContent = nodes.length;
-    document.getElementById('stat-edges').textContent = validEdges.length;
+    document.getElementById('stat-nodes').textContent = allNodes.length;
+    document.getElementById('stat-edges').textContent = allEdges.length;
 
-    // Degree for sizing
-    const degree = {};
-    nodes.forEach(n => degree[n.id] = 0);
-    validEdges.forEach(e => {
+    const counts = {};
+    allNodes.forEach(n => counts[n.type] = (counts[n.type] || 0) + 1);
+    const domCounts = {};
+    allNodes.forEach(n => domCounts[n.domain] = (domCounts[n.domain] || 0) + 1);
+    document.querySelectorAll('.filter-count').forEach(el => {
+        if (el.dataset.type) el.textContent = `(${counts[el.dataset.type] || 0})`;
+        if (el.dataset.domain) el.textContent = `(${domCounts[el.dataset.domain] || 0})`;
+    });
+
+    // === ANALYTICS ===
+    buildAnalytics(counts);
+    document.getElementById('analytics-btn').addEventListener('click', () => {
+        const a = document.getElementById('analytics');
+        a.style.display = a.style.display === 'none' ? 'block' : 'none';
+    });
+    document.getElementById('analytics-close').addEventListener('click', () => {
+        document.getElementById('analytics').style.display = 'none';
+    });
+
+    degree = {};
+    allNodes.forEach(n => degree[n.id] = 0);
+    allEdges.forEach(e => {
         degree[e.source] = (degree[e.source] || 0) + 1;
         degree[e.target] = (degree[e.target] || 0) + 1;
     });
 
+    // Derivation depth
+    const adj = {};
+    allNodes.forEach(n => adj[n.id] = []);
+    allEdges.forEach(e => { if (!adj[e.source]) adj[e.source] = []; adj[e.source].push(e.target); });
+    const depthMap = {};
+    const queue = [];
+    allNodes.forEach(n => {
+        if (n.type === 'seed' || n.type === 'core_memory') { depthMap[n.id] = 0; queue.push(n.id); }
+    });
+    let qi = 0;
+    while (qi < queue.length) {
+        const cur = queue[qi++];
+        (adj[cur] || []).forEach(child => {
+            if (depthMap[child] === undefined || depthMap[child] > depthMap[cur] + 1) {
+                depthMap[child] = depthMap[cur] + 1; queue.push(child);
+            }
+        });
+    }
+    allNodes.forEach(n => { n._depth = depthMap[n.id] !== undefined ? depthMap[n.id] : 10; });
+
     const W = window.innerWidth, H = window.innerHeight;
-
-    svg = d3.select('#graph').append('svg')
-        .attr('width', W).attr('height', H);
-
+    svg = d3.select('#graph').append('svg').attr('width', W).attr('height', H);
     g = svg.append('g');
-
-    // Zoom
-    const zoom = d3.zoom()
-        .scaleExtent([0.2, 5])
-        .on('zoom', e => g.attr('transform', e.transform));
+    zoom = d3.zoom().scaleExtent([0.1, 5]).on('zoom', e => g.attr('transform', e.transform));
     svg.call(zoom);
 
-    simulation = d3.forceSimulation(nodes)
-        .force('link', d3.forceLink(validEdges).id(d => d.id).distance(60).strength(0.3))
+    simulation = d3.forceSimulation(allNodes)
+        .force('link', d3.forceLink(allEdges).id(d => d.id).distance(60).strength(0.3))
         .force('charge', d3.forceManyBody().strength(-120))
         .force('center', d3.forceCenter(W / 2, H / 2))
         .force('collision', d3.forceCollide().radius(d => getRadius(degree[d.id] || 0) + 4));
 
     link = g.append('g').selectAll('line')
-        .data(validEdges).enter().append('line')
+        .data(allEdges).enter().append('line')
         .attr('class', d => 'link ' + (d.relation || ''))
-        .attr('stroke-width', d => Math.max(0.5, (d.weight || 0.5) * 2));
+        .attr('stroke-width', d => Math.max(0.5, (d.weight || 0.5) * 2))
+        .attr('stroke', '#333');
 
     node = g.append('g').selectAll('g')
-        .data(nodes).enter().append('g')
+        .data(allNodes).enter().append('g')
         .attr('class', 'node')
-        .call(d3.drag()
-            .on('start', dragstart)
-            .on('drag', dragging)
-            .on('end', dragend));
+        .call(d3.drag().on('start', dragstart).on('drag', dragging).on('end', dragend));
 
     node.append('circle')
         .attr('r', d => getRadius(degree[d.id] || 0))
@@ -311,72 +458,49 @@ async function init() {
         .text(d => truncate(d.content, 20))
         .attr('dy', d => -(getRadius(degree[d.id] || 0) + 4));
 
-    node.on('click', (e, d) => {
-        e.stopPropagation();
-        selectNode(d);
-    });
-
-    svg.on('click', () => {
-        selectedNode = null;
-        node.classed('selected', false);
-        resetOpacity();
-        closePanel();
-    });
+    node.on('click', (e, d) => { e.stopPropagation(); selectNode(d); });
+    svg.on('click', () => { selectedNode = null; node.classed('selected', false); resetOpacity(); closePanel(); });
 
     simulation.on('tick', () => {
-        link
-            .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+        link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
             .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
         node.attr('transform', d => `translate(${d.x},${d.y})`);
     });
 
-    // Search
     document.getElementById('search').addEventListener('input', e => {
         const q = e.target.value.toLowerCase();
-        if (!q) { resetOpacity(); return; }
+        if (!q) { applyFilter(); return; }
         node.style('opacity', d => d.content.toLowerCase().includes(q) ? 1 : 0.08);
         labels.style('opacity', d => d.content.toLowerCase().includes(q) ? 1 : 0.08);
         link.style('opacity', 0.03);
-
-        const matches = nodes.filter(n => n.content.toLowerCase().includes(q));
+        const matches = allNodes.filter(n => n.content.toLowerCase().includes(q));
         if (matches.length === 1) selectNode(matches[0]);
     });
 
-    // Panel swipe/drag
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeFilter = btn.dataset.type || btn.dataset.domain || 'all';
+            activeDomain = btn.dataset.domain || null;
+            applyFilter();
+        });
+    });
+
+    document.getElementById('timeline-btn').addEventListener('click', () => {
+        timelineMode = !timelineMode;
+        document.getElementById('timeline-btn').classList.toggle('active', timelineMode);
+        if (timelineMode) enterTimeline(); else exitTimeline();
+    });
+
     const panel = document.getElementById('panel');
-    const handle = document.getElementById('panel-handle');
-    let startY = 0, panelDragging = false;
-
     const handleZone = document.getElementById('panel-handle-zone');
-    handleZone.addEventListener('touchstart', e => {
-        panelDragging = true;
-        startY = e.touches[0].clientY;
-        panel.style.transition = 'none';
-    });
-    handleZone.addEventListener('touchmove', e => {
-        if (!panelDragging) return;
-        const dy = e.touches[0].clientY - startY;
-        if (dy > 0) panel.style.transform = `translateY(${dy}px)`;
-    });
-    handleZone.addEventListener('touchend', e => {
-        if (!panelDragging) return;
-        panelDragging = false;
-        panel.style.transition = 'transform 0.3s ease';
-        const dy = e.changedTouches[0].clientY - startY;
-        if (dy > 80) {
-            panel.classList.remove('open');
-            panel.style.transform = '';
-        } else {
-            panel.style.transform = '';
-        }
-    });
-    // Also close on tap of handle
-    handleZone.addEventListener('click', e => {
-        e.stopPropagation();
-        panel.classList.toggle('open');
-    });
+    let startY = 0, panelDragging = false;
+    handleZone.addEventListener('touchstart', e => { panelDragging = true; startY = e.touches[0].clientY; panel.style.transition = 'none'; });
+    handleZone.addEventListener('touchmove', e => { if (!panelDragging) return; const dy = e.touches[0].clientY - startY; if (dy > 0) panel.style.transform = `translateY(${dy}px)`; });
+    handleZone.addEventListener('touchend', e => { if (!panelDragging) return; panelDragging = false; panel.style.transition = 'transform 0.3s ease'; if (e.changedTouches[0].clientY - startY > 80) { panel.classList.remove('open'); panel.style.transform = ''; } else { panel.style.transform = ''; } });
+    handleZone.addEventListener('click', e => { e.stopPropagation(); panel.classList.toggle('open'); });
 
-    // Auto-fit: run multiple times to catch the graph as it settles
     function fitGraph() {
         const bounds = g.node().getBBox();
         if (bounds.width === 0) return;
@@ -384,36 +508,76 @@ async function init() {
         const scale = Math.min((W - pad) / bounds.width, (H - pad) / bounds.height) * 0.85;
         const tx = W/2 - (bounds.x + bounds.width/2) * scale;
         const ty = H/2 - (bounds.y + bounds.height/2) * scale;
-        svg.transition().duration(800).call(
-            zoom.transform,
-            d3.zoomIdentity.translate(tx, ty).scale(Math.min(scale, 1.5))
-        );
+        svg.transition().duration(800).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(Math.min(scale, 1.5)));
     }
     setTimeout(fitGraph, 500);
     setTimeout(fitGraph, 2000);
     setTimeout(() => { simulation.alphaTarget(0); fitGraph(); }, 4000);
 }
 
-function getRadius(deg) {
-    return Math.max(4, Math.min(16, 4 + deg * 1.5));
+function applyFilter() {
+    if (activeFilter === 'all' && !activeDomain) { node.style('opacity', 1); labels.style('opacity', 1); link.style('opacity', null); return; }
+    let matchIds;
+    if (activeDomain) {
+        matchIds = new Set(allNodes.filter(n => n.domain === activeDomain).map(n => n.id));
+    } else {
+        matchIds = new Set(allNodes.filter(n => n.type === activeFilter).map(n => n.id));
+    }
+    const connected = new Set(matchIds);
+    allEdges.forEach(e => {
+        const sid = typeof e.source === 'object' ? e.source.id : e.source;
+        const tid = typeof e.target === 'object' ? e.target.id : e.target;
+        if (matchIds.has(sid)) connected.add(tid);
+        if (matchIds.has(tid)) connected.add(sid);
+    });
+    node.style('opacity', d => matchIds.has(d.id) ? 1 : (connected.has(d.id) ? 0.3 : 0.05));
+    labels.style('opacity', d => matchIds.has(d.id) ? 1 : (connected.has(d.id) ? 0.3 : 0.05));
+    link.style('opacity', e => {
+        const sid = typeof e.source === 'object' ? e.source.id : e.source;
+        const tid = typeof e.target === 'object' ? e.target.id : e.target;
+        return (matchIds.has(sid) || matchIds.has(tid)) ? 0.6 : 0.02;
+    });
 }
 
-function truncate(s, n) {
-    if (!s) return '';
-    return s.length > n ? s.slice(0, n) + '…' : s;
+function enterTimeline() {
+    const W = window.innerWidth, H = window.innerHeight;
+    const maxDepth = d3.max(allNodes, d => d._depth) || 1;
+    const margin = 100;
+    const byDepth = {};
+    allNodes.forEach(n => { if (!byDepth[n._depth]) byDepth[n._depth] = []; byDepth[n._depth].push(n); });
+    allNodes.forEach(n => {
+        const col = byDepth[n._depth];
+        const idx = col.indexOf(n);
+        const ySpacing = Math.min(50, (H - margin * 2) / col.length);
+        n.fx = margin + (n._depth / maxDepth) * (W - margin * 2);
+        n.fy = H/2 - (col.length - 1) * ySpacing / 2 + idx * ySpacing;
+    });
+    simulation.alpha(0.5).restart();
+    setTimeout(() => {
+        const bounds = g.node().getBBox();
+        if (bounds.width === 0) return;
+        const pad = 80;
+        const scale = Math.min((W - pad) / bounds.width, (H - pad) / bounds.height) * 0.85;
+        const tx = W/2 - (bounds.x + bounds.width/2) * scale;
+        const ty = H/2 - (bounds.y + bounds.height/2) * scale;
+        svg.transition().duration(800).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(Math.min(scale, 1.2)));
+    }, 600);
 }
+
+function exitTimeline() { allNodes.forEach(n => { n.fx = null; n.fy = null; }); simulation.alpha(0.8).restart(); }
+function getRadius(deg) { return Math.max(4, Math.min(16, 4 + deg * 1.5)); }
+function truncate(s, n) { return !s ? '' : s.length > n ? s.slice(0, n) + '…' : s; }
 
 function selectNode(d) {
     selectedNode = d;
     node.classed('selected', n => n.id === d.id);
-
-    // Highlight connected
     const connected = new Set([d.id]);
-    graphData.edges.forEach(e => {
-        if (e.source === d.id || e.source.id === d.id) connected.add(typeof e.target === 'object' ? e.target.id : e.target);
-        if (e.target === d.id || e.target.id === d.id) connected.add(typeof e.source === 'object' ? e.source.id : e.source);
+    allEdges.forEach(e => {
+        const sid = typeof e.source === 'object' ? e.source.id : e.source;
+        const tid = typeof e.target === 'object' ? e.target.id : e.target;
+        if (sid === d.id) connected.add(tid);
+        if (tid === d.id) connected.add(sid);
     });
-
     node.style('opacity', n => connected.has(n.id) ? 1 : 0.1);
     labels.style('opacity', n => connected.has(n.id) ? 1 : 0.1);
     link.style('opacity', e => {
@@ -421,92 +585,47 @@ function selectNode(d) {
         const tid = typeof e.target === 'object' ? e.target.id : e.target;
         return (sid === d.id || tid === d.id) ? 0.8 : 0.03;
     });
-
     showPanel(d);
 }
 
 function showPanel(d) {
     const panel = document.getElementById('panel');
     const content = document.getElementById('panel-content');
-
-    const typeBadge = `<span class="node-type-badge" style="background:${COLORS[d.type] || '#888'}33;color:${COLORS[d.type] || '#888'}">${d.type}</span>`;
-
-    // Find parents
-    const parents = graphData.edges
+    const c = getNodeColor(d);
+    const typeBadge = `<span class="node-type-badge" style="background:${c}33;color:${c}">${d.type}</span>`;
+    const parents = allEdges
         .filter(e => (typeof e.target === 'object' ? e.target.id : e.target) === d.id)
-        .map(e => {
-            const pid = typeof e.source === 'object' ? e.source.id : e.source;
-            const pnode = graphData.nodes.find(n => n.id === pid);
-            return { node: pnode, edge: e };
-        })
+        .map(e => { const pid = typeof e.source === 'object' ? e.source.id : e.source; return { node: allNodes.find(n => n.id === pid), edge: e }; })
         .filter(p => p.node);
-
-    // Find children
-    const children = graphData.edges
+    const children = allEdges
         .filter(e => (typeof e.source === 'object' ? e.source.id : e.source) === d.id)
-        .map(e => {
-            const cid = typeof e.target === 'object' ? e.target.id : e.target;
-            const cnode = graphData.nodes.find(n => n.id === cid);
-            return { node: cnode, edge: e };
-        })
+        .map(e => { const cid = typeof e.target === 'object' ? e.target.id : e.target; return { node: allNodes.find(n => n.id === cid), edge: e }; })
         .filter(c => c.node);
-
     let html = `
-        <div class="panel-label">Thought ${typeBadge}</div>
+        <div class="panel-label">Thought ${typeBadge} <span style="color:#555;font-size:9px;margin-left:8px;">depth ${d._depth}</span></div>
         <div class="panel-text" style="font-size:16px;font-weight:500;">${d.content}</div>
-        <div class="panel-meta">Confidence: ${d.confidence} · Source: ${d.source_file || 'unknown'}${d.source_file === 'system_generated' ? ' 🤖' : ' 🧠'}</div>
+        <div class="panel-meta">Confidence: ${d.confidence} · ${d.domain === 'bunny' ? '🐰 Bunny' : '🧠 Raj'} · ${d.source_file === 'system_generated' ? '🤖 AI Generated' : '✍️ Human'}</div>
     `;
-
     if (parents.length) {
         html += `<div class="panel-label">Derived From (${parents.length})</div>`;
-        parents.forEach(p => {
-            html += `<div class="chain-step">
-                <div class="chain-content">${p.node.content}</div>
-                <div class="chain-reason">${p.edge.relation}: ${p.edge.reasoning || ''}</div>
-            </div>`;
-        });
+        parents.forEach(p => { const reason = p.edge.reasoning ? `<div class="chain-reason">${p.edge.reasoning}</div>` : ''; html += `<div class="chain-step"><div class="chain-content">${p.node.content}</div>${reason}</div>`; });
     }
-
     if (children.length) {
         html += `<div class="panel-label">Leads To (${children.length})</div>`;
-        children.forEach(c => {
-            html += `<div class="chain-step">
-                <div class="chain-content">${c.node.content}</div>
-                <div class="chain-reason">${c.edge.relation}: ${c.edge.reasoning || ''}</div>
-            </div>`;
-        });
+        children.forEach(c => { const reason = c.edge.reasoning ? `<div class="chain-reason">${c.edge.reasoning}</div>` : ''; html += `<div class="chain-step"><div class="chain-content">${c.node.content}</div>${reason}</div>`; });
     }
-
     if (!parents.length && !children.length) {
-        html += `<div class="panel-label">Connections</div>
-                 <div class="panel-meta">Orphan node — no derivation edges</div>`;
+        html += `<div class="panel-label">Connections</div><div class="panel-meta">Orphan node — no derivation edges</div>`;
     }
-
     content.innerHTML = html;
     panel.classList.add('open');
 }
 
-function closePanel() {
-    document.getElementById('panel').classList.remove('open');
-}
-
-function resetOpacity() {
-    node.style('opacity', 1);
-    labels.style('opacity', 1);
-    link.style('opacity', null);
-}
-
-function dragstart(e, d) {
-    if (!e.active) simulation.alphaTarget(0.3).restart();
-    d.fx = d.x; d.fy = d.y;
-}
+function closePanel() { document.getElementById('panel').classList.remove('open'); }
+function resetOpacity() { node.style('opacity', 1); labels.style('opacity', 1); link.style('opacity', null); }
+function dragstart(e, d) { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
 function dragging(e, d) { d.fx = e.x; d.fy = e.y; }
-function dragend(e, d) {
-    if (!e.active) simulation.alphaTarget(0);
-    d.fx = null; d.fy = null;
-}
-
-init();
+function dragend(e, d) { if (!e.active) simulation.alphaTarget(0); if (!timelineMode) { d.fx = null; d.fy = null; } }
 </script>
 </body>
 </html>

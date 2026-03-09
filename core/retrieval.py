@@ -291,6 +291,214 @@ def _retrieve_flat(db_path: str, query: str, top_k: int = 5, domain: Optional[st
     return retrieve(db_path, query, top_k, domain=domain)
 
 
+def retrieve_dfs(db_path: str, query: str, top_k: int = 5, 
+                 domain: Optional[str] = None) -> List[RetrievalResult]:
+    """
+    DFS retrieval through hierarchical hotspot tree:
+    1. Get root-level hotspots (not children of other hotspots)
+    2. Compute embedding similarity against root hotspots  
+    3. Pick top-K (K=2-3) best matching root hotspots
+    4. For each: check if it has sub-hotspots (children that are also hotspots)
+    5. If yes: recurse - compare query against sub-hotspots, pick best
+    6. If no (leaf hotspot): return its cluster members ranked by similarity
+    7. Also include unclustered nodes as fallback pool
+    8. Final output: 1 hotspot (the leaf hotspot for context) + N detail nodes
+    
+    Args:
+        db_path: Path to SQLite database
+        query: Search query  
+        top_k: Number of final results to return
+        domain: Optional domain filter
+        
+    Returns:
+        List of RetrievalResult objects
+    """
+    if not query or not query.strip():
+        return []
+    
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    # Get all hotspot IDs and their parent-child relationships  
+    if domain:
+        cursor.execute("""
+            SELECT id FROM thought_nodes 
+            WHERE node_type = ? AND (decayed IS NULL OR decayed = 0) AND domain = ?
+        """, (HOTSPOT_TYPE, domain))
+    else:
+        cursor.execute("""
+            SELECT id FROM thought_nodes 
+            WHERE node_type = ? AND (decayed IS NULL OR decayed = 0)
+        """, (HOTSPOT_TYPE,))
+    
+    all_hotspot_ids = set(row[0] for row in cursor.fetchall())
+    
+    if not all_hotspot_ids:
+        conn.close()
+        return _retrieve_flat(db_path, query, top_k, domain=domain)
+    
+    # Find hotspot hierarchy: parent -> children mapping
+    cursor.execute("""
+        SELECT de.parent_id, de.child_id  
+        FROM derivation_edges de
+        JOIN thought_nodes tn_parent ON de.parent_id = tn_parent.id
+        JOIN thought_nodes tn_child ON de.child_id = tn_child.id
+        WHERE tn_parent.node_type = ? AND tn_child.node_type = ?
+        AND de.relation = 'summarizes'
+        AND (tn_parent.decayed IS NULL OR tn_parent.decayed = 0)
+        AND (tn_child.decayed IS NULL OR tn_child.decayed = 0)
+    """, (HOTSPOT_TYPE, HOTSPOT_TYPE))
+    
+    hotspot_children = defaultdict(set)  # parent_hotspot -> set of child_hotspots
+    hotspot_parents = {}  # child_hotspot -> parent_hotspot
+    
+    for parent_id, child_id in cursor.fetchall():
+        hotspot_children[parent_id].add(child_id)
+        hotspot_parents[child_id] = parent_id
+    
+    # Find root hotspots (hotspots that are not children of other hotspots)
+    root_hotspots = all_hotspot_ids - set(hotspot_parents.keys())
+    
+    if not root_hotspots:
+        # No hierarchical structure, fall back to flat hotspot search
+        conn.close()
+        return retrieve_hierarchical(db_path, query, top_k, top_hotspots=3, domain=domain)
+    
+    # Prepare query embedding
+    from .embeddings import embed_text
+    query_embedding = np.array(embed_text(query), dtype=np.float32)
+    
+    # Function to get embedding similarity for a hotspot
+    def get_hotspot_similarity(hotspot_id: str) -> float:
+        cursor.execute("SELECT vector FROM embeddings WHERE node_id = ?", (hotspot_id,))
+        row = cursor.fetchone()
+        if not row:
+            return 0.0
+        vec = np.frombuffer(row[0], dtype=np.float32)
+        return float(np.dot(query_embedding, vec) / (np.linalg.norm(query_embedding) * np.linalg.norm(vec) + 1e-8))
+    
+    # DFS search through hotspot tree
+    def dfs_search(current_hotspots: Set[str], depth: int = 0, max_depth: int = 5) -> Tuple[str, float]:
+        """
+        DFS search through hotspot hierarchy.
+        Returns: (best_leaf_hotspot_id, best_score)
+        """
+        if depth >= max_depth or not current_hotspots:
+            return None, 0.0
+        
+        # Compute similarities for current level hotspots
+        hotspot_sims = []
+        for hotspot_id in current_hotspots:
+            sim = get_hotspot_similarity(hotspot_id)
+            hotspot_sims.append((hotspot_id, sim))
+        
+        # Sort by similarity
+        hotspot_sims.sort(key=lambda x: x[1], reverse=True)
+        
+        # Take top 2-3 for exploration
+        explore_count = min(3, len(hotspot_sims))
+        best_leaf = None
+        best_leaf_score = 0.0
+        
+        for hotspot_id, sim in hotspot_sims[:explore_count]:
+            # Check if this hotspot has children
+            children = hotspot_children.get(hotspot_id, set())
+            
+            if children:
+                # Has children - recurse
+                child_leaf, child_score = dfs_search(children, depth + 1, max_depth)
+                if child_score > best_leaf_score:
+                    best_leaf = child_leaf
+                    best_leaf_score = child_score
+            else:
+                # Leaf hotspot - candidate for final selection
+                if sim > best_leaf_score:
+                    best_leaf = hotspot_id
+                    best_leaf_score = sim
+        
+        return best_leaf, best_leaf_score
+    
+    # Start DFS from root hotspots
+    best_hotspot_id, best_hotspot_score = dfs_search(root_hotspots)
+    
+    conn.close()
+    
+    if not best_hotspot_id:
+        # DFS failed, fall back to flat retrieval
+        return _retrieve_flat(db_path, query, top_k, domain=domain)
+    
+    # Get cluster members for the best leaf hotspot
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT child_id FROM derivation_edges 
+        WHERE parent_id = ? AND relation = 'summarizes'
+    """, (best_hotspot_id,))
+    
+    cluster_members = set(row[0] for row in cursor.fetchall())
+    
+    # Also get unclustered nodes as fallback
+    cursor.execute("""
+        SELECT DISTINCT child_id FROM derivation_edges 
+        WHERE relation = 'summarizes'
+    """)
+    all_clustered = set(row[0] for row in cursor.fetchall())
+    
+    # Get some unclustered nodes from embedding search
+    all_embedding_results = embedding_search(db_path, query, top_k=50)
+    unclustered_pool = set()
+    for node_id, score in all_embedding_results:
+        if node_id not in all_clustered and node_id not in all_hotspot_ids:
+            unclustered_pool.add(node_id)
+    
+    # Combine cluster members and unclustered pool
+    search_pool = cluster_members | unclustered_pool
+    
+    # Rank by embedding similarity
+    pool_scores = {}
+    for node_id, score in all_embedding_results:
+        if node_id in search_pool:
+            pool_scores[node_id] = score
+    
+    # Load node details
+    all_candidate_ids = list(search_pool) + [best_hotspot_id]
+    node_details = _load_node_details(db_path, all_candidate_ids, domain)
+    
+    conn.close()
+    
+    # Build results
+    results = []
+    
+    # Add the best leaf hotspot as context
+    if best_hotspot_id in node_details:
+        details = node_details[best_hotspot_id]
+        results.append(RetrievalResult(
+            node_id=best_hotspot_id,
+            content=details["content"],
+            node_type=details["node_type"],
+            domain=details["domain"],
+            score=best_hotspot_score * HOTSPOT_BOOST,
+            path=[best_hotspot_id]
+        ))
+    
+    # Add detail nodes ranked by similarity
+    ranked_pool = sorted(pool_scores.items(), key=lambda x: x[1], reverse=True)
+    for node_id, score in ranked_pool:
+        if node_id in node_details and node_id not in all_hotspot_ids:
+            details = node_details[node_id]
+            results.append(RetrievalResult(
+                node_id=node_id,
+                content=details["content"],
+                node_type=details["node_type"],
+                domain=details["domain"],
+                score=score,
+                path=[node_id]
+            ))
+    
+    return results[:top_k]
+
+
 def retrieve_hierarchical(db_path: str, query: str, top_k: int = 5, 
                           top_hotspots: int = 3, domain: Optional[str] = None) -> List[RetrievalResult]:
     """

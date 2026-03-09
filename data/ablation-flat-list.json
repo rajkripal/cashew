@@ -1,0 +1,366 @@
+{
+  "method": "flat_list_single_prompt",
+  "input_nodes": 34,
+  "prompt_chars": 4315,
+  "conclusions": [
+    {
+      "content": "The fine-tuning argument presents genuinely puzzling data that materialism struggles to explain without invoking multiverse theories that are themselves unfalsifiable",
+      "confidence": 0.75,
+      "supporting_inputs": [
+        "fine-tuning evidence",
+        "extraordinary claims principle",
+        "falsifiability criterion"
+      ]
+    },
+    {
+      "content": "The hard problem of consciousness represents a significant explanatory gap in materialist frameworks, though this gap alone doesn't prove divine causation",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "consciousness unexplained by materialism",
+        "absence of evidence principle"
+      ]
+    },
+    {
+      "content": "Near-death experiences show remarkable cross-cultural consistency, but neuroscience provides plausible alternative explanations through temporal lobe activity",
+      "confidence": 0.7,
+      "supporting_inputs": [
+        "NDE consistency evidence",
+        "neuroscience explanations",
+        "test claims against evidence"
+      ]
+    },
+    {
+      "content": "Religious communities demonstrably provide measurable health and social benefits, regardless of truth claims about supernatural beliefs",
+      "confidence": 0.85,
+      "supporting_inputs": [
+        "peer-reviewed health studies",
+        "systematic observation principle"
+      ]
+    },
+    {
+      "content": "Plantinga's properly basic belief framework is internally coherent but doesn't distinguish between true and false basic beliefs",
+      "confidence": 0.75,
+      "supporting_inputs": [
+        "reformed epistemology",
+        "properly basic truths principle",
+        "why derivation chains"
+      ]
+    },
+    {
+      "content": "The Kalam cosmological argument's first premise (everything that begins has a cause) may not apply to quantum phenomena or universe origins",
+      "confidence": 0.7,
+      "supporting_inputs": [
+        "Kalam argument",
+        "test against evidence",
+        "extraordinary claims principle"
+      ]
+    },
+    {
+      "content": "Universal moral intuitions exist but can be explained through evolutionary advantage without requiring transcendent source",
+      "confidence": 0.75,
+      "supporting_inputs": [
+        "moral argument evidence",
+        "secular societies data",
+        "follow evidence principle"
+      ]
+    },
+    {
+      "content": "Personal transformative experiences are valid data points but must be weighed against the possibility of psychological rather than supernatural causation",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "personal experience validity",
+        "systematic observation",
+        "cognitive science explanations"
+      ]
+    },
+    {
+      "content": "Early Christian martyrdom evidence suggests sincere belief but doesn't validate the content of those beliefs",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "martyrdom evidence",
+        "distinguish belief from truth",
+        "steelman principle"
+      ]
+    },
+    {
+      "content": "Kierkegaard's faith-beyond-reason framework acknowledges important experiential dimensions but removes claims from evidential evaluation",
+      "confidence": 0.75,
+      "supporting_inputs": [
+        "faith leap argument",
+        "falsifiability criterion",
+        "meaningful vs scientific distinction"
+      ]
+    },
+    {
+      "content": "The STEP trial provides strong evidence against intercessory prayer efficacy, though believers can argue this tests God inappropriately",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "STEP trial results",
+        "test claims principle",
+        "strongest arguments engagement"
+      ]
+    },
+    {
+      "content": "Geological and DNA evidence conclusively contradict young earth interpretations but don't necessarily refute all forms of theism",
+      "confidence": 0.9,
+      "supporting_inputs": [
+        "geological/DNA evidence",
+        "archaeological contradictions",
+        "follow evidence principle"
+      ]
+    },
+    {
+      "content": "Multiple mutually exclusive religions with equally convinced followers suggests cultural rather than divine origin of specific doctrines",
+      "confidence": 0.85,
+      "supporting_inputs": [
+        "multiple religions evidence",
+        "systematic observation",
+        "extraordinary claims principle"
+      ]
+    },
+    {
+      "content": "The problem of evil presents the strongest philosophical challenge to omnibenevolent deity claims, though sophisticated theodicies exist",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "problem of evil",
+        "children/tsunami examples",
+        "steelman principle"
+      ]
+    },
+    {
+      "content": "Secular societies' ethical performance undermines claims that divine command is necessary for moral foundation",
+      "confidence": 0.85,
+      "supporting_inputs": [
+        "Scandinavian/Japan data",
+        "morality claims",
+        "test against evidence"
+      ]
+    },
+    {
+      "content": "Cognitive science explanations for religious belief are compelling but don't definitively prove supernatural experiences are illusory",
+      "confidence": 0.75,
+      "supporting_inputs": [
+        "pattern recognition/agent detection",
+        "temporal lobe activity",
+        "absence of evidence principle"
+      ]
+    },
+    {
+      "content": "Vague prophecy fulfillment and post-hoc writing significantly undermine prophetic evidence for divine inspiration",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "prophecy analysis",
+        "historical evidence",
+        "extraordinary claims principle"
+      ]
+    },
+    {
+      "content": "Sacred text claims of ultimate authority are weakened by archaeological contradictions and internal inconsistencies",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "archaeological evidence",
+        "historical contradictions",
+        "follow evidence principle"
+      ]
+    },
+    {
+      "content": "Miracle claims face the Humean problem: natural law violations require evidence stronger than the reliability of human testimony",
+      "confidence": 0.75,
+      "supporting_inputs": [
+        "historical figure miracles",
+        "extraordinary claims principle",
+        "systematic observation"
+      ]
+    },
+    {
+      "content": "Eternal punishment claims cannot be empirically tested but raise serious moral questions about proportionality and justice",
+      "confidence": 0.7,
+      "supporting_inputs": [
+        "negative eternal consequences",
+        "unfalsifiable but meaningful",
+        "moral reasoning"
+      ]
+    },
+    {
+      "content": "Religious experience validity as properly basic knowledge faces the challenge of distinguishing genuine from delusory experiences",
+      "confidence": 0.75,
+      "supporting_inputs": [
+        "properly basic principle",
+        "personal experience data",
+        "systematic observation tension"
+      ]
+    },
+    {
+      "content": "Natural explanations for religious phenomena are generally more parsimonious than supernatural ones, following Occam's razor",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "neuroscience explanations",
+        "cognitive science",
+        "follow evidence principle"
+      ]
+    },
+    {
+      "content": "The beneficial effects of religious practice can be separated from supernatural truth claims about divine intervention",
+      "confidence": 0.85,
+      "supporting_inputs": [
+        "health outcomes",
+        "social support",
+        "prayer study results"
+      ]
+    },
+    {
+      "content": "Consciousness and fine-tuning represent genuine puzzles that current science cannot fully resolve, creating space for metaphysical speculation",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "consciousness problem",
+        "fine-tuning constants",
+        "absence of evidence principle"
+      ]
+    },
+    {
+      "content": "Historical religious claims should be evaluated using the same evidential standards applied to other historical assertions",
+      "confidence": 0.9,
+      "supporting_inputs": [
+        "archaeological evidence",
+        "historical analysis",
+        "test claims principle"
+      ]
+    },
+    {
+      "content": "The diversity of religious experiences across cultures suggests either multiple divine revelations or common psychological mechanisms",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "cross-cultural experiences",
+        "multiple religions",
+        "systematic observation"
+      ]
+    },
+    {
+      "content": "Moral intuitions exist but their evolutionary origin provides a more testable explanation than divine command theory",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "universal moral intuitions",
+        "secular societies data",
+        "evolutionary explanations"
+      ]
+    },
+    {
+      "content": "Prayer and ritual may produce psychological benefits without requiring supernatural mechanisms to explain their effects",
+      "confidence": 0.85,
+      "supporting_inputs": [
+        "STEP trial",
+        "health benefits",
+        "psychological mechanisms"
+      ]
+    },
+    {
+      "content": "The strongest religious arguments acknowledge natural explanations while pointing to explanatory gaps rather than contradicting established science",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "consciousness gap",
+        "fine-tuning",
+        "steelman principle"
+      ]
+    },
+    {
+      "content": "Extraordinary religious claims lack the extraordinary evidence required for rational acceptance, though they remain meaningful to believers",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "extraordinary claims principle",
+        "evidence evaluation",
+        "meaningful vs scientific"
+      ]
+    },
+    {
+      "content": "Personal religious experience, while valid as subjective data, cannot establish objective truth claims about supernatural reality",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "personal experience validity",
+        "systematic observation",
+        "subjective vs objective distinction"
+      ]
+    },
+    {
+      "content": "The cumulative case against specific supernatural claims is stronger than arguments for them, though metaphysical questions about ultimate reality remain open",
+      "confidence": 0.75,
+      "supporting_inputs": [
+        "cumulative counter-evidence",
+        "archaeological contradictions",
+        "scientific explanations"
+      ]
+    },
+    {
+      "content": "Religious frameworks provide meaning and community benefits that persist independently of their supernatural truth claims",
+      "confidence": 0.85,
+      "supporting_inputs": [
+        "health outcomes",
+        "social support",
+        "transformative experiences"
+      ]
+    },
+    {
+      "content": "Current evidence best supports naturalistic explanations for religious phenomena while acknowledging significant unresolved questions about consciousness and cosmic origins",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "follow evidence principle",
+        "naturalistic explanations",
+        "consciousness/fine-tuning puzzles"
+      ]
+    },
+    {
+      "content": "Rational evaluation favors skepticism toward specific supernatural claims while maintaining intellectual humility about ultimate metaphysical questions",
+      "confidence": 0.75,
+      "supporting_inputs": [
+        "evidence evaluation",
+        "extraordinary claims standard",
+        "absence of evidence principle"
+      ]
+    },
+    {
+      "content": "The religious impulse addresses genuine human needs and experiences but these can be understood through psychological and sociological rather than supernatural frameworks",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "transformative experiences",
+        "community benefits",
+        "cognitive science explanations"
+      ]
+    },
+    {
+      "content": "Belief systems should be evaluated on multiple criteria including evidential support, explanatory power, internal consistency, and practical outcomes",
+      "confidence": 0.85,
+      "supporting_inputs": [
+        "multiple evaluation criteria",
+        "systematic observation",
+        "follow evidence principle"
+      ]
+    },
+    {
+      "content": "The most defensible position maintains that while religious experiences are real and valuable, supernatural explanations lack sufficient evidential support for rational acceptance",
+      "confidence": 0.75,
+      "supporting_inputs": [
+        "personal experience validity",
+        "extraordinary evidence requirement",
+        "naturalistic alternatives"
+      ]
+    },
+    {
+      "content": "Intellectual honesty requires acknowledging both the genuine benefits of religious practice and the insufficient evidence for supernatural claims",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "health/social benefits",
+        "evidential gaps",
+        "balanced evaluation principle"
+      ]
+    },
+    {
+      "content": "The scientific worldview provides more reliable knowledge about reality while religious frameworks offer meaning-making resources that serve different human needs",
+      "confidence": 0.8,
+      "supporting_inputs": [
+        "systematic observation success",
+        "meaning-making function",
+        "different domains principle"
+      ]
+    }
+  ],
+  "raw_response": "```json\n[\n  {\"content\": \"The fine-tuning argument presents genuinely puzzling data that materialism struggles to explain without invoking multiverse theories that are themselves unfalsifiable\", \"confidence\": 0.75, \"supporting_inputs\": [\"fine-tuning evidence\", \"extraordinary claims principle\", \"falsifiability criterion\"]},\n  \n  {\"content\": \"The hard problem of consciousness represents a significant explanatory gap in materialist frameworks, though this gap alone doesn't prove divine causation\", \"confidence\": 0.8, \"supporting_inputs\": [\"consciousness unexplained by materialism\", \"absence of evidence principle\"]},\n  \n  {\"content\": \"Near-death experiences show remarkable cross-cultural consistency, but neuroscience provides plausible alternative explanations through temporal lobe activity\", \"confidence\": 0.7, \"supporting_inputs\": [\"NDE consistency evidence\", \"neuroscience explanations\", \"test claims against evidence\"]},\n  \n  {\"content\": \"Religious communities demonstrably provide measurable health and social benefits, regardless of truth claims about supernatural beliefs\", \"confidence\": 0.85, \"supporting_inputs\": [\"peer-reviewed health studies\", \"systematic observation principle\"]},\n  \n  {\"content\": \"Plantinga's properly basic belief framework is internally coherent but doesn't distinguish between true and false basic beliefs\", \"confidence\": 0.75, \"supporting_inputs\": [\"reformed epistemology\", \"properly basic truths principle\", \"why derivation chains\"]},\n  \n  {\"content\": \"The Kalam cosmological argument's first premise (everything that begins has a cause) may not apply to quantum phenomena or universe origins\", \"confidence\": 0.7, \"supporting_inputs\": [\"Kalam argument\", \"test against evidence\", \"extraordinary claims principle\"]},\n  \n  {\"content\": \"Universal moral intuitions exist but can be explained through evolutionary advantage without requiring transcendent source\", \"confidence\": 0.75, \"supporting_inputs\": [\"moral argument evidence\", \"secular societies data\", \"follow evidence principle\"]},\n  \n  {\"content\": \"Personal transformative experiences are valid data points but must be weighed against the possibility of psychological rather than supernatural causation\", \"confidence\": 0.8, \"supporting_inputs\": [\"personal experience validity\", \"systematic observation\", \"cognitive science explanations\"]},\n  \n  {\"content\": \"Early Christian martyrdom evidence suggests sincere belief but doesn't validate the content of those beliefs\", \"confidence\": 0.8, \"supporting_inputs\": [\"martyrdom evidence\", \"distinguish belief from truth\", \"steelman principle\"]},\n  \n  {\"content\": \"Kierkegaard's faith-beyond-reason framework acknowledges important experiential dimensions but removes claims from evidential evaluation\", \"confidence\": 0.75, \"supporting_inputs\": [\"faith leap argument\", \"falsifiability criterion\", \"meaningful vs scientific distinction\"]},\n  \n  {\"content\": \"The STEP trial provides strong evidence against intercessory prayer efficacy, though believers can argue this tests God inappropriately\", \"confidence\": 0.8, \"supporting_inputs\": [\"STEP trial results\", \"test claims principle\", \"strongest arguments engagement\"]},\n  \n  {\"content\": \"Geological and DNA evidence conclusively contradict young earth interpretations but don't necessarily refute all forms of theism\", \"confidence\": 0.9, \"supporting_inputs\": [\"geological/DNA evidence\", \"archaeological contradictions\", \"follow evidence principle\"]},\n  \n  {\"content\": \"Multiple mutually exclusive religions with equally convinced followers suggests cultural rather than divine origin of specific doctrines\", \"confidence\": 0.85, \"supporting_inputs\": [\"multiple religions evidence\", \"systematic observation\", \"extraordinary claims principle\"]},\n  \n  {\"content\": \"The problem of evil presents the strongest philosophical challenge to omnibenevolent deity claims, though sophisticated theodicies exist\", \"confidence\": 0.8, \"supporting_inputs\": [\"problem of evil\", \"children/tsunami examples\", \"steelman principle\"]},\n  \n  {\"content\": \"Secular societies' ethical performance undermines claims that divine command is necessary for moral foundation\", \"confidence\": 0.85, \"supporting_inputs\": [\"Scandinavian/Japan data\", \"morality claims\", \"test against evidence\"]},\n  \n  {\"content\": \"Cognitive science explanations for religious belief are compelling but don't definitively prove supernatural experiences are illusory\", \"confidence\": 0.75, \"supporting_inputs\": [\"pattern recognition/agent detection\", \"temporal lobe activity\", \"absence of evidence principle\"]},\n  \n  {\"content\": \"Vague prophecy fulfillment and post-hoc writing significantly undermine prophetic evidence for divine inspiration\", \"confidence\": 0.8, \"supporting_inputs\": [\"prophecy analysis\", \"historical evidence\", \"extraordinary claims principle\"]},\n  \n  {\"content\": \"Sacred text claims of ultimate authority are weakened by archaeological contradictions and internal inconsistencies\", \"confidence\": 0.8, \"supporting_inputs\": [\"archaeological evidence\", \"historical contradictions\", \"follow evidence principle\"]},\n  \n  {\"content\": \"Miracle claims face the Humean problem: natural law violations require evidence stronger than the reliability of human testimony\", \"confidence\": 0.75, \"supporting_inputs\": [\"historical figure miracles\", \"extraordinary claims principle\", \"systematic observation\"]},\n  \n  {\"content\": \"Eternal punishment claims cannot be empirically tested but raise serious moral questions about proportionality and justice\", \"confidence\": 0.7, \"supporting_inputs\": [\"negative eternal consequences\", \"unfalsifiable but meaningful\", \"moral reasoning\"]},\n  \n  {\"content\": \"Religious experience validity as properly basic knowledge faces the challenge of distinguishing genuine from delusory experiences\", \"confidence\": 0.75, \"supporting_inputs\": [\"properly basic principle\", \"personal experience data\", \"systematic observation tension\"]},\n  \n  {\"content\": \"Natural explanations for religious phenomena are generally more parsimonious than supernatural ones, following Occam's razor\", \"confidence\": 0.8, \"supporting_inputs\": [\"neuroscience explanations\", \"cognitive science\", \"follow evidence principle\"]},\n  \n  {\"content\": \"The beneficial effects of religious practice can be separated from supernatural truth claims about divine intervention\", \"confidence\": 0.85, \"supporting_inputs\": [\"health outcomes\", \"social support\", \"prayer study results\"]},\n  \n  {\"content\": \"Consciousness and fine-tuning represent genuine puzzles that current science cannot fully resolve, creating space for metaphysical speculation\", \"confidence\": 0.8, \"supporting_inputs\": [\"consciousness problem\", \"fine-tuning constants\", \"absence of evidence principle\"]},\n  \n  {\"content\": \"Historical religious claims should be evaluated using the same evidential standards applied to other historical assertions\", \"confidence\": 0.9, \"supporting_inputs\": [\"archaeological evidence\", \"historical analysis\", \"test claims principle\"]},\n  \n  {\"content\": \"The diversity of religious experiences across cultures suggests either multiple divine revelations or common psychological mechanisms\", \"confidence\": 0.8, \"supporting_inputs\": [\"cross-cultural experiences\", \"multiple religions\", \"systematic observation\"]},\n  \n  {\"content\": \"Moral intuitions exist but their evolutionary origin provides a more testable explanation than divine command theory\", \"confidence\": 0.8, \"supporting_inputs\": [\"universal moral intuitions\", \"secular societies data\", \"evolutionary explanations\"]},\n  \n  {\"content\": \"Prayer and ritual may produce psychological benefits without requiring supernatural mechanisms to explain their effects\", \"confidence\": 0.85, \"supporting_inputs\": [\"STEP trial\", \"health benefits\", \"psychological mechanisms\"]},\n  \n  {\"content\": \"The strongest religious arguments acknowledge natural explanations while pointing to explanatory gaps rather than contradicting established science\", \"confidence\": 0.8, \"supporting_inputs\": [\"consciousness gap\", \"fine-tuning\", \"steelman principle\"]},\n  \n  {\"content\": \"Extraordinary religious claims lack the extraordinary evidence required for rational acceptance, though they remain meaningful to believers\", \"confidence\": 0.8, \"supporting_inputs\": [\"extraordinary claims principle\", \"evidence evaluation\", \"meaningful vs scientific\"]},\n  \n  {\"content\": \"Personal religious experience, while valid as subjective data, cannot establish objective truth claims about supernatural reality\", \"confidence\": 0.8, \"supporting_inputs\": [\"personal experience validity\", \"systematic observation\", \"subjective vs objective distinction\"]},\n  \n  {\"content\": \"The cumulative case against specific supernatural claims is stronger than arguments for them, though metaphysical questions about ultimate reality remain open\", \"confidence\": 0.75, \"supporting_inputs\": [\"cumulative counter-evidence\", \"archaeological contradictions\", \"scientific explanations\"]},\n  \n  {\"content\": \"Religious frameworks provide meaning and community benefits that persist independently of their supernatural truth claims\", \"confidence\": 0.85, \"supporting_inputs\": [\"health outcomes\", \"social support\", \"transformative experiences\"]},\n  \n  {\"content\": \"Current evidence best supports naturalistic explanations for religious phenomena while acknowledging significant unresolved questions about consciousness and cosmic origins\", \"confidence\": 0.8, \"supporting_inputs\": [\"follow evidence principle\", \"naturalistic explanations\", \"consciousness/fine-tuning puzzles\"]},\n  \n  {\"content\": \"Rational evaluation favors skepticism toward specific supernatural claims while maintaining intellectual humility about ultimate metaphysical questions\", \"confidence\": 0.75, \"supporting_inputs\": [\"evidence evaluation\", \"extraordinary claims standard\", \"absence of evidence principle\"]},\n  \n  {\"content\": \"The religious impulse addresses genuine human needs and experiences but these can be understood through psychological and sociological rather than supernatural frameworks\", \"confidence\": 0.8, \"supporting_inputs\": [\"transformative experiences\", \"community benefits\", \"cognitive science explanations\"]},\n  \n  {\"content\": \"Belief systems should be evaluated on multiple criteria including evidential support, explanatory power, internal consistency, and practical outcomes\", \"confidence\": 0.85, \"supporting_inputs\": [\"multiple evaluation criteria\", \"systematic observation\", \"follow evidence principle\"]},\n  \n  {\"content\": \"The most defensible position maintains that while religious experiences are real and valuable, supernatural explanations lack sufficient evidential support for rational acceptance\", \"confidence\": 0.75, \"supporting_inputs\": [\"personal experience validity\", \"extraordinary evidence requirement\", \"naturalistic alternatives\"]},\n  \n  {\"content\": \"Intellectual honesty requires acknowledging both the genuine benefits of religious practice and the insufficient evidence for supernatural claims\", \"confidence\": 0.8, \"supporting_inputs\": [\"health/social benefits\", \"evidential gaps\", \"balanced evaluation principle\"]},\n  \n  {\"content\": \"The scientific worldview provides more reliable knowledge about reality while religious frameworks offer meaning-making resources that serve different human needs\", \"confidence\": 0.8, \"supporting_inputs\": [\"systematic observation success\", \"meaning-making function\", \"different domains principle\"]}\n]\n```"
+}

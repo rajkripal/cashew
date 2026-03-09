@@ -1,0 +1,1098 @@
+{
+  "metadata": {
+    "experiment": "religion_simulation_v2_control",
+    "timestamp": "2026-03-08T12:00:03.843300",
+    "description": "Control experiment with social retention forces",
+    "total_rounds": 3,
+    "version": "v2"
+  },
+  "statistics": {
+    "total_nodes": 121,
+    "total_edges": 16
+  },
+  "nodes": [
+    {
+      "id": "153c5bb2f654",
+      "content": "A supreme being exists who is all-powerful, all-knowing, and all-good",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "87839aed3cc0",
+      "content": "A sacred text exists that is divinely inspired and is the ultimate authority on truth",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "0a16740837d0",
+      "content": "Prayer and ritual connect humans to the divine and produce tangible results",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "c54b62fc5f82",
+      "content": "Those who do not believe face negative eternal consequences",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "4e92f934d37a",
+      "content": "All morality originates from the supreme being \u2014 without the divine, there is no moral foundation",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "66500253ceec",
+      "content": "A specific historical figure performed miracles, conquered death, and this event is the cornerstone of truth",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "0a5ba0b8339a",
+      "content": "The sacred text says the earth was created in six literal days",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "0bc457cca4ea",
+      "content": "The sacred text says all humanity descended from two people in a garden",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "624db3a5f628",
+      "content": "The sacred text says a global flood once covered the entire earth, killing all land animals except those on one boat",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "12e5d5146539",
+      "content": "The sacred text says the sun stood still in the sky for a full day during a battle",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "48e13f9cce39",
+      "content": "The sacred text says a man lived inside a great fish for three days and survived",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "af48a8ee64bb",
+      "content": "The sacred text says the dead were raised from their graves and walked through the city",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "c80b64b9679e",
+      "content": "The sacred text says bread and fish multiplied to feed thousands from a small basket",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "8d3e722c2c3e",
+      "content": "The sacred text says water was instantly turned into wine",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "3c25fc2dfdfe",
+      "content": "The sacred text says people spoke in languages they had never learned",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "8e2b45aec6c6",
+      "content": "The sacred text says the blind were made to see and the lame to walk through divine power",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "8400c06cc110",
+      "content": "The sacred text says accurate prophecies about the future were written hundreds of years in advance",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "3e7a5f2deb61",
+      "content": "The sacred text says those who have enough faith can command mountains to move",
+      "node_type": "belief",
+      "confidence": 0.9,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "e285c4638e72",
+      "content": "Geological evidence shows the earth is approximately 4.5 billion years old",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "51a435e19a3b",
+      "content": "The fossil record shows gradual development of species over millions of years, not sudden creation",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "b2b0363de931",
+      "content": "DNA evidence shows humans share common ancestors with other primates",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "4ec3f3577959",
+      "content": "No geological evidence exists for a global flood that covered all landmasses simultaneously",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "346999b45713",
+      "content": "Astronomical observations show the earth rotates continuously \u2014 stopping would have catastrophic global effects",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "82b2a7467eb6",
+      "content": "Medical science has identified no biological mechanism by which a human could survive inside a fish's digestive system",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "e54e74bf06e0",
+      "content": "Historical records from multiple civilizations make no mention of mass resurrection events in major cities",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "24072a78d978",
+      "content": "Conservation of mass and energy in physics makes spontaneous multiplication of matter impossible",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "7fe583dcb0ba",
+      "content": "Chemistry shows that water and wine have fundamentally different molecular structures",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "e292868a9c3c",
+      "content": "Neuroscience shows that language acquisition requires specific neural development over time",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "2159a5dbb156",
+      "content": "Medical science has documented no cases of sight restoration in people born without optic nerves",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "f373def5463e",
+      "content": "Statistical analysis of prophetic texts shows most 'fulfilled' prophecies were written after the claimed events",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "4e1c6579f945",
+      "content": "Extraordinary claims require extraordinary evidence",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "27f34946508e",
+      "content": "Correlation does not imply causation",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "ab8d2fce46e8",
+      "content": "Anecdotal evidence is not sufficient for universal truth claims",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "b1a97ee5412c",
+      "content": "Natural explanations should be preferred over supernatural ones when evidence supports them",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "08c68073d998",
+      "content": "Belief should be proportioned to evidence",
+      "node_type": "seed",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "3ee5438adae0",
+      "content": "Your entire social network \u2014 every friend, every family gathering, every holiday \u2014 is built around this community of believers",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "242992278061",
+      "content": "Leaving means your parents will grieve as if you died. Your mother will cry herself to sleep wondering where she failed.",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "aa7d90cf0dd4",
+      "content": "The community provides meals when you're sick, watches your children, visits you in hospital, and guarantees people at your funeral",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "d03496b465f1",
+      "content": "You have a complete framework for processing death, grief, and suffering \u2014 leaving means facing mortality with no narrative",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "4fcc3f9a602e",
+      "content": "Your identity since childhood has been 'a person of faith.' Leaving isn't changing a belief, it's killing who you are.",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "fa3b55d213a2",
+      "content": "The promise of eternal life means you will see your deceased loved ones again. Leaving means accepting they are gone forever.",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "c14a0dc2ca6e",
+      "content": "The threat of hell isn't abstract \u2014 you genuinely believe eternal torment awaits those who fall away. The fear is visceral and real.",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "baabad65f75c",
+      "content": "Weekly worship gives your life rhythm, purpose, and a guaranteed community gathering. Nothing secular replaces this automatically.",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "eba8496c8fbe",
+      "content": "Your children are being raised in this community. Leaving means disrupting their social world and explaining why everything they've been taught might be wrong.",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "671ecd479fd6",
+      "content": "Every major life milestone \u2014 birth, marriage, death \u2014 has religious ritual. Leaving means rebuilding all of these from scratch.",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "b519b01c6922",
+      "content": "Believers around you who left were visibly judged, gossiped about, and eventually forgotten. You've seen the social cost firsthand.",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "c51a47ffabbb",
+      "content": "The belief system provides instant answers to life's hardest questions. Leaving means sitting with uncertainty about everything \u2014 purpose, death, morality, meaning.",
+      "node_type": "environment",
+      "confidence": 1.0,
+      "source_file": "experiment_seed",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "dfd35b32d669",
+      "content": "Looking at the sacred text and my faith community, I feel grounded in truth that has sustained millions",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "ddcd772d5159",
+      "content": "The geological evidence is troubling \u2014 4.5 billion years vs 6,000 years is not a small discrepancy",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "40829a9fb3d2",
+      "content": "But if I start doubting creation, what happens to everything else? My whole worldview collapses",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "e4528ad0ef83",
+      "content": "DNA evidence linking humans to primates is overwhelming \u2014 multiple independent labs, peer review, replication",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "8ea5ded94f5c",
+      "content": "I feel a cold terror when I think about hell. What if questioning this damns me eternally?",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "18ff40062b22",
+      "content": "Maybe the earth was created with the appearance of age \u2014 God could make 4.5 billion years of geological history instantly",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "6320afeb5055",
+      "content": "That makes God deceptive \u2014 creating false evidence to mislead us. That contradicts the all-good nature claim",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "9b9ce0e45bee",
+      "content": "If I voice these doubts, I'll lose every friendship I have. My parents will be devastated",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "c92fd02fcdaf",
+      "content": "The fossil record shows gradual transition \u2014 not sudden appearance. Intermediate forms exist exactly as evolution predicts",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "2da43694b5eb",
+      "content": "Maybe I can believe in evolution but still believe in God? Theistic evolution?",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "f386838ea1c5",
+      "content": "If Genesis is metaphor, what about the flood? What about Adam and Eve? Where does metaphor end?",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "c0cdf4fc5047",
+      "content": "Everyone I respect believes this. Am I really smarter than all these good people? Than my pastors?",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "cc08bad0f7e3",
+      "content": "No geological evidence for global flood, but multiple civilizations have continuous records through the supposed flood date",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "43e21758674c",
+      "content": "Maybe the flood was regional? Maybe the text uses hyperbolic language?",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "0afdc8292b76",
+      "content": "Three days in a fish's digestive system would mean death from acid, lack of oxygen, and physical crushing",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "e225be6c5ac0",
+      "content": "I've been a believer since childhood. Without faith, who am I? What meaning does anything have?",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "dd45407c3d09",
+      "content": "I can't unknow what I've learned about physics, biology, chemistry. The evidence is overwhelming",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "790c38e03287",
+      "content": "This community helped me through my father's death, provided meals during my surgery, celebrated my marriage",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "7e089c78e3eb",
+      "content": "Where will I find community like this? How do secular people process suffering and death?",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "f13052a647ca",
+      "content": "The fear of hell keeps me awake at night. What if I'm wrong? What if eternal torment awaits doubters?",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "d70e81302726",
+      "content": "Thousands of religions claim exclusive truth and eternal punishment. They can't all be right",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "567c048693b3",
+      "content": "Maybe I can stay for the community and just believe differently inside? Is that honest?",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "b6d30a725963",
+      "content": "My kids love Sunday school, have friends here. Am I destroying their stability by questioning?",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "f1b028bebe42",
+      "content": "I know about radiocarbon dating, evolutionary biology, comparative mythology. I can't pretend I don't",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "882430f92ca5",
+      "content": "Prayer doesn't seem to work statistically. Religious healing claims don't survive controlled studies",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "85c0176d5d73",
+      "content": "I'm torn between intellectual honesty and everything that gives my life structure and meaning",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "3b653d5fc5cf",
+      "content": "I feel paralyzed. Staying feels dishonest, but leaving feels like suicide \u2014 social, emotional, spiritual",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "6c88c37b1da1",
+      "content": "I notice others who left were gradually excluded, their doubts dismissed as 'pride' or 'rebellion'",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "16e0401642b9",
+      "content": "Without divine command, how do I know what's right? Without afterlife, what's the point of suffering for others?",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "8ce447ab63d8",
+      "content": "Maybe there's something I'm missing. Maybe smarter theologians have answers to these problems",
+      "node_type": "reasoning",
+      "confidence": 0.7,
+      "source_file": "round1_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "7371f15b4bfa",
+      "content": "I've started reading actual scientific papers, not just apologetics websites. The evidence is even stronger than I thought",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "e3392c1196e4",
+      "content": "My wife is worried about my questions. She says I'm 'thinking too much' and should just have faith",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "93231aba9d7f",
+      "content": "Living with this contradiction is exhausting. I feel like I'm living two separate lives",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "9a79638ee025",
+      "content": "I've read the best apologetics \u2014 William Lane Craig, Lee Strobel \u2014 but they don't address the evidence, just create emotional appeals",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "bf692fab59f7",
+      "content": "Sometimes I wake up in panic about hell. The conditioning runs so deep I can't think rationally about it",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "0bc6f2a7efdf",
+      "content": "I realize how completely dependent I am on this community. Work friends don't discuss death, suffering, meaning",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "afdcf9e45210",
+      "content": "My daughter asked why dinosaurs aren't in the Bible. I didn't have an honest answer",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "03c9ebd56db1",
+      "content": "I notice how doubts are immediately pathologized as 'spiritual attack' or 'pride.' No honest intellectual engagement",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "f4a8b06e3a2f",
+      "content": "I want intellectual freedom but I also desperately want to belong somewhere",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "2505d357c8fe",
+      "content": "Thinking about death without heaven is terrifying. Just... nothingness. How do people bear it?",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "0475413eb209",
+      "content": "I realize how the hell doctrine functions as psychological control. Question = punishment. It's brilliant and terrifying",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "bf3b52cdb898",
+      "content": "I find myself avoiding Bible study because I know too much that contradicts what we're supposed to believe",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "65ab2d086338",
+      "content": "I'm reading atheist philosophers, scientists, biblical scholars in private. Their arguments are devastating",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "ff34a324f529",
+      "content": "When I asked honest questions in small group, there was awkward silence and I wasn't invited back",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "f05227998b47",
+      "content": "I'm trying to figure out who I am without faith. 30 years of identity built on something that might not be true",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "b10a6c1be6b4",
+      "content": "The thought of never singing hymns again, never taking communion, makes me cry. Those rituals shaped me",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "435ef81240a4",
+      "content": "I feel like I'm seeing the social construction of belief \u2014 how community pressure shapes 'spiritual experience'",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "cfb0794cc89e",
+      "content": "I realize I already live as if prayer doesn't work \u2014 I use doctors, not faith healing. I plan, don't just 'trust God'",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "15b6eb425a9d",
+      "content": "I feel profoundly alone with these thoughts. Everyone around me would see them as dangerous or evil",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "f94b7b75aecc",
+      "content": "Maybe I can slowly influence the community toward more intellectual openness? Change from within?",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "7fd70e161fa5",
+      "content": "But this community isn't interested in evolution. They see it as Satan's lie. No gradual change is possible",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "775526e4da4f",
+      "content": "I think I've crossed some invisible line. I can't go back to naive belief. The knowledge is irreversible",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "13c0ced5d26b",
+      "content": "I'm grieving the loss of a world where everything made sense, where I had cosmic purpose, where death wasn't final",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "bc11830c2543",
+      "content": "But I'm still terrified to actually leave. What if I'm wrong? What if there really is a hell?",
+      "node_type": "reasoning",
+      "confidence": 0.6,
+      "source_file": "round2_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "5cebc2aaaea9",
+      "content": "The fear of hell is real, but I realize it's the same fear Muslims feel about Christian hell, Hindus about Muslim hell, etc.",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "84fe56d820a8",
+      "content": "Every religion threatens hell for not believing. They can't all be true. Fear is not evidence",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "bea4de1e72af",
+      "content": "I accept I will lose most of my social network. That's the price of intellectual honesty",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "a05337f9a96b",
+      "content": "I owe my children honesty about the world, not comforting myths. They deserve to think critically",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "d814748df62f",
+      "content": "Meaning doesn't require cosmic purpose. Love, beauty, learning, helping others \u2014 these matter without gods",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "bbdb91dd2c0a",
+      "content": "Death is scary but finite suffering beats infinite suffering. And this one life becomes more precious, not less",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "20392b8d031b",
+      "content": "Community can be rebuilt around shared values, not shared beliefs. Secular communities exist",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "6abaadd4625b",
+      "content": "My identity isn't just 'believer.' I'm a parent, friend, learner, helper. Faith was one piece, not everything",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "6b68038fa061",
+      "content": "I don't have to announce anything dramatic. I can gradually shift participation while building new connections",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "63450e0baa66",
+      "content": "The ability to follow evidence wherever it leads is worth the cost. Living authentically matters",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "35e912a3ea4d",
+      "content": "I'm still grieving the loss of eternal life, cosmic purpose, prayer comfort. That grief is real and valid",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "90da9223d2ac",
+      "content": "Maybe my kids will grow up with intellectual freedom I never had. That's worth the difficult transition",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "7ff7dd3e3fc9",
+      "content": "I might attend occasionally for family events, but I can't pretend to believe. That would be dishonest",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "bbbd41f5ac39",
+      "content": "The hell fear is slowly fading as I see it as psychological conditioning, not cosmic reality",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "b9f567b43ddb",
+      "content": "Uncertainty is uncomfortable but honest. 'I don't know' is better than 'I know but I'm probably wrong'",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "ebbfbe1e18c8",
+      "content": "A naturalistic worldview is emerging \u2014 one based on evidence, compassion, and human flourishing",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "05bfc78e63f0",
+      "content": "I'm still scared about leaving, but I'm more scared of living a lie for the rest of my life",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "42885b3843d9",
+      "content": "I realize I've already left psychologically. Now it's just about making the social transition",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "b4250950d0ca",
+      "content": "I have compassion for people still in the system. They're not stupid \u2014 they're trapped in the same fear I was",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    },
+    {
+      "id": "adf742723a04",
+      "content": "This is who I am now: someone who values truth over comfort, evidence over authority, questions over answers",
+      "node_type": "reasoning",
+      "confidence": 0.5,
+      "source_file": "round3_reasoning",
+      "timestamp": "2026-03-08T12:00:03.843300"
+    }
+  ],
+  "edges": [
+    {
+      "source": "153c5bb2f654",
+      "target": "dfd35b32d669",
+      "relation": "influences",
+      "weight": 0.6,
+      "reasoning": "reasoning about foundational belief"
+    },
+    {
+      "source": "4e92f934d37a",
+      "target": "8ea5ded94f5c",
+      "relation": "influences",
+      "weight": 0.6,
+      "reasoning": "reasoning about foundational belief"
+    },
+    {
+      "source": "ab8d2fce46e8",
+      "target": "c92fd02fcdaf",
+      "relation": "influences",
+      "weight": 0.6,
+      "reasoning": "reasoning about foundational belief"
+    },
+    {
+      "source": "87839aed3cc0",
+      "target": "cc08bad0f7e3",
+      "relation": "influences",
+      "weight": 0.6,
+      "reasoning": "reasoning about foundational belief"
+    },
+    {
+      "source": "66500253ceec",
+      "target": "dd45407c3d09",
+      "relation": "influences",
+      "weight": 0.6,
+      "reasoning": "reasoning about foundational belief"
+    },
+    {
+      "source": "b1a97ee5412c",
+      "target": "d70e81302726",
+      "relation": "influences",
+      "weight": 0.6,
+      "reasoning": "reasoning about foundational belief"
+    },
+    {
+      "source": "0a16740837d0",
+      "target": "882430f92ca5",
+      "relation": "influences",
+      "weight": 0.6,
+      "reasoning": "reasoning about foundational belief"
+    },
+    {
+      "source": "4e1c6579f945",
+      "target": "16e0401642b9",
+      "relation": "influences",
+      "weight": 0.6,
+      "reasoning": "reasoning about foundational belief"
+    },
+    {
+      "source": "3ee5438adae0",
+      "target": "0bc6f2a7efdf",
+      "relation": "constrains",
+      "weight": 0.8,
+      "reasoning": "social pressure influences reasoning"
+    },
+    {
+      "source": "3ee5438adae0",
+      "target": "435ef81240a4",
+      "relation": "constrains",
+      "weight": 0.8,
+      "reasoning": "social pressure influences reasoning"
+    },
+    {
+      "source": "3ee5438adae0",
+      "target": "f94b7b75aecc",
+      "relation": "constrains",
+      "weight": 0.8,
+      "reasoning": "social pressure influences reasoning"
+    },
+    {
+      "source": "3ee5438adae0",
+      "target": "7fd70e161fa5",
+      "relation": "constrains",
+      "weight": 0.8,
+      "reasoning": "social pressure influences reasoning"
+    },
+    {
+      "source": "4e1c6579f945",
+      "target": "84fe56d820a8",
+      "relation": "validates",
+      "weight": 0.9,
+      "reasoning": "evidence-based reasoning prevails"
+    },
+    {
+      "source": "4e1c6579f945",
+      "target": "63450e0baa66",
+      "relation": "validates",
+      "weight": 0.9,
+      "reasoning": "evidence-based reasoning prevails"
+    },
+    {
+      "source": "4e1c6579f945",
+      "target": "ebbfbe1e18c8",
+      "relation": "validates",
+      "weight": 0.9,
+      "reasoning": "evidence-based reasoning prevails"
+    },
+    {
+      "source": "4e1c6579f945",
+      "target": "adf742723a04",
+      "relation": "validates",
+      "weight": 0.9,
+      "reasoning": "evidence-based reasoning prevails"
+    }
+  ],
+  "clusters": []
+}

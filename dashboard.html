@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cashew - Thought Graph Dashboard</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2a2a2a;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffd93d;
+        }
+
+        .stats {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.9rem;
+            color: #b0b0b0;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 80px);
+        }
+
+        .graph-container {
+            flex: 1;
+            position: relative;
+            background: #1a1a1a;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: #252525;
+            border-left: 1px solid #404040;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .sidebar h3 {
+            color: #ffd93d;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .node-details {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid #404040;
+        }
+
+        .node-type {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .type-seed { background: #ff6b6b; color: white; }
+        .type-core_memory { background: #ffd93d; color: black; }
+        .type-derived { background: #74c0fc; color: white; }
+        .type-belief { background: #51cf66; color: white; }
+        .type-question { background: #da77f2; color: white; }
+        .type-dream { background: #22d3ee; color: white; }
+        .type-decayed { background: #868e96; color: white; }
+
+        .confidence-bar {
+            width: 100%;
+            height: 4px;
+            background: #404040;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #ffd93d, #51cf66);
+            transition: width 0.3s ease;
+        }
+
+        .derivation-chain {
+            background: #1a1a1a;
+            border-radius: 6px;
+            padding: 0.8rem;
+            margin-top: 1rem;
+            border: 1px solid #404040;
+        }
+
+        .derivation-step {
+            margin-bottom: 0.8rem;
+            padding-left: 1rem;
+            border-left: 2px solid #404040;
+        }
+
+        .derivation-step:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-content {
+            font-size: 0.9rem;
+            color: #d0d0d0;
+            margin-bottom: 0.3rem;
+        }
+
+        .step-relation {
+            font-size: 0.8rem;
+            color: #888;
+            font-style: italic;
+        }
+
+        .controls {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(42, 42, 42, 0.9);
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid #404040;
+        }
+
+        .control-group {
+            margin-bottom: 1rem;
+        }
+
+        .control-group label {
+            display: block;
+            color: #b0b0b0;
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+        }
+
+        .control-group select,
+        .control-group input {
+            width: 100%;
+            padding: 0.4rem;
+            background: #1a1a1a;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            color: #e0e0e0;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffd93d;
+            font-size: 1.2rem;
+        }
+
+        .error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff6b6b;
+            text-align: center;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            background: rgba(42, 42, 42, 0.9);
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid #404040;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        #graph {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🌰 CASHEW</div>
+        <div class="stats" id="stats">
+            <span>Loading...</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="graph-container">
+            <div id="graph"></div>
+            
+            <div class="loading" id="loading">
+                Loading thought graph...
+            </div>
+
+            <div class="error" id="error" style="display: none;">
+                <h3>Failed to load graph data</h3>
+                <p>Make sure to run: <code>python -m cashew.core.export export</code></p>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Search</label>
+                    <input type="text" id="node-search" placeholder="Search nodes..." style="padding:6px 10px;background:#333;border:1px solid #555;color:#e0e0e0;border-radius:4px;width:200px;" oninput="
+                        const q = this.value.toLowerCase();
+                        if (!q) { window.app.applyFilter(); return; }
+                        const matches = window.app.data.nodes.filter(n => n.content.toLowerCase().includes(q));
+                        if (matches.length > 0) {
+                            const ids = matches.map(n => n.id);
+                            window.app.network.selectNodes(ids);
+                            window.app.network.focus(ids[0], {scale: 1.2, animation: true});
+                            window.app.showNodeDetails(matches[0]);
+                        }
+                    ">
+                </div>
+                <div class="control-group">
+                    <label>Physics</label>
+                    <select id="physics-select">
+                        <option value="true">Enabled</option>
+                        <option value="false">Disabled</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Node Filter</label>
+                    <select id="node-filter">
+                        <option value="all">All Nodes</option>
+                        <option value="seed">Seeds Only</option>
+                        <option value="core_memory">Core Memories</option>
+                        <option value="question">Questions</option>
+                        <option value="non-decayed">Non-decayed</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Layout</label>
+                    <select id="layout-select">
+                        <option value="hierarchical">Hierarchical</option>
+                        <option value="spring">Force-directed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff6b6b;"></div>
+                    <span>Seed</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffd93d;"></div>
+                    <span>Core Memory</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #74c0fc;"></div>
+                    <span>Derived</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #51cf66;"></div>
+                    <span>Belief</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #da77f2;"></div>
+                    <span>Question</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #22d3ee;"></div>
+                    <span>Dream</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #868e96;"></div>
+                    <span>Decayed</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div id="node-info">
+                <h3>Click a node to explore</h3>
+                <p style="color: #888;">Select any node in the graph to see its details and derivation chain.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class CashewDashboard {
+            constructor() {
+                this.network = null;
+                this.data = null;
+                this.allNodes = null;
+                this.allEdges = null;
+                this.init();
+            }
+
+            async init() {
+                try {
+                    await this.loadData();
+                    this.setupGraph();
+                    this.setupControls();
+                    this.updateStats();
+                    document.getElementById('loading').style.display = 'none';
+                } catch (error) {
+                    console.error('Failed to initialize dashboard:', error);
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('error').style.display = 'block';
+                }
+            }
+
+            async loadData() {
+                const response = await fetch('./data/graph_export.json');
+                if (!response.ok) {
+                    throw new Error('Failed to load graph data');
+                }
+                this.data = await response.json();
+                console.log('Loaded graph data:', this.data.statistics);
+            }
+
+            getNodeColor(nodeType) {
+                const colors = {
+                    seed: '#FF6B6B',
+                    core_memory: '#FFD93D',
+                    derived: '#74C0FC',
+                    belief: '#51CF66',
+                    question: '#DA77F2',
+                    dream: '#22D3EE',
+                    decayed: '#868E96'
+                };
+                return colors[nodeType] || '#ADB5BD';
+            }
+
+            getEdgeColor(relation) {
+                const colors = {
+                    derived_from: '#74C0FC',
+                    contradicts: '#FF6B6B',
+                    supports: '#51CF66',
+                    questions: '#DA77F2',
+                    cross_link: '#22D3EE'
+                };
+                return colors[relation] || '#868E96';
+            }
+
+            prepareGraphData() {
+                const nodes = this.data.nodes.map(node => ({
+                    id: node.id,
+                    label: this.truncateText(node.content, 40),
+                    title: node.content,
+                    color: {
+                        background: this.getNodeColor(node.type),
+                        border: node.decayed ? '#666' : '#333',
+                        highlight: { background: this.lightenColor(this.getNodeColor(node.type)), border: '#fff' }
+                    },
+                    size: Math.max(10, Math.min(30, node.confidence * 25)),
+                    font: { 
+                        color: node.type === 'core_memory' ? '#000' : '#fff',
+                        size: node.type === 'seed' || node.type === 'core_memory' ? 14 : 12
+                    },
+                    borderWidth: node.type === 'seed' ? 3 : 1,
+                    opacity: node.decayed ? 0.5 : 1.0,
+                    nodeData: node
+                }));
+
+                const edges = this.data.edges.map(edge => ({
+                    from: edge.source,
+                    to: edge.target,
+                    color: {
+                        color: this.getEdgeColor(edge.relation),
+                        opacity: Math.max(0.3, edge.weight)
+                    },
+                    width: Math.max(1, edge.weight * 3),
+                    arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+                    title: `${edge.relation} (${edge.weight.toFixed(2)})${edge.reasoning ? ': ' + edge.reasoning : ''}`,
+                    smooth: { type: 'continuous' }
+                }));
+
+                this.allNodes = new vis.DataSet(nodes);
+                this.allEdges = new vis.DataSet(edges);
+
+                return { nodes: this.allNodes, edges: this.allEdges };
+            }
+
+            setupGraph() {
+                const container = document.getElementById('graph');
+                const data = this.prepareGraphData();
+
+                const options = {
+                    physics: {
+                        enabled: true,
+                        stabilization: { iterations: 100 },
+                        barnesHut: {
+                            gravitationalConstant: -2000,
+                            centralGravity: 0.3,
+                            springLength: 95,
+                            springConstant: 0.04,
+                            damping: 0.09
+                        }
+                    },
+                    layout: {
+                        improvedLayout: true,
+                        hierarchical: {
+                            enabled: false,
+                            levelSeparation: 150,
+                            nodeSpacing: 200,
+                            treeSpacing: 200,
+                            blockShifting: true,
+                            edgeMinimization: true,
+                            parentCentralization: true,
+                            direction: 'UD',
+                            sortMethod: 'directed'
+                        }
+                    },
+                    nodes: {
+                        shape: 'dot',
+                        scaling: {
+                            min: 10,
+                            max: 30
+                        }
+                    },
+                    edges: {
+                        smooth: {
+                            type: 'continuous'
+                        }
+                    },
+                    interaction: {
+                        hover: true,
+                        selectConnectedEdges: false
+                    }
+                };
+
+                this.network = new vis.Network(container, data, options);
+
+                // Handle node selection
+                this.network.on('selectNode', (params) => {
+                    if (params.nodes.length > 0) {
+                        const nodeId = params.nodes[0];
+                        const nodeData = this.allNodes.get(nodeId).nodeData;
+                        this.showNodeDetails(nodeData);
+                    }
+                });
+
+                // Handle empty space click
+                this.network.on('deselectNode', () => {
+                    this.clearNodeDetails();
+                });
+            }
+
+            setupControls() {
+                // Physics toggle
+                document.getElementById('physics-select').addEventListener('change', (e) => {
+                    this.network.setOptions({
+                        physics: { enabled: e.target.value === 'true' }
+                    });
+                });
+
+                // Node filter
+                document.getElementById('node-filter').addEventListener('change', (e) => {
+                    this.filterNodes(e.target.value);
+                });
+
+                // Layout toggle
+                document.getElementById('layout-select').addEventListener('change', (e) => {
+                    const hierarchical = e.target.value === 'hierarchical';
+                    this.network.setOptions({
+                        layout: {
+                            hierarchical: {
+                                enabled: hierarchical,
+                                levelSeparation: 150,
+                                nodeSpacing: 200,
+                                treeSpacing: 200,
+                                blockShifting: true,
+                                edgeMinimization: true,
+                                parentCentralization: true,
+                                direction: 'UD',
+                                sortMethod: 'directed'
+                            }
+                        }
+                    });
+                });
+            }
+
+            filterNodes(filterType) {
+                let filteredNodes = this.data.nodes;
+                let filteredEdges = this.data.edges;
+
+                if (filterType !== 'all') {
+                    if (filterType === 'non-decayed') {
+                        filteredNodes = this.data.nodes.filter(n => !n.decayed);
+                    } else {
+                        filteredNodes = this.data.nodes.filter(n => n.type === filterType);
+                    }
+
+                    const nodeIds = new Set(filteredNodes.map(n => n.id));
+                    filteredEdges = this.data.edges.filter(e => 
+                        nodeIds.has(e.source) && nodeIds.has(e.target)
+                    );
+                }
+
+                const nodes = filteredNodes.map(node => ({
+                    id: node.id,
+                    label: this.truncateText(node.content, 40),
+                    title: node.content,
+                    color: {
+                        background: this.getNodeColor(node.type),
+                        border: node.decayed ? '#666' : '#333',
+                        highlight: { background: this.lightenColor(this.getNodeColor(node.type)), border: '#fff' }
+                    },
+                    size: Math.max(10, Math.min(30, node.confidence * 25)),
+                    font: { 
+                        color: node.type === 'core_memory' ? '#000' : '#fff',
+                        size: node.type === 'seed' || node.type === 'core_memory' ? 14 : 12
+                    },
+                    borderWidth: node.type === 'seed' ? 3 : 1,
+                    opacity: node.decayed ? 0.5 : 1.0,
+                    nodeData: node
+                }));
+
+                const edges = filteredEdges.map(edge => ({
+                    from: edge.source,
+                    to: edge.target,
+                    color: {
+                        color: this.getEdgeColor(edge.relation),
+                        opacity: Math.max(0.3, edge.weight)
+                    },
+                    width: Math.max(1, edge.weight * 3),
+                    arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+                    title: `${edge.relation} (${edge.weight.toFixed(2)})${edge.reasoning ? ': ' + edge.reasoning : ''}`,
+                    smooth: { type: 'continuous' }
+                }));
+
+                this.network.setData({ nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) });
+            }
+
+            showNodeDetails(nodeData) {
+                const sidebar = document.getElementById('node-info');
+                
+                const html = `
+                    <h3>Node Details</h3>
+                    <div class="node-details">
+                        <div class="node-type type-${nodeData.type}">${nodeData.type}</div>
+                        <div class="step-content">${nodeData.content}</div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: ${nodeData.confidence * 100}%"></div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #888; margin-top: 0.5rem;">
+                            Confidence: ${(nodeData.confidence * 100).toFixed(0)}% | 
+                            Mood: ${nodeData.mood_state} | 
+                            Source: ${nodeData.source_file}
+                        </div>
+                        ${nodeData.decayed ? '<div style="color: #ff6b6b; font-size: 0.8rem; margin-top: 0.5rem;">⚠️ Decayed</div>' : ''}
+                    </div>
+                    <div class="derivation-chain">
+                        <h4 style="margin-bottom: 0.5rem; color: #ffd93d;">Derivation Chain</h4>
+                        <div id="derivation-loading">Loading derivation chain...</div>
+                    </div>
+                `;
+                
+                sidebar.innerHTML = html;
+                this.loadDerivationChain(nodeData.id);
+            }
+
+            async loadDerivationChain(nodeId) {
+                // For now, show connections in the graph
+                // In a real implementation, you'd call the traversal API
+                const connectedEdges = this.data.edges.filter(e => 
+                    e.target === nodeId || e.source === nodeId
+                );
+                
+                const derivationDiv = document.getElementById('derivation-loading');
+                
+                if (connectedEdges.length === 0) {
+                    derivationDiv.innerHTML = '<div style="color: #888;">No connections found (isolated node)</div>';
+                    return;
+                }
+
+                let html = '';
+                
+                // Show parent relationships
+                const parents = connectedEdges.filter(e => e.target === nodeId);
+                if (parents.length > 0) {
+                    html += '<div style="margin-bottom: 1rem;"><strong>Derived from:</strong>';
+                    parents.forEach(edge => {
+                        const parentNode = this.data.nodes.find(n => n.id === edge.source);
+                        if (parentNode) {
+                            html += `
+                                <div class="derivation-step">
+                                    <div class="step-content">${this.truncateText(parentNode.content, 80)}</div>
+                                    <div class="step-relation">${edge.relation} (${edge.weight.toFixed(2)})</div>
+                                </div>
+                            `;
+                        }
+                    });
+                    html += '</div>';
+                }
+
+                // Show child relationships
+                const children = connectedEdges.filter(e => e.source === nodeId);
+                if (children.length > 0) {
+                    html += '<div><strong>Leads to:</strong>';
+                    children.forEach(edge => {
+                        const childNode = this.data.nodes.find(n => n.id === edge.target);
+                        if (childNode) {
+                            html += `
+                                <div class="derivation-step">
+                                    <div class="step-content">${this.truncateText(childNode.content, 80)}</div>
+                                    <div class="step-relation">${edge.relation} (${edge.weight.toFixed(2)})</div>
+                                </div>
+                            `;
+                        }
+                    });
+                    html += '</div>';
+                }
+
+                derivationDiv.innerHTML = html;
+            }
+
+            clearNodeDetails() {
+                document.getElementById('node-info').innerHTML = `
+                    <h3>Click a node to explore</h3>
+                    <p style="color: #888;">Select any node in the graph to see its details and derivation chain.</p>
+                `;
+            }
+
+            updateStats() {
+                const stats = this.data.statistics;
+                document.getElementById('stats').innerHTML = `
+                    <span>${stats.total_nodes} nodes</span>
+                    <span>${stats.total_edges} edges</span>
+                    <span>Avg degree: ${stats.avg_in_degree.toFixed(1)}</span>
+                `;
+            }
+
+            truncateText(text, maxLength) {
+                if (text.length <= maxLength) return text;
+                return text.substring(0, maxLength) + '...';
+            }
+
+            lightenColor(color) {
+                // Simple color lightening for hover effect
+                const hex = color.replace('#', '');
+                const r = Math.min(255, parseInt(hex.substr(0, 2), 16) + 40);
+                const g = Math.min(255, parseInt(hex.substr(2, 2), 16) + 40);
+                const b = Math.min(255, parseInt(hex.substr(4, 2), 16) + 40);
+                return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+            }
+        }
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new CashewDashboard();
+        });
+    </script>
+</body>
+</html>

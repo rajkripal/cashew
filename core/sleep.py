@@ -644,7 +644,8 @@ class SleepProtocol:
             except Exception as e:
                 logger.debug(f"No model function available for hotspot summaries: {e}")
             
-            results = run_clustering_cycle(self.db_path, model_fn=model_fn)
+            # Use recursive clustering with max cluster size = 15
+            results = run_clustering_cycle(self.db_path, model_fn=model_fn, max_cluster_size=15)
             
             # Log events
             if results["new_hotspots_created"] > 0:
@@ -652,6 +653,12 @@ class SleepProtocol:
                     "action": "new_hotspots",
                     "count": results["new_hotspots_created"],
                     "clusters_found": results["clusters_found"]
+                })
+            if results.get("parent_hotspots_created", 0) > 0:
+                self._log_event("clustering", {
+                    "action": "parent_hotspots",
+                    "count": results["parent_hotspots_created"],
+                    "hierarchical_edges": results.get("hierarchical_edges_created", 0)
                 })
             if results["stale_hotspots_found"] > 0:
                 self._log_event("clustering", {

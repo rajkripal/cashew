@@ -272,13 +272,13 @@ def get_bunny_context(db_path: str, hints: Optional[List[str]] = None) -> str:
             logging.warning(f"Database not found at {db_path}")
             return ""
         
-        from core.retrieval import retrieve
+        from core.retrieval import retrieve_dfs
         
         # Build query from hints or use default
         query = " ".join(hints) if hints else "operational knowledge patterns decisions"
         
-        # Retrieve only bunny domain nodes
-        results = retrieve(db_path, query, top_k=10, walk_depth=1, domain="bunny")
+        # Retrieve only bunny domain nodes using DFS
+        results = retrieve_dfs(db_path, query, top_k=10, domain="bunny")
         
         if not results:
             return ""
@@ -317,13 +317,13 @@ def get_raj_context(db_path: str, hints: Optional[List[str]] = None) -> str:
             logging.warning(f"Database not found at {db_path}")
             return ""
         
-        from core.retrieval import retrieve
+        from core.retrieval import retrieve_dfs
         
         # Build query from hints or use default
         query = " ".join(hints) if hints else "thoughts insights patterns decisions"
         
-        # Retrieve only raj domain nodes
-        results = retrieve(db_path, query, top_k=10, walk_depth=2, domain="raj")
+        # Retrieve only raj domain nodes using DFS
+        results = retrieve_dfs(db_path, query, top_k=10, domain="raj")
         
         if not results:
             return ""

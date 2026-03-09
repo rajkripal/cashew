@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-03-09T12:45:51.566898",
+  "orphan_count": 69,
+  "active_nodes": 882,
+  "total_edges": 1463,
+  "dedup_pairs": 15,
+  "think_diversity": {
+    "node_count": 94,
+    "avg_similarity": NaN,
+    "high_cluster_risk": false
+  }
+}

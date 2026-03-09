@@ -1,0 +1,426 @@
+{
+  "method": "swapped_edge_labels",
+  "total_conclusions": 84,
+  "conclusions": [
+    {
+      "content": "The stark contrast between measurable community benefits [51e4e0210f6e] and the null results of controlled intercessory prayer [601e7a95e348] suggests that prayer's tangible effects may operate through psychological and social mechanisms rather than direct divine intervention.",
+      "confidence": 0.85,
+      "cycle": 1
+    },
+    {
+      "content": "Personal transformative experiences [6cc79838413b] may be neurologically real and life-changing [3240324b8861] while still constituting valid experiential data [fc24cd369be8], even if the metaphysical claims about their source cannot meet the evidentiary bar for extraordinary claims [4e1c6579f945].",
+      "confidence": 0.8,
+      "cycle": 1
+    },
+    {
+      "content": "The failure of distant intercessory prayer [601e7a95e348] to show effects does not invalidate the documented benefits of religious community participation [51e4e0210f6e], suggesting these represent distinct phenomena that should be evaluated separately.",
+      "confidence": 0.9,
+      "cycle": 1
+    },
+    {
+      "content": "If neurological explanations [3240324b8861] can account for transformative religious experiences [6cc79838413b], this paradoxically strengthens rather than weakens their practical significance, as it suggests reproducible pathways to beneficial psychological states.",
+      "confidence": 0.75,
+      "cycle": 1
+    },
+    {
+      "content": "The existence of highly ethical secular societies suggests that while divine command may be sufficient for moral foundation, it is not necessary \u2014 contradicting the claim that moral foundation requires divine origin.",
+      "confidence": 0.85,
+      "cycle": 2
+    },
+    {
+      "content": "Lewis's observation of universal moral intuitions remains valid even if cognitive science explains their evolutionary origins \u2014 the transcendent 'feel' of morality could emerge from deeply embedded biological imperatives rather than divine implantation.",
+      "confidence": 0.75,
+      "cycle": 2
+    },
+    {
+      "content": "The cognitive science findings on pattern recognition and agent detection raise questions about whether humans are detecting actual divine moral sources or projecting agency onto evolved moral emotions.",
+      "confidence": 0.8,
+      "cycle": 2
+    },
+    {
+      "content": "A synthesis position emerges: moral intuitions may be evolutionarily embedded universal features that function effectively in both religious and secular frameworks, suggesting the debate's focus should shift from foundation to implementation.",
+      "confidence": 0.7,
+      "cycle": 2
+    },
+    {
+      "content": "The fine-tuning argument creates a probabilistic tension with naturalistic explanations, but the extraordinary nature of divine intervention claims demands proportionally extraordinary evidence that fine-tuning alone may not provide.",
+      "confidence": 0.75,
+      "cycle": 3
+    },
+    {
+      "content": "If the Kalam argument successfully establishes a transcendent cause of the universe, this cause need not possess the moral attributes required to resolve the problem of evil, creating a gap between cosmological necessity and theological goodness.",
+      "confidence": 0.8,
+      "cycle": 3
+    },
+    {
+      "content": "The absence of definitive empirical evidence for divine intervention in preventing natural disasters and diseases, while not conclusively disproving God's existence, does create an evidential asymmetry that weighs against the all-powerful, all-good formulation.",
+      "confidence": 0.7,
+      "cycle": 3
+    },
+    {
+      "content": "The convergence of fine-tuning and cosmological arguments provides cumulative evidential support that may overcome individual weaknesses, but this convergence must still account for the moral evidence problem without ad hoc modifications to divine attributes.",
+      "confidence": 0.65,
+      "cycle": 3
+    },
+    {
+      "content": "The tension between sacred text authority and empirical evidence creates an epistemological hierarchy question: when divine revelation claims contradict well-established scientific evidence, which source of knowledge takes precedence and why?",
+      "confidence": 0.85,
+      "cycle": 4
+    },
+    {
+      "content": "If a sacred text's historical and scientific claims can be demonstrated as inaccurate through archaeological and geological evidence, this raises fundamental questions about the reliability of its supernatural or prophetic claims that cannot be empirically tested.",
+      "confidence": 0.8,
+      "cycle": 4
+    },
+    {
+      "content": "The strongest defense of sacred text authority would require either: (1) reinterpreting contradicted passages as metaphorical rather than literal, (2) arguing that divine inspiration allows for human cultural limitations in transmission, or (3) maintaining that spiritual truth operates independently from empirical accuracy.",
+      "confidence": 0.75,
+      "cycle": 4
+    },
+    {
+      "content": "The pattern of post-hoc prophecy writing and vague predictions suggests that claimed divine foreknowledge may actually reflect human retrospective interpretation and confirmation bias rather than supernatural revelation.",
+      "confidence": 0.85,
+      "cycle": 4
+    },
+    {
+      "content": "The convergence of cultural universality in NDEs [14925ac48ab1] with the hard problem's resistance to materialist explanation [00760444fdf4] suggests that consciousness may access information or experiences that transcend local brain activity, making purely neurological explanations incomplete even if partially correct.",
+      "confidence": 0.75,
+      "cycle": 5
+    },
+    {
+      "content": "Since religious experiences involve subjective phenomenology that may be properly basic [b660e29ded46] yet correlate with measurable neural activity [3240324b8861], the most rigorous approach requires treating both first-person reports and third-person neuroscience as complementary rather than competing datasets.",
+      "confidence": 0.8,
+      "cycle": 5
+    },
+    {
+      "content": "The unfalsifiability of many consciousness-related claims about NDEs [b3ea6bf2f54f] does not invalidate them as meaningful experiences, but creates an epistemological boundary where scientific method reaches its limits in adjudicating between materialist and transcendent interpretations.",
+      "confidence": 0.85,
+      "cycle": 5
+    },
+    {
+      "content": "If consciousness genuinely poses a hard problem for materialism [00760444fdf4], then the burden of proof shifts: neuroscientific correlations with religious experiences [3240324b8861] may identify necessary conditions without establishing sufficient causal explanations, leaving room for non-materialist interpretations to remain rationally viable.",
+      "confidence": 0.7,
+      "cycle": 5
+    },
+    {
+      "content": "Reformed epistemology creates a parity problem: if God-belief can be properly basic without evidence, then competing religious beliefs with equally convinced adherents could claim the same epistemic status, undermining the framework's ability to distinguish truth from delusion.",
+      "confidence": 0.85,
+      "cycle": 6
+    },
+    {
+      "content": "Kierkegaard's leap paradoxically requires extraordinary rational preparation \u2014 one must understand the limits of reason and the weight of existential choice before the leap becomes meaningful rather than arbitrary.",
+      "confidence": 0.75,
+      "cycle": 6
+    },
+    {
+      "content": "The evidentialist demand for extraordinary evidence may itself rest on properly basic assumptions about the reliability of empirical methods and logical reasoning that cannot be proven without circularity.",
+      "confidence": 0.8,
+      "cycle": 6
+    },
+    {
+      "content": "Religious diversity suggests that if properly basic beliefs exist, they are either culturally conditioned rather than universally accessible, or human cognitive faculties are systematically unreliable in detecting religious truth.",
+      "confidence": 0.82,
+      "cycle": 6
+    },
+    {
+      "content": "The martyrdom evidence ([6f3b2f5e5fb4]) demonstrates sincere belief but does not necessarily validate the truth of what was believed, as humans can genuinely die for false beliefs formed through cognitive biases ([d2659e48dfa0]).",
+      "confidence": 0.85,
+      "cycle": 7
+    },
+    {
+      "content": "The DNA evidence for common descent ([ec0a2762da8a]) creates a methodological challenge: if we accept scientific evidence for human origins, consistency demands applying similar evidential standards to historical miracle claims ([57ee024c9b90]).",
+      "confidence": 0.75,
+      "cycle": 7
+    },
+    {
+      "content": "A steelman approach ([76d8909793e7]) must acknowledge that cognitive bias explanations ([d2659e48dfa0]) could potentially account for both the formation of miracle beliefs AND the contemporary dismissal of them, creating an evidential stalemate that requires additional discriminating factors.",
+      "confidence": 0.7,
+      "cycle": 7
+    },
+    {
+      "content": "The intersection of genuine martyrdom ([6f3b2f5e5fb4]) with our understanding of cognitive biases ([d2659e48dfa0]) suggests that early Christians may have experienced subjectively compelling but naturalistically explicable phenomena that they interpreted through their existing theological framework.",
+      "confidence": 0.65,
+      "cycle": 7
+    },
+    {
+      "content": "The measurable health benefits of religious communities may stem from community structure and ritual rather than supernatural beliefs, suggesting secular societies could achieve similar outcomes through intentionally designed social frameworks.",
+      "confidence": 0.75,
+      "cycle": 8
+    },
+    {
+      "content": "Personal transformative experiences in religious contexts represent genuine psychological phenomena that deserve scientific study, regardless of whether the underlying beliefs are factually accurate.",
+      "confidence": 0.85,
+      "cycle": 8
+    },
+    {
+      "content": "Both religious and secular societies demonstrate that human flourishing can emerge through different pathways, suggesting the mechanism of social cohesion and shared meaning may be more important than the specific content of beliefs.",
+      "confidence": 0.8,
+      "cycle": 8
+    },
+    {
+      "content": "The apparent contradiction between religious community benefits and secular society achievements may resolve if we consider that optimal human societies require both individual meaning-making and effective institutional design, which can be achieved through religious or secular means.",
+      "confidence": 0.7,
+      "cycle": 8
+    },
+    {
+      "content": "The convergence of evidence suggests that human flourishing emerges from predictable psychological and social mechanisms\u2014community belonging, shared meaning-making, transformative experiences, and ritual practice\u2014rather than from the specific truth content of belief systems themselves.",
+      "confidence": 0.88,
+      "cycle": 9
+    },
+    {
+      "content": "The scientific validation of neurological bases for transformative experiences may actually strengthen religious practice by providing reproducible methodologies for accessing beneficial psychological states, potentially bridging the gap between empirical and spiritual approaches to human wellbeing.",
+      "confidence": 0.82,
+      "cycle": 9
+    },
+    {
+      "content": "The distinction between efficacious and non-efficacious religious practices reveals a testable framework: practices involving social connection and psychological engagement show measurable benefits, while those relying solely on supernatural mechanisms without human participation do not.",
+      "confidence": 0.85,
+      "cycle": 9
+    },
+    {
+      "content": "The synthesis suggests that optimal social design\u2014whether religious or secular\u2014requires intentional cultivation of the fundamental human needs for transcendent meaning, communal belonging, and transformative experience, pointing toward evidence-based approaches to creating flourishing societies.",
+      "confidence": 0.78,
+      "cycle": 9
+    },
+    {
+      "content": "The STEP trial's failure to detect intercessory prayer effects may reflect methodological limitations rather than absence of divine influence, since prayer traditionally involves personal relationship and intentionality that cannot be replicated in double-blind conditions with strangers praying for unknown patients.",
+      "confidence": 0.7,
+      "cycle": 10
+    },
+    {
+      "content": "Religious communities may produce measurable health benefits through both neurobiological mechanisms and social structures, suggesting that divine connection and naturalistic explanations are not mutually exclusive but potentially complementary frameworks.",
+      "confidence": 0.8,
+      "cycle": 10
+    },
+    {
+      "content": "The disconnect between negative controlled studies and positive personal reports suggests prayer's effects may be inherently subjective and relational, operating through meaning-making and identity transformation rather than direct physical intervention.",
+      "confidence": 0.75,
+      "cycle": 10
+    },
+    {
+      "content": "If extraordinary evidence is required for divine claims, then the consistent replication of health benefits in religious communities across cultures and decades may constitute stronger evidence than single controlled trials, suggesting the need for longer-term, community-based research designs.",
+      "confidence": 0.65,
+      "cycle": 10
+    },
+    {
+      "content": "The cognitive predisposition to pattern recognition and agent detection (d2659e48dfa0) may explain why humans consistently develop moral intuitions that feel transcendent, without requiring an actual transcendent source - suggesting Lewis's universal moral intuitions (76f5b719a7c5) could be evolutionary artifacts rather than divine imprints.",
+      "confidence": 0.75,
+      "cycle": 11
+    },
+    {
+      "content": "The empirical success of secular ethical societies (05c11d92f769) creates a significant evidential challenge to claims that divine foundation is necessary for morality (4e92f934d37a), requiring proponents to explain how robust ethical systems can function without their proposed necessary condition.",
+      "confidence": 0.82,
+      "cycle": 11
+    },
+    {
+      "content": "Lewis's argument gains strength when formulated not as requiring divine foundation for any morality, but as explaining why moral intuitions feel objectively binding rather than merely preferential - the phenomenology of moral experience differs qualitatively from other evolutionary adaptations.",
+      "confidence": 0.68,
+      "cycle": 11
+    },
+    {
+      "content": "The convergence between cognitive science explanations and observable secular moral success suggests moral foundations may emerge from evolutionary social cooperation mechanisms, making divine sources unnecessary while still accounting for the universal patterns Lewis identified.",
+      "confidence": 0.78,
+      "cycle": 11
+    },
+    {
+      "content": "The fine-tuning argument and Kalam argument provide positive evidence for a first cause with precise knowledge, but this falls short of the 'extraordinary evidence' threshold required for claims about an all-good deity given the magnitude of suffering observed.",
+      "confidence": 0.82,
+      "cycle": 12
+    },
+    {
+      "content": "A deity with sufficient power and knowledge to fine-tune universal constants but limited in goodness or intervention capability represents a more parsimonious explanation than either pure naturalism or omnibenevolent theism.",
+      "confidence": 0.75,
+      "cycle": 12
+    },
+    {
+      "content": "The absence of clear divine intervention in preventing massive suffering constitutes significant negative evidence that must be weighed against fine-tuning, rather than dismissed as mere 'absence of evidence.'",
+      "confidence": 0.78,
+      "cycle": 12
+    },
+    {
+      "content": "The Kalam argument's conclusion of a 'cause' is compatible with multiple hypotheses ranging from conscious designer to naturalistic quantum processes, making it insufficient to establish theism specifically.",
+      "confidence": 0.83,
+      "cycle": 12
+    },
+    {
+      "content": "The tension between divine inspiration claims and empirical evidence suggests that either the interpretation of sacred texts must be non-literal, or the methodology for determining truth must be re-examined to account for different epistemological frameworks.",
+      "confidence": 0.85,
+      "cycle": 13
+    },
+    {
+      "content": "The strongest case for sacred text authority would require demonstrating that apparent contradictions with physical evidence result from misunderstanding the text's genre, purpose, or intended audience rather than factual errors.",
+      "confidence": 0.75,
+      "cycle": 13
+    },
+    {
+      "content": "If prophecy analysis reveals post-hoc writing or vague predictions, this undermines a key empirical test that could distinguish genuine divine inspiration from human authorship, weakening the evidentiary foundation for ultimate textual authority.",
+      "confidence": 0.8,
+      "cycle": 13
+    },
+    {
+      "content": "The cumulative weight of geological, archaeological, and prophetic analysis challenges suggests that claims of ultimate textual authority may need to be grounded in non-empirical foundations or significantly modified to accommodate empirical realities.",
+      "confidence": 0.9,
+      "cycle": 13
+    },
+    {
+      "content": "The convergence of cross-cultural NDE phenomena with the hard problem of consciousness suggests that subjective experience may access information beyond what current materialist neuroscience can account for. While neuroscience explains the neural correlates, it cannot fully explain why these particular subjective experiences arise or their apparent consistency across cultures.",
+      "confidence": 0.75,
+      "cycle": 14
+    },
+    {
+      "content": "The unfalsifiable nature of many religious experiences paradoxically strengthens their epistemological status as properly basic beliefs while simultaneously weakening their scientific credibility. This creates a legitimate dual-track approach to knowledge where personal religious experience and scientific investigation can coexist without direct competition.",
+      "confidence": 0.7,
+      "cycle": 14
+    },
+    {
+      "content": "Temporal lobe activity and default mode network changes may be necessary but not sufficient conditions for religious experience, similar to how neural activity is necessary but not sufficient for consciousness itself. The neural substrate could be the mechanism through which non-material consciousness interfaces with transcendent reality.",
+      "confidence": 0.65,
+      "cycle": 14
+    },
+    {
+      "content": "The methodological limitations of studying consciousness scientifically may inherently bias research toward materialist explanations, not because materialism is correct, but because science can only measure material phenomena. This creates an epistemological blind spot where the most significant aspects of consciousness and religious experience remain systematically unexamined.",
+      "confidence": 0.8,
+      "cycle": 14
+    },
+    {
+      "content": "The properly basic framework creates an asymmetry problem: if religious beliefs can be properly basic without evidence, then competing religious claims with equal phenomenological conviction cannot be adjudicated rationally.",
+      "confidence": 0.85,
+      "cycle": 15
+    },
+    {
+      "content": "Kierkegaard's leap and Plantinga's properly basic beliefs solve different epistemological problems: the leap acknowledges rational inadequacy while properly basic beliefs claim rational legitimacy without argument.",
+      "confidence": 0.8,
+      "cycle": 15
+    },
+    {
+      "content": "The distinction between scientific and meaningful claims suggests that religious epistemologies might operate in a different domain than empirical investigation, neither requiring nor providing scientific evidence.",
+      "confidence": 0.75,
+      "cycle": 15
+    },
+    {
+      "content": "If experiential knowledge can ground properly basic beliefs, then the multiple religions problem becomes an empirical question about which religious experiences most reliably track truth rather than a purely logical contradiction.",
+      "confidence": 0.7,
+      "cycle": 15
+    },
+    {
+      "content": "The martyrdom evidence creates a puzzle: early Christians died for beliefs that cognitive science suggests humans are naturally predisposed to develop, making it difficult to determine whether their willingness to die indicates truth of claims or simply the power of evolved psychological mechanisms.",
+      "confidence": 0.85,
+      "cycle": 16
+    },
+    {
+      "content": "The DNA evidence for common descent with primates does not directly address miracle claims, but it establishes that naturalistic explanations have explanatory power for phenomena once thought to require divine intervention, shifting the burden of proof for supernatural claims.",
+      "confidence": 0.8,
+      "cycle": 16
+    },
+    {
+      "content": "Testing miracle claims against available evidence requires distinguishing between what can be empirically evaluated (historical testimony, psychological mechanisms, physical processes) versus what lies beyond current scientific methodology, avoiding both scientism and anti-evidential thinking.",
+      "confidence": 0.75,
+      "cycle": 16
+    },
+    {
+      "content": "The strongest case for historical miracle claims must acknowledge that cognitive bias explanations and evolutionary evidence create reasonable doubt, while the strongest naturalistic position must account for the sociological puzzle of why people would die for claims they knew to be false if early Christianity were merely legendary development.",
+      "confidence": 0.9,
+      "cycle": 16
+    },
+    {
+      "content": "The measurable health benefits of religious communities [51e4e0210f6e] may stem from social cohesion and meaning-making mechanisms that could theoretically be replicated in secular frameworks, rather than requiring supernatural beliefs specifically.",
+      "confidence": 0.75,
+      "cycle": 17
+    },
+    {
+      "content": "Personal transformative experiences [6cc79838413b] represent genuine psychological phenomena worthy of study, regardless of whether the attributed supernatural causes are valid, since the behavioral changes have measurable real-world effects.",
+      "confidence": 0.8,
+      "cycle": 17
+    },
+    {
+      "content": "The coexistence of thriving secular societies [05c11d92f769] and beneficial religious communities [51e4e0210f6e] suggests that human flourishing may depend more on social structure quality and meaning-provision than on specific belief content.",
+      "confidence": 0.85,
+      "cycle": 17
+    },
+    {
+      "content": "A rigorous comparison would need to control for confounding variables like community engagement, shared purpose, and social support networks when evaluating whether religious or secular frameworks produce superior outcomes.",
+      "confidence": 0.9,
+      "cycle": 17
+    },
+    {
+      "content": "The convergence of evidence suggests a 'dual-track' model where religious phenomena operate simultaneously through measurable naturalistic mechanisms (neurological, social, psychological) and subjectively meaningful experiential frameworks, making the supernatural/natural distinction less relevant than previously assumed for understanding human flourishing.",
+      "confidence": 0.82,
+      "cycle": 18
+    },
+    {
+      "content": "The pattern across all domains points toward 'functional equivalence' - secular and religious frameworks may achieve similar human flourishing outcomes through parallel mechanisms (community cohesion, meaning-making, transformative experiences), suggesting the optimization problem is architectural rather than ideological.",
+      "confidence": 0.78,
+      "cycle": 18
+    },
+    {
+      "content": "The systematic separation of phenomena (distant prayer vs. community benefits, neurological processes vs. subjective meaning) reveals that religious traditions may be 'bundled packages' containing both empirically unsupported elements and highly effective psychological/social technologies that merit independent evaluation.",
+      "confidence": 0.85,
+      "cycle": 18
+    },
+    {
+      "content": "The evidence suggests a research agenda focused on 'active ingredients extraction' - identifying and isolating the specific community structures, practices, and meaning-making processes that generate measurable benefits, regardless of their traditional religious or secular packaging.",
+      "confidence": 0.75,
+      "cycle": 18
+    },
+    {
+      "content": "The convergence of evidence suggests a nuanced position: while supernatural claims lack empirical support, the psychological, social, and moral frameworks of religious belief systems demonstrate measurable positive effects that cannot be dismissed. This points toward separating the instrumental value of religious practice from metaphysical truth claims.",
+      "confidence": 0.8,
+      "cycle": 19
+    },
+    {
+      "content": "The systematic pattern where religious claims consistently fail empirical testing while retaining subjective meaning suggests these belief systems may represent evolved cognitive frameworks for meaning-making rather than accurate descriptions of objective reality. This would explain both their persistence and their empirical limitations.",
+      "confidence": 0.85,
+      "cycle": 19
+    },
+    {
+      "content": "The reasoning reveals an asymmetric burden of proof problem: extraordinary supernatural claims require extraordinary evidence, yet the consistent absence of such evidence under controlled conditions, combined with alternative explanations for religious phenomena, shifts the evidential weight toward naturalistic explanations.",
+      "confidence": 0.9,
+      "cycle": 19
+    },
+    {
+      "content": "The final assessment suggests that while religious belief systems fail as empirical truth claims about reality, they succeed as psychological and social technologies for human flourishing. This reframes the question from 'Is religion true?' to 'What functions do religious frameworks serve, and can these benefits be preserved without metaphysical commitments?'",
+      "confidence": 0.85,
+      "cycle": 19
+    },
+    {
+      "content": "The convergence of fine-tuning [5ed0a40dba66] with consciousness as an irreducible phenomenon [00760444fdf4] and cross-cultural near-death experiences [14925ac48ab1] creates a cumulative case that transcends purely physical explanations, even while acknowledging moral evidence challenges.",
+      "confidence": 0.75,
+      "cycle": 20
+    },
+    {
+      "content": "If some truths are properly basic and known through experience rather than argument [b660e29ded46], then the absence of empirical evidence for divine intervention [954169913008] may not constitute decisive counter-evidence against theistic belief grounded in experiential knowledge.",
+      "confidence": 0.68,
+      "cycle": 20
+    },
+    {
+      "content": "The strongest theistic position may require reformulating divine attributes to accommodate both the empirical absence of intervention [954169913008] and the success of secular ethics [04d402d562b6], while maintaining explanatory power for fine-tuning and consciousness phenomena.",
+      "confidence": 0.72,
+      "cycle": 20
+    },
+    {
+      "content": "Near-death experiences providing consistent cross-cultural evidence [14925ac48ab1] combined with properly basic experiential knowledge [b660e29ded46] suggests that theistic evidence may be primarily phenomenological rather than empirical, bypassing traditional evidential objections.",
+      "confidence": 0.65,
+      "cycle": 20
+    },
+    {
+      "content": "The most intellectually honest position may be methodological naturalism in practice while remaining agnostic about ultimate metaphysical claims - extracting the demonstrable benefits of religious technologies [bd62bc2bfc92] without requiring commitment to empirically unsupported supernatural claims.",
+      "confidence": 0.8,
+      "cycle": 21
+    },
+    {
+      "content": "The convergent evolution of religious belief systems across cultures [eb67fa689518] combined with their demonstrable social benefits [a9f689fa8f2c] suggests these traditions represent successful solutions to universal human psychological needs rather than revelations of transcendent truth.",
+      "confidence": 0.82,
+      "cycle": 21
+    },
+    {
+      "content": "The evidential asymmetry [954169913008] and prayer mechanism findings [eff106594965] create a burden of proof problem: extraordinary claims about divine intervention require extraordinary evidence, which appears consistently absent in controlled conditions despite strong subjective experiences.",
+      "confidence": 0.85,
+      "cycle": 21
+    },
+    {
+      "content": "The martyrdom puzzle [353644d56ba4] reveals a deeper epistemic problem: human psychology makes it impossible to use sincerity, conviction, or willingness to sacrifice as reliable indicators of truth, since these emerge naturally from cognitive mechanisms regardless of claim validity.",
+      "confidence": 0.8,
+      "cycle": 21
+    }
+  ]
+}
