@@ -66,14 +66,14 @@ def _create_anthropic_model_fn():
 
 def generate_session_context(db_path: str, hints: Optional[List[str]] = None) -> str:
     """
-    Generate session context from the thought graph
+    Generate three-layer session context from the thought graph
     
     Args:
         db_path: Path to the SQLite database
         hints: Optional list of topic hints for context retrieval
         
     Returns:
-        Formatted context string ready for injection into AGENTS.md or system context
+        Formatted three-layer context string ready for injection
         Returns empty string on failure (never crashes)
     """
     try:
@@ -85,18 +85,18 @@ def generate_session_context(db_path: str, hints: Optional[List[str]] = None) ->
         # Use a dummy session ID for context generation
         session_id = "openclaw_context_generation"
         
-        # Get session context
+        # Get three-layer session context
         context = start_session(db_path, session_id, hints)
         
         if not context.context_str:
             return ""
         
-        # Format with proper header for AGENTS.md injection
-        formatted_context = f"""## Relevant Context from Thought Graph
+        # The context_str now already has the three-layer format, just add header
+        formatted_context = f"""## Context from Thought Graph
 
 {context.context_str}
 
-*Retrieved {len(context.nodes_used)} nodes, ~{context.token_estimate} tokens*"""
+*Context layers: overview + recent activity{' + relevant hints' if hints else ''} (~{context.token_estimate} tokens)*"""
         
         return formatted_context
         

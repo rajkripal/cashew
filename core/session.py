@@ -87,19 +87,132 @@ def _estimate_tokens(text: str) -> int:
     """Rough token estimation (conservative: ~3.5 chars per token)"""
     return len(text) // 3
 
+def _get_tree_overview(db_path: str) -> str:
+    """Get Layer 1 - Tree Overview: total nodes, hotspots, recent activity, inbox count"""
+    try:
+        conn = _get_connection(db_path)
+        cursor = conn.cursor()
+        
+        # Total nodes (excluding decayed)
+        cursor.execute("SELECT COUNT(*) FROM thought_nodes WHERE decayed IS NULL OR decayed = 0")
+        total_nodes = cursor.fetchone()[0]
+        
+        # Total hotspots/clusters
+        cursor.execute("""
+            SELECT COUNT(*) FROM thought_nodes 
+            WHERE node_type = 'hotspot' AND (decayed IS NULL OR decayed = 0)
+        """)
+        total_hotspots = cursor.fetchone()[0]
+        
+        # Recently updated hotspots (today)
+        from datetime import datetime, timezone
+        today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        
+        cursor.execute("""
+            SELECT substr(content, 1, 30), COUNT(e.child_id) as members
+            FROM thought_nodes h
+            LEFT JOIN derivation_edges e ON h.id = e.parent_id AND e.relation = 'summarizes'
+            WHERE h.node_type = 'hotspot' 
+            AND (h.decayed IS NULL OR h.decayed = 0)
+            AND h.last_updated LIKE ?
+            GROUP BY h.id
+            ORDER BY h.last_updated DESC
+            LIMIT 3
+        """, (f"{today}%",))
+        
+        recent_hotspots = []
+        for row in cursor.fetchall():
+            content_preview, member_count = row
+            recent_hotspots.append(f"{content_preview} ({member_count} nodes)")
+        
+        # Inbox count (find hotspot with "inbox" in content or specific ID)
+        cursor.execute("""
+            SELECT COUNT(e.child_id) as inbox_count
+            FROM thought_nodes h
+            LEFT JOIN derivation_edges e ON h.id = e.parent_id AND e.relation = 'summarizes'
+            WHERE h.node_type = 'hotspot' 
+            AND (h.decayed IS NULL OR h.decayed = 0)
+            AND (LOWER(h.content) LIKE '%inbox%' OR LOWER(h.content) LIKE '%uncategorized%')
+            GROUP BY h.id
+            LIMIT 1
+        """)
+        inbox_result = cursor.fetchone()
+        inbox_count = inbox_result[0] if inbox_result else 0
+        
+        conn.close()
+        
+        # Format overview
+        lines = [f"Graph: {total_nodes} nodes across {total_hotspots} clusters."]
+        
+        if recent_hotspots:
+            active_str = "Most active: " + ", ".join(recent_hotspots[:2])
+            lines.append(active_str)
+        
+        if inbox_count > 0:
+            lines.append(f"Inbox: {inbox_count} awaiting classification.")
+        
+        return " ".join(lines)
+        
+    except Exception as e:
+        logging.error(f"Error getting tree overview: {e}")
+        return f"Graph overview unavailable: {e}"
+
+def _get_recent_activity(db_path: str) -> str:
+    """Get Layer 2 - Recent Activity: recently updated nodes/summaries"""
+    try:
+        conn = _get_connection(db_path)
+        cursor = conn.cursor()
+        
+        # Get 3 most recently updated non-hotspot nodes
+        cursor.execute("""
+            SELECT substr(content, 1, 80), node_type, 
+                   COALESCE(last_updated, timestamp) as update_time
+            FROM thought_nodes 
+            WHERE (decayed IS NULL OR decayed = 0) 
+            AND node_type != 'hotspot'
+            AND COALESCE(last_updated, timestamp) IS NOT NULL
+            ORDER BY update_time DESC
+            LIMIT 3
+        """)
+        
+        recent_items = []
+        for row in cursor.fetchall():
+            content, node_type, update_time = row
+            # Format timestamp to be readable (just show date if today, otherwise date)
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(update_time.replace('Z', '+00:00'))
+                if dt.strftime('%Y-%m-%d') == datetime.now().strftime('%Y-%m-%d'):
+                    time_str = "today"
+                else:
+                    time_str = dt.strftime('%m-%d')
+                recent_items.append(f"[{node_type}] {content} ({time_str})")
+            except:
+                recent_items.append(f"[{node_type}] {content}")
+        
+        conn.close()
+        
+        if recent_items:
+            return "\n".join([f"{i+1}. {item}" for i, item in enumerate(recent_items)])
+        else:
+            return "No recent activity found."
+            
+    except Exception as e:
+        logging.error(f"Error getting recent activity: {e}")
+        return f"Recent activity unavailable: {e}"
+
 def _format_context_string(results: List[RetrievalResult]) -> str:
     """Format retrieval results into context string"""
     if not results:
         return ""
     
-    lines = ["=== RELEVANT CONTEXT ==="]
+    lines = []
     
     for i, result in enumerate(results, 1):
         # Format: [TYPE] Content (Domain: domain_name)
         domain_str = f" (Domain: {result.domain})" if result.domain != "unknown" else ""
         lines.append(f"{i}. [{result.node_type.upper()}] {result.content}{domain_str}")
     
-    lines.append("=== END CONTEXT ===")
     return "\n".join(lines)
 
 def _update_access_tracking(db_path: str, node_ids: List[str]):
@@ -125,7 +238,10 @@ def _update_access_tracking(db_path: str, node_ids: List[str]):
 
 def start_session(db_path: str, session_id: str, hints: Optional[List[str]] = None, domain: Optional[str] = None) -> SessionContext:
     """
-    Start a session and inject relevant context
+    Start a session and inject relevant context with three layers:
+    Layer 1 - Tree Overview (always)
+    Layer 2 - Recent Activity (always) 
+    Layer 3 - Hint-driven depth (when hints provided)
     
     Args:
         db_path: Path to SQLite database
@@ -134,60 +250,89 @@ def start_session(db_path: str, session_id: str, hints: Optional[List[str]] = No
         domain: Optional domain filter for context retrieval
         
     Returns:
-        SessionContext with context string, node IDs, and token estimate
+        SessionContext with three-layer context string, node IDs, and token estimate
     """
     _ensure_schema(db_path)
     
-    # Build query from hints or use default
-    query = " ".join(hints) if hints else "recent relevant context"
+    # Layer 1: Tree Overview (always shown)
+    tree_overview = _get_tree_overview(db_path)
     
-    # Retrieve relevant nodes using DFS hierarchical approach
-    top_k = get_top_k()
+    # Layer 2: Recent Activity (always shown)
+    recent_activity = _get_recent_activity(db_path)
     
-    results = retrieve_dfs(db_path, query, top_k, domain)
+    # Layer 3: Hint-driven depth (only if hints provided)
+    hint_context = ""
+    nodes_used = []
+    hint_tokens = 0
     
-    if not results:
-        logging.info(f"No relevant context found for session {session_id}")
-        return SessionContext(
-            context_str="",
-            nodes_used=[],
-            token_estimate=0
-        )
-    
-    # Apply token budget constraint
-    token_budget = get_token_budget()
-    filtered_results = []
-    current_tokens = 0
-    
-    for result in results:
-        # Estimate tokens for this result (including formatting)
-        result_text = f"[{result.node_type.upper()}] {result.content}"
-        if result.domain != "unknown":
-            result_text += f" (Domain: {result.domain})"
+    if hints:
+        # Build query from hints
+        query = " ".join(hints)
         
-        result_tokens = _estimate_tokens(result_text)
+        # Retrieve relevant nodes using DFS hierarchical approach
+        top_k = get_top_k()
         
-        if current_tokens + result_tokens > token_budget:
-            logging.info(f"Token budget reached: {current_tokens}/{token_budget} tokens")
-            break
+        results = retrieve_dfs(db_path, query, top_k, domain)
         
-        filtered_results.append(result)
-        current_tokens += result_tokens
+        if results:
+            # Apply token budget constraint for hint-driven content
+            token_budget = get_token_budget() // 2  # Reserve space for layers 1+2
+            filtered_results = []
+            current_tokens = 0
+            
+            for result in results:
+                # Estimate tokens for this result (including formatting)
+                result_text = f"[{result.node_type.upper()}] {result.content}"
+                if result.domain != "unknown":
+                    result_text += f" (Domain: {result.domain})"
+                
+                result_tokens = _estimate_tokens(result_text)
+                
+                if current_tokens + result_tokens > token_budget:
+                    logging.info(f"Hint context token budget reached: {current_tokens}/{token_budget} tokens")
+                    break
+                
+                filtered_results.append(result)
+                current_tokens += result_tokens
+            
+            # Format hint-driven context
+            hint_context = _format_context_string(filtered_results)
+            nodes_used = [r.node_id for r in filtered_results]
+            hint_tokens = current_tokens
+            
+            # Update access tracking
+            _update_access_tracking(db_path, nodes_used)
     
-    # Format context string
-    context_str = _format_context_string(filtered_results)
-    nodes_used = [r.node_id for r in filtered_results]
+    # Build three-layer context string
+    context_parts = []
+    context_parts.append("=== GRAPH OVERVIEW ===")
+    context_parts.append(tree_overview)
+    context_parts.append("")
+    context_parts.append("=== RECENT ACTIVITY ===")
+    context_parts.append(recent_activity)
     
-    # Update access tracking
-    _update_access_tracking(db_path, nodes_used)
+    if hints and hint_context:
+        context_parts.append("")
+        context_parts.append("=== RELEVANT CONTEXT ===")
+        context_parts.append(hint_context)
     
-    logging.info(f"Session {session_id} started with {len(nodes_used)} context nodes "
-                f"({current_tokens} tokens)")
+    context_parts.append("")
+    context_parts.append("=== END CONTEXT ===")
+    
+    context_str = "\n".join(context_parts)
+    
+    # Estimate total tokens (overview + recent + hints)
+    overview_tokens = _estimate_tokens(tree_overview)
+    recent_tokens = _estimate_tokens(recent_activity) 
+    total_tokens = overview_tokens + recent_tokens + hint_tokens + 50  # +50 for structure
+    
+    logging.info(f"Session {session_id} started with 3-layer context: "
+                f"overview({overview_tokens}t) + recent({recent_tokens}t) + hints({hint_tokens}t) = {total_tokens}t")
     
     return SessionContext(
         context_str=context_str,
         nodes_used=nodes_used,
-        token_estimate=current_tokens
+        token_estimate=total_tokens
     )
 
 def _extract_with_heuristics(conversation_text: str) -> List[Dict[str, str]]:
