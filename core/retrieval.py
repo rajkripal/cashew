@@ -264,6 +264,25 @@ def retrieve(db_path: str, query: str, top_k: int = 5, walk_depth: int = 2, doma
     
     # Step 5: Rank and return top results
     results.sort(key=lambda r: r.score, reverse=True)
+    
+    # Step 6: Cluster suppression — if a hotspot is in results, suppress its cluster members
+    hotspot_cluster_members = set()
+    for result in results:
+        if result.node_type == HOTSPOT_TYPE:
+            # Get this hotspot's cluster members
+            conn2 = sqlite3.connect(db_path)
+            cursor2 = conn2.cursor()
+            cursor2.execute("""
+                SELECT child_id FROM derivation_edges 
+                WHERE parent_id = ? AND relation = 'summarizes'
+            """, (result.node_id,))
+            for row in cursor2.fetchall():
+                hotspot_cluster_members.add(row[0])
+            conn2.close()
+    
+    if hotspot_cluster_members:
+        results = [r for r in results if r.node_id not in hotspot_cluster_members or r.node_type == HOTSPOT_TYPE]
+    
     return results[:top_k]
 
 def format_context(results: List[RetrievalResult], include_paths: bool = False) -> str:

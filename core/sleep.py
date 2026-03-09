@@ -8,12 +8,16 @@ import sqlite3
 import json
 import math
 import random
+import numpy as np
 from typing import List, Dict, Tuple, Optional, Set
 from collections import defaultdict
 from dataclasses import dataclass, asdict
 import argparse
 import sys
 from datetime import datetime
+import logging
+
+logger = logging.getLogger("cashew.sleep")
 
 DB_PATH = "/Users/bunny/.openclaw/workspace/cashew/data/graph.db"
 SLEEP_LOG_PATH = "/Users/bunny/.openclaw/workspace/cashew/data/sleep_log.json"
@@ -80,16 +84,42 @@ class SleepProtocol:
         
         conn.close()
     
-    def _text_similarity(self, text1: str, text2: str) -> float:
+    def _load_embedding_sim_cache(self):
+        """Load all embeddings into a similarity cache for fast pairwise lookups"""
+        if hasattr(self, '_sim_cache'):
+            return
+        
+        from .clustering import load_embeddings, cosine_similarity
+        
+        node_ids, vectors, _ = load_embeddings(self.db_path)
+        self._embed_ids = node_ids
+        self._embed_vectors = vectors
+        self._embed_id_to_idx = {nid: i for i, nid in enumerate(node_ids)}
+        self._cosine_similarity = cosine_similarity
+    
+    def _text_similarity(self, text1: str, text2: str, node1_id: str = None, node2_id: str = None) -> float:
         """
-        Simple text similarity based on word overlap
-        TODO: Replace with embeddings for better similarity
+        Similarity between two nodes. Uses cosine similarity on embeddings 
+        when node IDs are provided, falls back to Jaccard on text.
         """
-        # Tokenize and normalize
+        # Try embedding-based similarity first
+        if node1_id and node2_id:
+            try:
+                self._load_embedding_sim_cache()
+                idx1 = self._embed_id_to_idx.get(node1_id)
+                idx2 = self._embed_id_to_idx.get(node2_id)
+                if idx1 is not None and idx2 is not None:
+                    return self._cosine_similarity(
+                        self._embed_vectors[idx1], 
+                        self._embed_vectors[idx2]
+                    )
+            except Exception as e:
+                logger.debug(f"Embedding similarity failed, falling back to text: {e}")
+        
+        # Fallback: Jaccard on words
         words1 = set(text1.lower().split())
         words2 = set(text2.lower().split())
         
-        # Remove common stop words
         stop_words = {'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from',
                      'has', 'he', 'in', 'is', 'it', 'its', 'of', 'on', 'that', 'the',
                      'to', 'was', 'were', 'will', 'with', 'i', 'you', 'they', 'we'}
@@ -100,18 +130,62 @@ class SleepProtocol:
         if not words1 or not words2:
             return 0.0
         
-        # Jaccard similarity
         intersection = len(words1.intersection(words2))
         union = len(words1.union(words2))
         
         return intersection / union if union > 0 else 0.0
     
     def find_cross_link_candidates(self) -> List[CrossLinkCandidate]:
-        """Find nodes that should be cross-linked or deduplicated"""
+        """
+        Find nodes that should be cross-linked or deduplicated.
+        Uses embedding cosine similarity for accurate comparison.
+        Optimized: computes full similarity matrix once, then filters.
+        """
+        try:
+            from .clustering import load_embeddings
+            from sklearn.metrics.pairwise import cosine_similarity as sklearn_cosine_sim
+            
+            node_ids, vectors, node_meta = load_embeddings(self.db_path)
+            if len(node_ids) < 2:
+                return []
+            
+            # Compute full pairwise similarity matrix (N x N)
+            sim_matrix = sklearn_cosine_sim(vectors)
+            
+            candidates = []
+            
+            # Only check upper triangle (avoid duplicates)
+            for i in range(len(node_ids)):
+                for j in range(i + 1, len(node_ids)):
+                    similarity = float(sim_matrix[i, j])
+                    
+                    if similarity >= self.dedup_threshold:
+                        candidates.append(CrossLinkCandidate(
+                            node1_id=node_ids[i],
+                            node2_id=node_ids[j],
+                            similarity=similarity,
+                            action="dedup"
+                        ))
+                    elif similarity >= self.cross_link_threshold:
+                        candidates.append(CrossLinkCandidate(
+                            node1_id=node_ids[i],
+                            node2_id=node_ids[j],
+                            similarity=similarity,
+                            action="cross_link"
+                        ))
+            
+            logger.info(f"Found {len(candidates)} cross-link candidates from {len(node_ids)} nodes")
+            return candidates
+            
+        except Exception as e:
+            logger.warning(f"Embedding-based cross-link failed, falling back to text: {e}")
+            return self._find_cross_link_candidates_text_fallback()
+    
+    def _find_cross_link_candidates_text_fallback(self) -> List[CrossLinkCandidate]:
+        """Fallback: text-based cross-link detection"""
         conn = self._get_connection()
         cursor = conn.cursor()
         
-        # Get all non-decayed nodes
         cursor.execute("""
             SELECT id, content, node_type 
             FROM thought_nodes 
@@ -121,31 +195,15 @@ class SleepProtocol:
         conn.close()
         
         candidates = []
-        
-        # Compare all pairs of nodes
         for i, (id1, content1, type1) in enumerate(nodes):
             for j, (id2, content2, type2) in enumerate(nodes):
-                if i >= j:  # Avoid duplicate comparisons
+                if i >= j:
                     continue
-                
                 similarity = self._text_similarity(content1, content2)
-                
                 if similarity >= self.dedup_threshold:
-                    # High similarity - deduplication candidate
-                    candidates.append(CrossLinkCandidate(
-                        node1_id=id1,
-                        node2_id=id2,
-                        similarity=similarity,
-                        action="dedup"
-                    ))
+                    candidates.append(CrossLinkCandidate(id1, id2, similarity, "dedup"))
                 elif similarity >= self.cross_link_threshold:
-                    # Medium similarity - cross-link candidate
-                    candidates.append(CrossLinkCandidate(
-                        node1_id=id1,
-                        node2_id=id2,
-                        similarity=similarity,
-                        action="cross_link"
-                    ))
+                    candidates.append(CrossLinkCandidate(id1, id2, similarity, "cross_link"))
         
         return candidates
     
@@ -545,7 +603,11 @@ class SleepProtocol:
         print("⭐ Updating core memories...")
         promotions, demotions = self.promote_core_memories(metrics)
         
-        # 6. Build summary before saving (save clears events)
+        # 6. Clustering & hotspot maintenance
+        print("📍 Running cluster detection & hotspot maintenance...")
+        clustering_results = self._run_clustering_phase()
+        
+        # 7. Build summary before saving (save clears events)
         events_count = len(self.events)
         self.save_sleep_log()
         
@@ -556,6 +618,9 @@ class SleepProtocol:
             "nodes_decayed": len(decayed_nodes),
             "core_promotions": len(promotions),
             "core_demotions": len(demotions),
+            "clusters_found": clustering_results.get("clusters_found", 0),
+            "new_hotspots": clustering_results.get("new_hotspots_created", 0),
+            "stale_hotspots": clustering_results.get("stale_hotspots_found", 0),
             "total_nodes": len(metrics),
             "events_logged": events_count
         }
@@ -563,6 +628,43 @@ class SleepProtocol:
         print(f"✅ Sleep cycle complete: {summary}")
         return summary
     
+    def _run_clustering_phase(self) -> Dict:
+        """Run cluster detection and hotspot maintenance as part of sleep"""
+        try:
+            from .clustering import run_clustering_cycle
+            
+            # Try to get a model function for summary generation
+            model_fn = None
+            try:
+                # Import the model function creator from openclaw integration
+                import sys, os
+                sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__))))
+                from integration.openclaw import _create_anthropic_model_fn
+                model_fn = _create_anthropic_model_fn()
+            except Exception as e:
+                logger.debug(f"No model function available for hotspot summaries: {e}")
+            
+            results = run_clustering_cycle(self.db_path, model_fn=model_fn)
+            
+            # Log events
+            if results["new_hotspots_created"] > 0:
+                self._log_event("clustering", {
+                    "action": "new_hotspots",
+                    "count": results["new_hotspots_created"],
+                    "clusters_found": results["clusters_found"]
+                })
+            if results["stale_hotspots_found"] > 0:
+                self._log_event("clustering", {
+                    "action": "stale_detected",
+                    "count": results["stale_hotspots_found"]
+                })
+            
+            return results
+            
+        except Exception as e:
+            logger.warning(f"Clustering phase failed (non-fatal): {e}")
+            return {"clusters_found": 0, "new_hotspots_created": 0, "stale_hotspots_found": 0}
+
     def save_sleep_log(self):
         """Save sleep events to log file"""
         try:
