@@ -10,6 +10,7 @@ Two-phase approach:
 Every node belongs to exactly one cluster. Zero orphans.
 """
 
+import os
 import sqlite3
 import json
 import hashlib
@@ -31,11 +32,11 @@ logger = logging.getLogger("cashew.complete_clustering")
 # Database path is now configurable via environment variable or CLI
 from .config import get_db_path
 
-# Clustering parameters
-DBSCAN_EPS = 0.35           # Max distance between samples (1 - cosine_sim). Lower = tighter clusters.
-DBSCAN_MIN_SAMPLES = 3      # Min nodes to form a cluster
+# Clustering parameters (configurable via env vars for tuning)
+DBSCAN_EPS = float(os.environ.get('CASHEW_CLUSTER_EPS', '0.35'))  # Max distance (1 - cosine_sim). Higher = looser clusters.
+DBSCAN_MIN_SAMPLES = int(os.environ.get('CASHEW_CLUSTER_MIN_SAMPLES', '3'))  # Min nodes to form a cluster
 MIN_CLUSTER_SIZE = 5        # Don't create hotspots for tiny clusters
-NOISE_ASSIGNMENT_THRESHOLD = 0.3  # If noise node is too far from ALL clusters, make new micro-cluster
+NOISE_ASSIGNMENT_THRESHOLD = float(os.environ.get('CASHEW_NOISE_THRESHOLD', '0.3'))  # Max distance for orphan assignment
 STALENESS_THRESHOLD = 0.65  # If hotspot-centroid similarity drops below this, regenerate
 AUTO_HOTSPOT_CONFIDENCE = 0.90
 

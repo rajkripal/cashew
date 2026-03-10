@@ -197,7 +197,14 @@ def cmd_sleep(args):
     """Run the sleep/consolidation protocol."""
     import time as _time
     start = _time.time()
-    print("😴 Running sleep protocol...")
+    
+    # Apply eps override if provided
+    eps_val = getattr(args, 'eps', None)
+    if eps_val is not None:
+        os.environ['CASHEW_CLUSTER_EPS'] = str(eps_val)
+        print(f"😴 Running sleep protocol (eps={eps_val})...")
+    else:
+        print("😴 Running sleep protocol...")
     
     try:
         sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__))))
@@ -1011,6 +1018,8 @@ def main():
     
     # Sleep command
     sleep_parser = subparsers.add_parser("sleep", help="Run the sleep/consolidation protocol")
+    sleep_parser.add_argument("--eps", type=float, default=None,
+                             help="Clustering threshold (0.0-1.0). Higher = looser clusters. Default: 0.35")
     sleep_parser.set_defaults(func=cmd_sleep)
     
     # Stats command
