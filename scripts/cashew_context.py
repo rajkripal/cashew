@@ -530,6 +530,163 @@ def cmd_init(args):
         return 1
 
 
+def _migrate_extract_file(db_path: str, content: str, filename: str, session_id: str) -> dict:
+    """
+    Extract knowledge from a document file for migration.
+    Uses a migration-specific prompt that produces semantic summaries
+    instead of line-level fragments.
+    """
+    import json
+    import sqlite3
+    import hashlib
+    from datetime import datetime, timezone
+    from core.embeddings import ensure_schema, embed_nodes
+    
+    ensure_schema(db_path)
+    
+    # Try LLM extraction with migration-specific prompt
+    try:
+        import anthropic
+        import os
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            return _migrate_extract_heuristic(db_path, content, filename, session_id)
+        
+        client = anthropic.Anthropic(api_key=api_key)
+        
+        prompt = f"""You are migrating a personal knowledge document into a thought graph. Extract the KEY ENTITIES and INSIGHTS as self-contained statements.
+
+CRITICAL RULES:
+1. Each statement must be SELF-CONTAINED — understandable without reading the source document
+2. Include WHAT something is, not just that it exists. "DisClawd is a multi-agent collaboration framework for Discord bots" not just "DisClawd lives at /home/disclawd"
+3. Capture projects with their PURPOSE and STATUS, not just file paths
+4. Capture decisions with their REASONING, not just the choice
+5. Merge related fragments into single comprehensive statements
+6. Aim for 5-15 high-quality nodes per document, not 50 fragments
+
+Types: belief, insight, decision, observation, fact
+
+Respond with ONLY a JSON array:
+[{{"content": "self-contained statement", "type": "belief|insight|decision|observation|fact", "confidence": 0.8}}]
+
+Document ({filename}):
+{content[:8000]}"""
+        
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2000,
+            temperature=0.3,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        response = message.content[0].text
+        
+        # Parse JSON
+        cleaned = response.strip()
+        if cleaned.startswith('```'):
+            lines = cleaned.split('\n')
+            lines = [l for l in lines if not l.strip().startswith('```')]
+            cleaned = '\n'.join(lines).strip()
+        start = cleaned.find('[')
+        end = cleaned.rfind(']')
+        if start == -1 or end == -1:
+            return _migrate_extract_heuristic(db_path, content, filename, session_id)
+        
+        extractions = json.loads(cleaned[start:end+1])
+        
+    except Exception as e:
+        print(f"   ⚠️  LLM extraction failed ({e}), using heuristic")
+        return _migrate_extract_heuristic(db_path, content, filename, session_id)
+    
+    # Insert nodes
+    now = datetime.now(timezone.utc).isoformat()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    new_nodes = []
+    
+    for item in extractions:
+        node_content = item.get("content", "").strip()
+        if not node_content or len(node_content) < 20:
+            continue
+        node_type = item.get("type", "observation")
+        confidence = item.get("confidence", 0.7)
+        node_id = hashlib.sha256(f"{node_content}:{now}".encode()).hexdigest()[:12]
+        
+        try:
+            cursor.execute("""
+                INSERT OR IGNORE INTO thought_nodes 
+                (id, content, node_type, timestamp, confidence, source_file, access_count, metadata, domain)
+                VALUES (?, ?, ?, ?, ?, ?, 0, '{}', 'default')
+            """, (node_id, node_content, node_type, now, confidence, f"migration:{filename}"))
+            new_nodes.append(node_id)
+        except Exception:
+            continue
+    
+    conn.commit()
+    conn.close()
+    
+    # Generate embeddings for new nodes
+    try:
+        embed_nodes(db_path)
+    except Exception:
+        pass
+    
+    return {
+        "success": True,
+        "new_nodes": new_nodes,
+        "placements": []
+    }
+
+
+def _migrate_extract_heuristic(db_path: str, content: str, filename: str, session_id: str) -> dict:
+    """Fallback heuristic extraction for migration when no LLM available"""
+    import sqlite3
+    import hashlib
+    from datetime import datetime, timezone
+    from core.embeddings import ensure_schema, embed_nodes
+    
+    ensure_schema(db_path)
+    
+    now = datetime.now(timezone.utc).isoformat()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    new_nodes = []
+    
+    # Extract paragraphs (not lines) as semantic units
+    paragraphs = [p.strip() for p in content.split('\n\n') if len(p.strip()) > 50]
+    
+    for para in paragraphs[:20]:  # Cap at 20 per file
+        # Skip markdown headers, code blocks, and list fragments
+        if para.startswith('```') or para.startswith('---') or para.startswith('|'):
+            continue
+        # Clean up but keep as paragraph
+        clean = ' '.join(para.split())[:500]
+        node_id = hashlib.sha256(f"{clean}:{now}".encode()).hexdigest()[:12]
+        
+        try:
+            cursor.execute("""
+                INSERT OR IGNORE INTO thought_nodes 
+                (id, content, node_type, timestamp, confidence, source_file, access_count, metadata, domain)
+                VALUES (?, ?, 'observation', ?, 0.5, ?, 0, '{}', 'default')
+            """, (node_id, clean, now, f"migration:{filename}"))
+            new_nodes.append(node_id)
+        except Exception:
+            continue
+    
+    conn.commit()
+    conn.close()
+    
+    try:
+        embed_nodes(db_path)
+    except Exception:
+        pass
+    
+    return {
+        "success": True,
+        "new_nodes": new_nodes,
+        "placements": []
+    }
+
+
 def cmd_migrate_files(args):
     """Migrate markdown files to cashew database"""
     import os
@@ -589,7 +746,7 @@ def cmd_migrate_files(args):
         print("❌ Error: Database not found. Run `cashew init` first.")
         return 1
     
-    # Extract from each file
+    # Extract from each file using migration-aware extraction
     extracted_count = 0
     errors = 0
     
@@ -602,10 +759,11 @@ def cmd_migrate_files(args):
                 print(f"   ⚠️  Skipping (too short)")
                 continue
             
-            # Use the complete extraction system
-            result = extract_from_conversation_complete(
+            # Use migration-specific extraction (semantic summaries, not line fragments)
+            result = _migrate_extract_file(
                 args.db, 
                 content, 
+                md_file.name,
                 f"migration_{md_file.stem}"
             )
             
