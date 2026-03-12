@@ -51,7 +51,7 @@ class TestContextRetrieval(unittest.TestCase):
                 relation TEXT,
                 weight REAL,
                 reasoning TEXT,
-                edge_type TEXT,
+    
                 confidence REAL,
                 timestamp TEXT,
                 PRIMARY KEY (parent_id, child_id, relation)

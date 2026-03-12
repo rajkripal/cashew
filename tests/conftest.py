@@ -44,13 +44,13 @@ def temp_db():
         CREATE TABLE derivation_edges (
             parent_id TEXT,
             child_id TEXT,
-            edge_type TEXT,
+
             relation TEXT,
             weight REAL,
             reasoning TEXT,
             confidence REAL,
             timestamp TEXT,
-            PRIMARY KEY (parent_id, child_id, edge_type),
+            PRIMARY KEY (parent_id, child_id, relation),
             FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
             FOREIGN KEY (child_id) REFERENCES thought_nodes(id)
         )
@@ -128,13 +128,13 @@ def temp_db_with_data():
         CREATE TABLE derivation_edges (
             parent_id TEXT,
             child_id TEXT,
-            edge_type TEXT,
+
             relation TEXT,
             weight REAL,
             reasoning TEXT,
             confidence REAL,
             timestamp TEXT,
-            PRIMARY KEY (parent_id, child_id, edge_type),
+            PRIMARY KEY (parent_id, child_id, relation),
             FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
             FOREIGN KEY (child_id) REFERENCES thought_nodes(id)
         )
@@ -169,16 +169,16 @@ def temp_db_with_data():
     
     # Add sample edges
     sample_edges = [
-        ("node1", "node2", "supports", "supports", 0.7, "Both about tech/programming"),
-        ("node3", "node5", "related_to", "related_to", 0.5, "Both about mental processes")
+        ("node1", "node2", "supports", 0.7, "Both about tech/programming"),
+        ("node3", "node5", "related_to", 0.5, "Both about mental processes")
     ]
     
-    for parent_id, child_id, edge_type, relation, weight, reasoning in sample_edges:
+    for parent_id, child_id, relation, weight, reasoning in sample_edges:
         cursor.execute("""
             INSERT INTO derivation_edges 
-            (parent_id, child_id, edge_type, relation, weight, reasoning, confidence, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (parent_id, child_id, edge_type, relation, weight, reasoning, 0.8, now))
+            (parent_id, child_id, relation, weight, reasoning, confidence, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (parent_id, child_id, relation, weight, reasoning, 0.8, now))
     
     conn.commit()
     conn.close()

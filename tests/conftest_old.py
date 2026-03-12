@@ -41,10 +41,10 @@ def temp_db():
         CREATE TABLE derivation_edges (
             parent_id TEXT,
             child_id TEXT,
-            edge_type TEXT,
+
             confidence REAL,
             timestamp TEXT,
-            PRIMARY KEY (parent_id, child_id, edge_type),
+            PRIMARY KEY (parent_id, child_id, relation),
             FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
             FOREIGN KEY (child_id) REFERENCES thought_nodes(id)
         )
@@ -119,10 +119,10 @@ def temp_db_with_data():
         CREATE TABLE derivation_edges (
             parent_id TEXT,
             child_id TEXT,
-            edge_type TEXT,
+
             confidence REAL,
             timestamp TEXT,
-            PRIMARY KEY (parent_id, child_id, edge_type),
+            PRIMARY KEY (parent_id, child_id, relation),
             FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
             FOREIGN KEY (child_id) REFERENCES thought_nodes(id)
         )
@@ -161,12 +161,12 @@ def temp_db_with_data():
         ("node3", "node5", "related_to", 0.5, "Both about mental processes")
     ]
     
-    for parent_id, child_id, edge_type, confidence, reasoning in sample_edges:
+    for parent_id, child_id, relation, confidence, reasoning in sample_edges:
         cursor.execute("""
             INSERT INTO derivation_edges 
-            (parent_id, child_id, edge_type, confidence, timestamp)
+            (parent_id, child_id, relation, confidence, timestamp)
             VALUES (?, ?, ?, ?, ?)
-        """, (parent_id, child_id, edge_type, confidence, now))
+        """, (parent_id, child_id, relation, confidence, now))
     
     conn.commit()
     conn.close()
