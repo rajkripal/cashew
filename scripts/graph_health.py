@@ -133,16 +133,25 @@ def run_retrieval_regression_test(db_path):
             env['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
             
             cmd = [sys.executable, context_script, 'context', '--hints', query]
+            # Run from the parent directory of the scripts directory (cashew root)
+            cashew_root = os.path.dirname(os.path.dirname(context_script))
             result = subprocess.run(cmd, capture_output=True, text=True, 
-                                  cwd=os.path.dirname(db_path), env=env, timeout=30)
+                                  cwd=cashew_root, env=env, timeout=30)
             
             if result.returncode == 0:
                 # Parse output to count nodes and tokens
                 output = result.stdout
-                # Count lines that look like node results (contain "ID:" or similar patterns)
-                node_lines = [line for line in output.split('\n') if 'ID:' in line or line.strip().startswith('•')]
+                # Count lines that match the actual context format: "1. [TYPE] content..."
+                import re
+                node_lines = [line for line in output.split('\n') if re.match(r'^\d+\. \[', line)]
                 node_count = len(node_lines)
-                token_count = len(output) // 4  # Rough token estimate (chars/4)
+                
+                # Extract token count from footer line, fallback to chars/4 estimate
+                token_match = re.search(r'\(~(\d+) tokens\)', output)
+                if token_match:
+                    token_count = int(token_match.group(1))
+                else:
+                    token_count = len(output) // 4  # Fallback estimate
                 
                 results.append({
                     'query': query,
