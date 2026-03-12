@@ -22,6 +22,58 @@ logger = logging.getLogger("cashew.placement_aware_extraction")
 # Database path is now configurable via environment variable or CLI
 from .config import get_db_path
 
+# Quality gate parameters
+# MiniLM-L6 cosine similarity distribution: mean ~0.13, P99 ~0.49, true dupes peak ~0.85-0.90
+NOVELTY_THRESHOLD = 0.82  # reject if nearest neighbor similarity > this
+BORDERLINE_THRESHOLD = 0.72  # confidence tiebreaker zone: 0.72-0.82
+
+
+def check_novelty(db_path: str, content: str, threshold: float = NOVELTY_THRESHOLD) -> Tuple[bool, float, Optional[str]]:
+    """
+    Check if a candidate node is sufficiently novel compared to existing graph.
+    
+    Returns:
+        (is_novel, max_similarity, nearest_node_id)
+        is_novel=True means the node should be kept.
+    """
+    try:
+        candidate_embedding = np.array(embed_text(content))
+    except Exception as e:
+        logger.warning(f"Failed to embed candidate for novelty check: {e}")
+        return True, 0.0, None  # fail open — allow the node
+    
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT e.node_id, e.vector 
+        FROM embeddings e
+        JOIN thought_nodes tn ON e.node_id = tn.id
+        WHERE tn.decayed IS NULL OR tn.decayed = 0
+    """)
+    
+    max_sim = 0.0
+    nearest_id = None
+    
+    for node_id, vector_bytes in cursor.fetchall():
+        try:
+            stored = np.frombuffer(vector_bytes, dtype=np.float32)
+            dot = np.dot(candidate_embedding, stored)
+            cn = np.linalg.norm(candidate_embedding)
+            sn = np.linalg.norm(stored)
+            if cn > 0 and sn > 0:
+                sim = float(dot / (cn * sn))
+                if sim > max_sim:
+                    max_sim = sim
+                    nearest_id = node_id
+        except Exception:
+            continue
+    
+    conn.close()
+    
+    is_novel = max_sim < threshold
+    return is_novel, max_sim, nearest_id
+
+
 # Placement parameters
 HOTSPOT_MATCH_THRESHOLD = 0.3  # Min similarity to assign to existing hotspot
 UNCATEGORIZED_DOMAIN = "inbox"  # Domain for uncategorized hotspot
@@ -290,42 +342,62 @@ def _find_nodes_current_hotspot(db_path: str, node_id: str) -> Optional[str]:
     return result[0] if result else None
 
 
+MIN_CLUSTER_SIZE = 5  # Minimum nodes to justify creating a new hotspot
+
 def _should_create_new_hotspot(db_path: str, content: str, domain: str, model_fn) -> bool:
     """
-    Decide if we should create a new hotspot for this content or use the inbox.
+    Decide if we should create a new hotspot for this content.
     
-    Heuristics:
-    - If this looks like a significant new topic area
-    - If there are multiple recent nodes in this domain that aren't well-clustered
-    - If the content suggests this is a substantial insight/decision (not just an observation)
+    Philosophy: orphan nodes are a feature, not a bug. Only create a new hotspot
+    when there are MIN_CLUSTER_SIZE+ inbox nodes that cluster around a similar topic.
+    Otherwise, let the node sit in the inbox until a natural cluster emerges.
     """
-    # Simple heuristic: only create new hotspots for high-value node types with LLM support
-    if not model_fn:
+    try:
+        candidate_embedding = np.array(embed_text(content))
+    except Exception:
         return False
     
-    # Check content characteristics
-    content_lower = content.lower()
+    # Count inbox nodes similar to this content
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
     
-    # High-value indicators
-    high_value_indicators = [
-        "decision", "insight", "realization", "pattern", "strategy", 
-        "plan", "goal", "project", "important", "significant",
-        "breakthrough", "discovery", "understanding", "principle"
-    ]
+    # Find the inbox hotspot
+    cursor.execute("""
+        SELECT id FROM thought_nodes 
+        WHERE node_type = 'hotspot' AND content LIKE '%INBOX%Uncategorized%'
+        AND (decayed IS NULL OR decayed = 0)
+        LIMIT 1
+    """)
+    inbox_row = cursor.fetchone()
+    if not inbox_row:
+        conn.close()
+        return False
     
-    low_value_indicators = [
-        "observation", "note", "comment", "mention", "brief",
-        "quick", "simple", "basic", "just", "maybe", "probably"
-    ]
+    inbox_id = inbox_row[0]
     
-    high_value_score = sum(1 for indicator in high_value_indicators if indicator in content_lower)
-    low_value_score = sum(1 for indicator in low_value_indicators if indicator in content_lower)
+    # Get inbox children with embeddings
+    cursor.execute("""
+        SELECT e.node_id, emb.vector 
+        FROM derivation_edges e
+        JOIN embeddings emb ON e.child_id = emb.node_id
+        WHERE e.parent_id = ?
+    """, (inbox_id,))
     
-    # Only create new hotspot if this seems like significant content
-    if high_value_score > low_value_score and len(content) > 50:
-        return True
+    similar_count = 0
+    for node_id, vec_bytes in cursor.fetchall():
+        try:
+            stored = np.frombuffer(vec_bytes, dtype=np.float32)
+            sim = float(np.dot(candidate_embedding, stored) / 
+                       (np.linalg.norm(candidate_embedding) * np.linalg.norm(stored)))
+            if sim > 0.6:  # Reasonably similar topic
+                similar_count += 1
+        except Exception:
+            continue
     
-    return False
+    conn.close()
+    
+    # Only create hotspot if enough similar nodes are waiting in inbox
+    return similar_count >= (MIN_CLUSTER_SIZE - 1)  # -1 because the current node would join too
 
 
 def _create_new_hotspot_for_node(db_path: str, node_id: str, content: str, 
@@ -516,9 +588,11 @@ For each item, classify as:
 Each content field must be a specific, standalone statement that makes sense without the conversation context.
 
 BAD: "They discussed embeddings" (meta-comment)
-BAD: "The conversation covered several topics" (summary)
+BAD: "The conversation covered several topics" (summary)  
 GOOD: "Local embedding models (all-MiniLM-L6-v2) are sufficient for graphs under 100K nodes — brute force cosine similarity stays under 50ms"
 GOOD: "Placement-aware extraction should assign nodes to hotspots immediately during creation, not leave them orphaned"
+
+IMPORTANT: Only nodes with confidence >= 0.8 will be saved to the database. Be selective and only extract high-quality, substantive knowledge.
 
 Respond with ONLY a JSON array. No markdown, no explanation, no code fences.
 
@@ -568,6 +642,18 @@ Conversation to extract from:
         node_type = extraction.get("type", "observation") 
         confidence = extraction.get("confidence", 0.5)
         
+        # Primary gate: semantic novelty check
+        is_novel, max_sim, nearest_id = check_novelty(db_path, content)
+        if not is_novel:
+            logger.info(f"Rejecting duplicate (sim={max_sim:.3f} to {nearest_id}): {content[:60]}")
+            continue
+        
+        # Secondary gate: use confidence as tiebreaker for borderline novelty
+        # If similarity is in borderline zone (0.72-0.82) AND confidence is low, skip
+        if max_sim > BORDERLINE_THRESHOLD and confidence < 0.7:
+            logger.info(f"Rejecting borderline node (sim={max_sim:.3f}, conf={confidence}): {content[:60]}")
+            continue
+            
         # Create node with placement
         try:
             node_id, assigned_hotspot = create_node_with_placement(

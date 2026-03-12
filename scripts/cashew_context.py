@@ -23,6 +23,7 @@ from integration.complete_integration import (
     explain_complete_system, get_complete_system_stats
 )
 from core.hotspots import create_hotspot, update_hotspot, list_hotspots, get_hotspot
+from core.decay import auto_decay, get_decay_candidates
 
 
 def cmd_context(args):
@@ -191,6 +192,88 @@ def cmd_stats(args):
     except Exception as e:
         print(f"❌ Error getting stats: {e}")
         return 1
+
+
+def cmd_prune(args):
+    """Prune old unused low-confidence nodes"""
+    dry_run = getattr(args, 'dry_run', False)
+    min_age_days = getattr(args, 'min_age_days', 14)
+    max_confidence = getattr(args, 'max_confidence', 0.85)
+    
+    print(f"🧹 Pruning nodes older than {min_age_days} days with confidence < {max_confidence}")
+    print(f"🔍 Dry run: {dry_run}")
+    print()
+    
+    if dry_run:
+        # Show candidates without actually pruning
+        candidates = get_decay_candidates(args.db, min_age_days, max_confidence)
+        print(f"📊 Decay candidates:")
+        print(f"  Count: {candidates['candidates']}")
+        print(f"  Avg confidence: {candidates['avg_confidence']}")
+        print(f"  Min confidence: {candidates['min_confidence']}")
+        print(f"  Max confidence: {candidates['max_confidence']}")
+        if candidates['candidates'] > 0:
+            print(f"✨ Run without --dry-run to prune {candidates['candidates']} nodes")
+        else:
+            print(f"✅ No nodes eligible for pruning")
+    else:
+        # Actually prune
+        result = auto_decay(args.db, min_age_days, max_confidence)
+        pruned = result['pruned']
+        if pruned > 0:
+            print(f"✅ Pruned {pruned} nodes")
+        else:
+            print(f"✅ No nodes pruned (none eligible)")
+    
+    return 0
+
+
+def cmd_compact(args):
+    """Run semantic deduplication to merge near-duplicate nodes"""
+    dry_run = getattr(args, 'dry_run', False)
+    similarity_threshold = getattr(args, 'similarity_threshold', 0.82)
+    
+    print(f"🗜️  Compacting graph (similarity threshold: {similarity_threshold})")
+    print(f"🔍 Dry run: {dry_run}")
+    print()
+    
+    if dry_run:
+        print("🔍 Dry run: would analyze for near-duplicate nodes")
+        print(f"⚠️  Actual deduplication not yet implemented in dry-run mode")
+        print("💡 Run without --dry-run to perform actual deduplication")
+        return 0
+    else:
+        # Import and run the deduplication
+        try:
+            sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__))))
+            from scripts.dedup_nodes import deduplicate_graph
+            
+            print("🔍 Finding near-duplicate nodes...")
+            stats = deduplicate_graph(args.db, similarity_threshold)
+            
+            print(f"\n📊 Compaction results:")
+            print(f"  Merged pairs: {stats['merged']}")
+            print(f"  Edges transferred: {stats['edges_transferred']}")
+            
+            if stats['merged'] > 0:
+                print(f"\n🔗 Merge details:")
+                for merge in stats['merges']:
+                    print(f"  {merge['discarded_node']} → {merge['kept_node']} "
+                          f"(similarity: {merge['similarity']:.3f}, edges: {merge['edges_transferred']})")
+                    print(f"    Kept (conf: {merge['kept_confidence']:.2f}): {merge['kept_content']}")
+                    print(f"    Discarded (conf: {merge['discarded_confidence']:.2f}): {merge['discarded_content']}")
+                    print()
+            else:
+                print("✅ No near-duplicates found")
+            
+        except Exception as e:
+            print(f"❌ Error during compaction: {e}")
+            if args.debug:
+                import traceback
+                traceback.print_exc()
+            return 1
+    
+    return 0
 
 
 def cmd_sleep(args):
@@ -488,13 +571,13 @@ def cmd_init(args):
             CREATE TABLE derivation_edges (
                 parent_id TEXT,
                 child_id TEXT,
-                edge_type TEXT,
+    
                 relation TEXT,
                 weight REAL,
                 reasoning TEXT,
                 confidence REAL,
                 timestamp TEXT,
-                PRIMARY KEY (parent_id, child_id, edge_type),
+                PRIMARY KEY (parent_id, child_id, relation),
                 FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
                 FOREIGN KEY (child_id) REFERENCES thought_nodes(id)
             )
@@ -629,6 +712,21 @@ Document ({filename}):
             continue
         node_type = item.get("type", "observation")
         confidence = item.get("confidence", 0.7)
+        
+        # Primary gate: semantic novelty check
+        try:
+            from core.placement_aware_extraction import check_novelty
+            is_novel, max_sim, nearest_id = check_novelty(db_path, node_content)
+            if not is_novel:
+                print(f"   ⊘ Rejecting duplicate (sim={max_sim:.3f}): {node_content[:60]}")
+                continue
+            if max_sim > 0.72 and confidence < 0.7:
+                print(f"   ⊘ Rejecting borderline (sim={max_sim:.3f}, conf={confidence}): {node_content[:60]}")
+                continue
+        except Exception as e:
+            # Fail open — if novelty check breaks, fall through
+            pass
+            
         node_id = hashlib.sha256(f"{node_content}:{now}".encode()).hexdigest()[:12]
         
         try:
@@ -1038,6 +1136,19 @@ def main():
     # Stats command
     stats_parser = subparsers.add_parser("stats", help="Show graph stats")
     stats_parser.set_defaults(func=cmd_stats)
+    
+    # Prune command
+    prune_parser = subparsers.add_parser("prune", help="Prune old unused low-confidence nodes")
+    prune_parser.add_argument("--dry-run", action="store_true", help="Show what would be pruned without making changes")
+    prune_parser.add_argument("--min-age-days", type=int, default=14, help="Minimum age in days for pruning (default: 14)")
+    prune_parser.add_argument("--max-confidence", type=float, default=0.85, help="Maximum confidence for pruning (default: 0.85)")
+    prune_parser.set_defaults(func=cmd_prune)
+    
+    # Compact command
+    compact_parser = subparsers.add_parser("compact", help="Compact graph by merging near-duplicate nodes")
+    compact_parser.add_argument("--dry-run", action="store_true", help="Show what would be compacted without making changes")
+    compact_parser.add_argument("--similarity-threshold", type=float, default=0.82, help="Cosine similarity threshold for merging (default: 0.82)")
+    compact_parser.set_defaults(func=cmd_compact)
     
     # Hotspot command
     hotspot_parser = subparsers.add_parser("hotspot", help="Manage hotspot nodes")

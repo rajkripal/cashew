@@ -305,13 +305,27 @@ class ThinkCycle:
         timestamp = self._get_current_timestamp()
         
         for insight in insights:
+            # Primary gate: semantic novelty check
+            try:
+                from core.placement_aware_extraction import check_novelty
+                is_novel, max_sim, nearest_id = check_novelty(self.db_path, insight.content)
+                if not is_novel:
+                    print(f"  ⊘ Rejecting duplicate think insight (sim={max_sim:.3f}): {insight.content[:60]}")
+                    continue
+                # Borderline + low confidence = skip
+                if max_sim > 0.72 and insight.confidence < 0.7:
+                    print(f"  ⊘ Rejecting borderline think insight (sim={max_sim:.3f}, conf={insight.confidence}): {insight.content[:60]}")
+                    continue
+            except Exception as e:
+                print(f"  ⚠️ Novelty check failed, falling back to exact match: {e}")
+                
             # Generate node ID
             node_id = self._generate_node_id(insight.content)
             
-            # Check if this content already exists
+            # Check if this content already exists (exact match fallback)
             cursor.execute("SELECT id FROM thought_nodes WHERE content = ?", (insight.content,))
             if cursor.fetchone():
-                continue  # Skip duplicate content
+                continue  # Skip exact duplicate content
             
             # Insert the new thought node
             try:

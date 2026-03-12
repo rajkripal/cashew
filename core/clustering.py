@@ -584,37 +584,14 @@ def run_clustering_cycle(
         }
         
         if cluster.existing_hotspot_id is None:
-            # New cluster without hotspot
-            if not dry_run:
-                # Determine domain from majority vote
-                _, _, node_meta = load_embeddings(db_path)
-                domains = [node_meta.get(nid, {}).get("domain", "unknown") for nid in cluster.node_ids]
-                domain = max(set(domains), key=domains.count)
-                
-                summary = generate_hotspot_summary(cluster.representative_content, model_fn)
-                
-                # Add hierarchy info to summary if it's a parent
-                if getattr(cluster, 'is_parent', False):
-                    summary = f"[PARENT] {summary}"
-                    detail["action"] = "created_parent_hotspot"
-                    results["parent_hotspots_created"] += 1
-                else:
-                    detail["action"] = "created_hotspot"
-                
-                hotspot_id = create_hotspot(
-                    db_path=db_path,
-                    content=summary,
-                    status="auto_generated",
-                    file_pointers={},
-                    cluster_node_ids=cluster.node_ids,
-                    domain=domain,
-                    tags=["auto_cluster", "hierarchical"] if getattr(cluster, 'is_parent', False) else ["auto_cluster"]
-                )
-                detail["action"] += f":{hotspot_id}"
-                results["new_hotspots_created"] += 1
-                cluster_to_hotspot[cluster.cluster_id] = hotspot_id
-            else:
-                detail["action"] = "would_create_hotspot"
+            # No matching hotspot — DO NOT create one here.
+            # Hotspot creation is only allowed in placement_aware_extraction.py
+            # which has MIN_CLUSTER_SIZE gates and novelty checks.
+            # Creating hotspots in clustering causes runaway proliferation
+            # because DBSCAN produces different clusters each run.
+            detail["action"] = "skipped_no_hotspot_creation_in_clustering"
+            results.setdefault("skipped_clusters", 0)
+            results["skipped_clusters"] += 1
         else:
             cluster_to_hotspot[cluster.cluster_id] = cluster.existing_hotspot_id
         

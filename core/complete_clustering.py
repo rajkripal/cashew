@@ -376,20 +376,10 @@ def detect_complete_clusters(
                             cluster.centroid = vectors[all_member_indices].mean(axis=0)
                         break
             else:
-                # Create micro-cluster for this orphan
-                cluster_domain = domain_mapping.get(noise_node_id, "general")
-                representative_content = [node_meta[noise_node_id]["content"][:100]]
-                
-                micro_cluster = CompleteClusterInfo(
-                    cluster_id=f"micro_{noise_node_id}",
-                    node_ids=[noise_node_id],
-                    centroid=noise_vector,
-                    representative_content=representative_content,
-                    existing_hotspot_id=None,
-                    cluster_type="micro",
-                    domain=cluster_domain
-                )
-                assigned_noise_clusters.append(micro_cluster)
+                # Orphan nodes are a feature, not a bug.
+                # Don't create micro-clusters of 1. Let them sit in the inbox
+                # until the sleep cycle finds enough similar nodes to form a real cluster.
+                logger.info(f"Node {noise_node_id} is an orphan — will be assigned to inbox, not micro-clustered")
     
     all_clusters = natural_clusters + assigned_noise_clusters
     
@@ -652,46 +642,28 @@ def run_complete_clustering_cycle(db_path: str, model_fn=None, dry_run: bool = F
         }
         
         if cluster.existing_hotspot_id is None:
-            # New cluster without hotspot
-            if not dry_run:
-                summary = _generate_hotspot_summary(cluster, model_fn)
-                
-                hotspot_id = create_hotspot(
-                    db_path=db_path,
-                    content=summary,
-                    status="auto_generated_complete",
-                    file_pointers={},
-                    cluster_node_ids=cluster.node_ids,
-                    domain=cluster.domain,
-                    tags=["auto_cluster", "complete_coverage", cluster.cluster_type]
-                )
-                detail["action"] = f"created_hotspot:{hotspot_id}"
-                results["new_hotspots_created"] += 1
-                cluster_to_hotspot[cluster.cluster_id] = hotspot_id
-            else:
-                detail["action"] = "would_create_hotspot"
+            # No matching hotspot — DO NOT create one here.
+            # Hotspot creation is handled by placement_aware_extraction.py
+            # which has proper MIN_CLUSTER_SIZE gates and novelty checks.
+            # Creating hotspots in the sleep cycle causes runaway proliferation
+            # because DBSCAN produces different clusters each run and member-overlap
+            # matching fails to recognize them as duplicates.
+            detail["action"] = "skipped_no_hotspot_creation_in_sleep"
+            results.setdefault("skipped_clusters", 0)
+            results["skipped_clusters"] += 1
         else:
             cluster_to_hotspot[cluster.cluster_id] = cluster.existing_hotspot_id
         
         results["cluster_details"].append(detail)
     
-    # Handle parent clusters
+    # Handle parent clusters — same as above, no new hotspot creation in sleep
     for cluster in clusters:
         if cluster.is_parent:
-            if not dry_run and cluster.existing_hotspot_id is None:
-                summary = _generate_parent_hotspot_summary(cluster, model_fn)
-                
-                hotspot_id = create_hotspot(
-                    db_path=db_path,
-                    content=f"[PARENT] {summary}",
-                    status="auto_generated_parent",
-                    file_pointers={},
-                    cluster_node_ids=cluster.node_ids,
-                    domain=cluster.domain,
-                    tags=["auto_cluster", "parent_hotspot", "hierarchical"]
-                )
-                results["parent_hotspots_created"] += 1
-                cluster_to_hotspot[cluster.cluster_id] = hotspot_id
+            if cluster.existing_hotspot_id is not None:
+                cluster_to_hotspot[cluster.cluster_id] = cluster.existing_hotspot_id
+            else:
+                results.setdefault("skipped_parent_clusters", 0)
+                results["skipped_parent_clusters"] += 1
     
     # Step 2: Create hierarchical relationships between hotspots
     if not dry_run:

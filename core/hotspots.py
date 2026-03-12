@@ -128,17 +128,9 @@ def create_hotspot(
     
     conn.commit()
     
-    # Generate embedding for the hotspot
-    # Include status and tags in the embedding text for better retrieval
-    embedding_text = content
-    if tags:
-        embedding_text += " " + " ".join(tags)
-    embedding_text += f" status:{status}"
-    
-    try:
-        embed_nodes(db_path)
-    except Exception as e:
-        logging.warning(f"Failed to embed hotspot {node_id}: {e}")
+    # NOTE: We no longer call embed_nodes() here to avoid O(N) re-embedding
+    # storms when creating multiple hotspots. Callers should batch-embed
+    # after all hotspot operations are complete.
     
     conn.close()
     logging.info(f"Created hotspot {node_id} summarizing {len(cluster_node_ids)} nodes")
@@ -221,16 +213,15 @@ def update_hotspot(
     
     conn.commit()
     
-    # Re-embed if content changed — delete old embedding first so embed_nodes picks it up
+    # If content changed, delete old embedding so next embed_nodes() picks it up
     if content is not None:
         try:
             conn2 = _get_connection(db_path)
             conn2.execute("DELETE FROM embeddings WHERE node_id = ?", (hotspot_id,))
             conn2.commit()
             conn2.close()
-            embed_nodes(db_path)
         except Exception as e:
-            logging.warning(f"Failed to re-embed hotspot {hotspot_id}: {e}")
+            logging.warning(f"Failed to clear embedding for hotspot {hotspot_id}: {e}")
     
     conn.close()
     logging.info(f"Updated hotspot {hotspot_id}")
