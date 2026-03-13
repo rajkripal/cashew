@@ -760,12 +760,20 @@ Document ({filename}):
             
         node_id = hashlib.sha256(f"{node_content}:{now}".encode()).hexdigest()[:12]
         
+        # Infer domain from content
+        content_lower = node_content.lower()
+        bunny_signals = ['bunny', 'operating principle', 'engineering philosophy', 
+                         'belief (bunny', 'decision (bunny', 'insight (bunny',
+                         'boot sequence', 'heartbeat', 'cron job', 'brain query',
+                         'self-context', 'my personality', 'my beliefs']
+        domain = 'bunny' if any(s in content_lower for s in bunny_signals) else 'raj'
+        
         try:
             cursor.execute("""
                 INSERT OR IGNORE INTO thought_nodes 
                 (id, content, node_type, timestamp, confidence, source_file, access_count, metadata, domain)
-                VALUES (?, ?, ?, ?, ?, ?, 0, '{}', 'default')
-            """, (node_id, node_content, node_type, now, confidence, f"migration:{filename}"))
+                VALUES (?, ?, ?, ?, ?, ?, 0, '{}', ?)
+            """, (node_id, node_content, node_type, now, confidence, f"migration:{filename}", domain))
             new_nodes.append(node_id)
         except Exception:
             continue
@@ -811,12 +819,20 @@ def _migrate_extract_heuristic(db_path: str, content: str, filename: str, sessio
         clean = ' '.join(para.split())[:500]
         node_id = hashlib.sha256(f"{clean}:{now}".encode()).hexdigest()[:12]
         
+        # Infer domain from content
+        clean_lower = clean.lower()
+        bunny_signals = ['bunny', 'operating principle', 'engineering philosophy',
+                         'belief (bunny', 'decision (bunny', 'insight (bunny',
+                         'boot sequence', 'heartbeat', 'cron job', 'brain query',
+                         'self-context', 'my personality', 'my beliefs']
+        domain = 'bunny' if any(s in clean_lower for s in bunny_signals) else 'raj'
+        
         try:
             cursor.execute("""
                 INSERT OR IGNORE INTO thought_nodes 
                 (id, content, node_type, timestamp, confidence, source_file, access_count, metadata, domain)
-                VALUES (?, ?, 'observation', ?, 0.5, ?, 0, '{}', 'default')
-            """, (node_id, clean, now, f"migration:{filename}"))
+                VALUES (?, ?, 'observation', ?, 0.5, ?, 0, '{}', ?)
+            """, (node_id, clean, now, f"migration:{filename}", domain))
             new_nodes.append(node_id)
         except Exception:
             continue
