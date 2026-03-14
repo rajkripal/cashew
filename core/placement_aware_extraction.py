@@ -351,14 +351,10 @@ def create_node_with_placement(db_path: str, content: str, node_type: str,
             assigned_hotspot = new_hotspot_id
             logger.info(f"Created new hotspot {new_hotspot_id} for node {node_id}")
         else:
-            # Assign to uncategorized inbox
-            uncategorized_hotspot = _ensure_uncategorized_hotspot(db_path)
-            _assign_node_to_hotspot(
-                db_path, node_id, uncategorized_hotspot,
-                f"Placement-aware extraction - uncategorized (best similarity: {similarity:.3f})"
-            )
-            assigned_hotspot = uncategorized_hotspot
-            logger.info(f"Assigned node {node_id} to uncategorized inbox")
+            # Node doesn't match any hotspot — leave unconnected.
+            # Sleep cycle clustering will assign it to a real cluster later.
+            assigned_hotspot = None
+            logger.info(f"Node {node_id} left unconnected — awaiting sleep cycle clustering")
     
     return node_id, assigned_hotspot
 
@@ -567,12 +563,10 @@ def batch_assign_orphaned_nodes(db_path: str, model_fn: Optional[Callable[[str],
             assignment_type = "new"
             
         else:
-            # Assign to inbox
-            uncategorized_hotspot = _ensure_uncategorized_hotspot(db_path)
-            _assign_node_to_hotspot(
-                db_path, node_id, uncategorized_hotspot,
-                f"Batch assignment migration - uncategorized (best similarity: {similarity:.3f})"
-            )
+            # Node doesn't match any hotspot well enough — leave it unconnected.
+            # Sleep cycle clustering (DBSCAN on embeddings) will pick it up later
+            # and assign it to a real cluster with a meaningful edge.
+            # No edge creation here — avoids polluting the graph with junk connections.
             results["assigned_to_inbox"] += 1
             assignment_type = "inbox"
         
@@ -625,6 +619,13 @@ For each item, classify as:
 - "observation": a factual pattern noticed
 - "fact": a concrete verifiable fact
 
+CRITICAL — Speaker attribution:
+- "domain": must be "raj" if Raj (the human user) said/believes/decided this, or "bunny" if the AI assistant suggested/analyzed/hypothesized this.
+- If Bunny suggested something and Raj agreed, domain is "raj" (he adopted it).
+- If Bunny suggested something and Raj didn't explicitly agree, domain is "bunny".
+- AI-generated analysis, cross-domain pattern matching, and hypotheticals are ALWAYS "bunny".
+- Default to "raj" only for things Raj clearly stated himself.
+
 Each content field must be a specific, standalone statement that makes sense without the conversation context.
 
 BAD: "They discussed embeddings" (meta-comment)
@@ -636,7 +637,7 @@ IMPORTANT: Only nodes with confidence >= 0.8 will be saved to the database. Be s
 
 Respond with ONLY a JSON array. No markdown, no explanation, no code fences.
 
-[{{"content": "specific knowledge here", "type": "belief|insight|decision|observation|fact", "confidence": 0.7}}]
+[{{"content": "specific knowledge here", "type": "belief|insight|decision|observation|fact", "confidence": 0.7, "domain": "raj|bunny"}}]
 
 Conversation to extract from:
 {conversation_text}
@@ -688,6 +689,11 @@ Conversation to extract from:
         content = extraction["content"]
         node_type = extraction.get("type", "observation") 
         confidence = extraction.get("confidence", 0.5)
+        # Use LLM-provided domain if available (raj or bunny), otherwise infer
+        extraction_domain = extraction.get("domain", None)
+        # Validate domain — only accept raj or bunny
+        if extraction_domain not in ("raj", "bunny"):
+            extraction_domain = None
         
         # Primary gate: semantic novelty check
         if preloaded_embeddings is not None:
@@ -704,10 +710,11 @@ Conversation to extract from:
             logger.info(f"Rejecting borderline node (sim={max_sim:.3f}, conf={confidence}): {content[:60]}")
             continue
             
-        # Create node with placement
+        # Create node with placement — pass LLM-provided domain as hint
         try:
             node_id, assigned_hotspot = create_node_with_placement(
-                db_path, content, node_type, session_id, confidence, model_fn=model_fn
+                db_path, content, node_type, session_id, confidence, 
+                domain_hint=extraction_domain, model_fn=model_fn
             )
             new_nodes.append(node_id)
             placements.append({

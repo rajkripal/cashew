@@ -154,49 +154,44 @@ def load_embeddings_with_metadata(db_path: str) -> Tuple[List[str], np.ndarray, 
 
 def infer_emergent_domains(node_meta: Dict[str, Dict]) -> Dict[str, str]:
     """
-    Infer domains from node content and metadata. Domains emerge from the data.
+    Infer domains from node content and metadata.
+    Maps to actual graph domains: 'raj' (human user's knowledge) or 'bunny' (AI analysis/operations).
     
     Returns:
-        Dict mapping node_id -> emergent_domain
+        Dict mapping node_id -> 'raj' or 'bunny'
     """
     domain_mapping = {}
     
-    # Keywords that suggest different domain areas
-    domain_keywords = {
-        "work": ["meta", "engineer", "promotion", "e5", "manager", "career", "job", "work", "company", "team"],
-        "personal": ["family", "religion", "christian", "faith", "belief", "bunny", "personal", "identity"],
-        "technical": ["embedding", "clustering", "algorithm", "code", "programming", "database", "api"],
-        "projects": ["cashew", "blog", "project", "build", "implement", "dashboard", "brain"],
-        "relationships": ["vinny", "cousin", "family", "friend", "relationship", "social"],
-        "learning": ["insight", "pattern", "understanding", "realization", "discovery", "knowledge"],
-        "decisions": ["decision", "choice", "plan", "will", "going to", "decided"],
-        "reflections": ["think", "believe", "seems", "probably", "opinion", "reflection"]
-    }
+    # Keywords that indicate bunny (AI) domain — operational, meta-analytical, system-level
+    bunny_signals = [
+        'bunny', 'operating principle', 'engineering philosophy', 'boot sequence',
+        'heartbeat', 'cron job', 'brain query', 'self-context', 'my personality',
+        'my beliefs', 'think cycle', 'sleep cycle', 'extraction pipeline',
+        'cross-domain insight', 'graph structure', 'hub nodes', 'node_type',
+        'embedding', 'clustering', 'hotspot', 'orphan node', 'dedup',
+        'openclaw', 'system_generated', 'meta-analysis', 'meta-insight',
+        'the graph', 'dashboard deploy', 'cron', 'sub-agent'
+    ]
     
     for node_id, meta in node_meta.items():
         content_lower = meta["content"].lower()
         source_file = meta.get("source_file", "")
+        node_type = meta.get("node_type", "unknown")
         
-        # Check for domain keywords in content
-        domain_scores = {}
-        for domain, keywords in domain_keywords.items():
-            score = sum(1 for kw in keywords if kw in content_lower)
-            if score > 0:
-                domain_scores[domain] = score
+        # System-generated content is always bunny domain
+        if "system_generated" in source_file:
+            domain_mapping[node_id] = "bunny"
+            continue
         
-        # If we found domain indicators, use the highest scoring one
-        if domain_scores:
-            best_domain = max(domain_scores, key=domain_scores.get)
-            domain_mapping[node_id] = best_domain
+        # Check for bunny signals
+        bunny_score = sum(1 for s in bunny_signals if s in content_lower)
+        
+        if bunny_score >= 2:
+            domain_mapping[node_id] = "bunny"
+        elif node_type == "hotspot":
+            domain_mapping[node_id] = "bunny"  # structural nodes are AI's work
         else:
-            # Fallback: use node_type as domain indicator
-            node_type = meta.get("node_type", "unknown")
-            if node_type == "hotspot":
-                domain_mapping[node_id] = "structure"  # hotspots are structural
-            elif "system_generated" in source_file:
-                domain_mapping[node_id] = "insights"  # think cycles, tensions
-            else:
-                domain_mapping[node_id] = "general"  # catch-all
+            domain_mapping[node_id] = "raj"  # default: human's knowledge
     
     return domain_mapping
 

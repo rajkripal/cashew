@@ -819,12 +819,14 @@ def _migrate_extract_heuristic(db_path: str, content: str, filename: str, sessio
         clean = ' '.join(para.split())[:500]
         node_id = hashlib.sha256(f"{clean}:{now}".encode()).hexdigest()[:12]
         
-        # Infer domain from content
+        # Infer domain from content — only raj or bunny, never default
         clean_lower = clean.lower()
         bunny_signals = ['bunny', 'operating principle', 'engineering philosophy',
                          'belief (bunny', 'decision (bunny', 'insight (bunny',
                          'boot sequence', 'heartbeat', 'cron job', 'brain query',
-                         'self-context', 'my personality', 'my beliefs']
+                         'self-context', 'my personality', 'my beliefs',
+                         'think cycle', 'cross-domain insight', 'meta-analysis',
+                         'graph structure', 'openclaw', 'system_generated']
         domain = 'bunny' if any(s in clean_lower for s in bunny_signals) else 'raj'
         
         try:

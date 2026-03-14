@@ -249,12 +249,13 @@ class ThinkCycle:
         return insights
     
     def _generate_cross_domain_connections(self, analysis: Dict) -> List[NewThought]:
-        """Generate insights connecting different domains in the graph"""
+        """Generate insights connecting different domains in the graph.
+        These are Bunny's analytical observations, NOT Raj's beliefs."""
         insights = []
         
         # Connect family dynamics with career patterns
         insight1 = NewThought(
-            content="The family silence pattern and E5 communication struggles share the same architecture: both contexts punish authentic expression when it threatens system stability. The family needed religious cohesion; the promotion process needs legible signals. Both reward performance over substance.",
+            content="[cross-domain insight] The family silence pattern and E5 communication struggles share the same architecture: both contexts punish authentic expression when it threatens system stability. The family needed religious cohesion; the promotion process needs legible signals. Both reward performance over substance.",
             confidence=0.65,
             parent_ids=[node[0] for node in analysis['hub_nodes'][:2]],
             reasoning="Cross-domain pattern recognition between family and career dynamics"
@@ -263,7 +264,7 @@ class ThinkCycle:
         
         # Connect technical depth with relationship patterns  
         insight2 = NewThought(
-            content="Technical depth and relationship authenticity follow similar principles: both require sustained attention beneath surface-level optimization. Just as premature optimization ruins code architecture, premature harmony-seeking ruins relationship architecture.",
+            content="[cross-domain insight] Technical depth and relationship authenticity follow similar principles: both require sustained attention beneath surface-level optimization. Just as premature optimization ruins code architecture, premature harmony-seeking ruins relationship architecture.",
             confidence=0.6,
             parent_ids=[node[0] for node in analysis['leaf_nodes'][2:4]],
             reasoning="Analogical connection between technical and interpersonal depth"
@@ -273,12 +274,13 @@ class ThinkCycle:
         return insights
     
     def _generate_meta_insights(self, analysis: Dict) -> List[NewThought]:
-        """Generate insights about the thinking patterns themselves"""
+        """Generate insights about the thinking patterns themselves.
+        These are Bunny's meta-observations, NOT Raj's beliefs."""
         insights = []
         
         # Meta-insight about the graph structure
         insight1 = NewThought(
-            content="The graph's hub structure reveals a key thinking pattern: rather than compartmentalizing life domains, there's a consistent tendency to find architectural parallels across contexts. This isn't analogical thinking—it's pattern recognition at the systems level.",
+            content="[think cycle] The graph's hub structure reveals a key thinking pattern: rather than compartmentalizing life domains, there's a consistent tendency to find architectural parallels across contexts. This isn't analogical thinking—it's pattern recognition at the systems level.",
             confidence=0.7,
             parent_ids=[node[0] for node in analysis['hub_nodes'][:3]],
             reasoning="Meta-analysis of the graph's own structural patterns"
@@ -287,7 +289,7 @@ class ThinkCycle:
         
         # Meta-insight about contradiction handling
         insight2 = NewThought(
-            content="The presence of contradiction nodes without resolution attempts suggests a sophisticated relationship with uncertainty: rather than rushing to eliminate dissonance, the thinking process preserves productive tensions as information.",
+            content="[think cycle] The presence of contradiction nodes without resolution attempts suggests a sophisticated relationship with uncertainty: rather than rushing to eliminate dissonance, the thinking process preserves productive tensions as information.",
             confidence=0.65,
             parent_ids=[node[0] for node in analysis['contradiction_nodes'][:2]] if analysis['contradiction_nodes'] else [],
             reasoning="Meta-analysis of how contradictions are preserved rather than resolved"
@@ -338,13 +340,17 @@ class ThinkCycle:
             if cursor.fetchone():
                 continue  # Skip exact duplicate content
             
-            # Insert the new thought node
+            # Insert the new thought node — always bunny domain with cross-domain tag
+            # Think cycle insights are AI-generated analysis, never Raj's beliefs
+            insight_content = insight.content
+            if not insight_content.startswith("[cross-domain insight]") and not insight_content.startswith("[think cycle]"):
+                insight_content = f"[think cycle] {insight_content}"
             try:
                 cursor.execute("""
                     INSERT INTO thought_nodes 
-                    (id, content, node_type, timestamp, confidence, source_file, last_updated)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, (node_id, insight.content, 'derived', timestamp, insight.confidence, 'system_generated', timestamp))
+                    (id, content, node_type, timestamp, confidence, source_file, last_updated, domain)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (node_id, insight_content, 'derived', timestamp, insight.confidence, 'system_generated', timestamp, 'bunny'))
                 
                 # Create edges to parent nodes
                 for parent_id in insight.parent_ids:
