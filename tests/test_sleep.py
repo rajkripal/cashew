@@ -8,6 +8,7 @@ import sqlite3
 import json
 import tempfile
 import os
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import sys
@@ -39,7 +40,10 @@ class TestSleepProtocol:
                 metadata TEXT,
                 source_file TEXT,
                 decayed INTEGER DEFAULT 0,
-                permanent INTEGER DEFAULT 0
+                permanent INTEGER DEFAULT 0,
+                domain TEXT,
+                access_count INTEGER DEFAULT 0,
+                last_accessed TEXT
             )
         """)
         
@@ -410,7 +414,10 @@ class TestSleepProtocol:
                 metadata TEXT,
                 source_file TEXT,
                 decayed INTEGER DEFAULT 0,
-                permanent INTEGER DEFAULT 0
+                permanent INTEGER DEFAULT 0,
+                domain TEXT,
+                access_count INTEGER DEFAULT 0,
+                last_accessed TEXT
             )
         """)
         
@@ -437,3 +444,327 @@ class TestSleepProtocol:
             
         finally:
             os.unlink(empty_db)
+
+
+class TestGCConfigModes:
+    """Test garbage collection with config-driven modes, grace periods, and protections."""
+
+    @pytest.fixture
+    def gc_db(self):
+        """DB with last_accessed column and enough nodes to trigger GC."""
+        fd, path = tempfile.mkstemp(suffix=".db")
+        os.close(fd)
+
+        conn = sqlite3.connect(path)
+        c = conn.cursor()
+        c.execute("""
+            CREATE TABLE thought_nodes (
+                id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                node_type TEXT NOT NULL,
+                domain TEXT,
+                timestamp TEXT,
+                access_count INTEGER DEFAULT 0,
+                last_accessed TEXT,
+                confidence REAL,
+                mood_state TEXT,
+                metadata TEXT DEFAULT '{}',
+                source_file TEXT,
+                decayed INTEGER DEFAULT 0,
+                permanent INTEGER DEFAULT 0
+            )
+        """)
+        c.execute("""
+            CREATE TABLE derivation_edges (
+                parent_id TEXT,
+                child_id TEXT,
+                weight REAL,
+                reasoning TEXT,
+                PRIMARY KEY (parent_id, child_id)
+            )
+        """)
+        c.execute("""
+            CREATE TABLE embeddings (
+                node_id TEXT PRIMARY KEY,
+                vector BLOB NOT NULL,
+                model TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        """)
+
+        old_ts = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+        recent_ts = datetime.now(timezone.utc).isoformat()
+
+        # 25 nodes so GC will always have enough (>k_nodes=20)
+        # Nodes gc01-gc20: old last_accessed, low-fitness (no edges), type=derived
+        for i in range(1, 21):
+            c.execute("""
+                INSERT INTO thought_nodes
+                (id, content, node_type, domain, timestamp, last_accessed,
+                 confidence, source_file, decayed)
+                VALUES (?, ?, 'derived', 'general', ?, ?, 0.3, 'test', 0)
+            """, (f"gc{i:02d}", f"GC candidate node number {i}", old_ts, old_ts))
+
+        # Protected nodes
+        c.execute("""
+            INSERT INTO thought_nodes
+            (id, content, node_type, domain, timestamp, last_accessed,
+             confidence, source_file, decayed)
+            VALUES ('seed01', 'I am a seed node', 'seed', 'general', ?, ?, 0.5, 'test', 0)
+        """, (old_ts, old_ts))
+
+        c.execute("""
+            INSERT INTO thought_nodes
+            (id, content, node_type, domain, timestamp, last_accessed,
+             confidence, source_file, decayed)
+            VALUES ('hot01', 'I am a hotspot summary', 'hotspot', 'general', ?, ?, 0.5, 'test', 0)
+        """, (old_ts, old_ts))
+
+        # Recently accessed node (within grace period)
+        c.execute("""
+            INSERT INTO thought_nodes
+            (id, content, node_type, domain, timestamp, last_accessed,
+             confidence, source_file, decayed)
+            VALUES ('recent01', 'Recently accessed node', 'derived', 'general', ?, ?, 0.3, 'test', 0)
+        """, (old_ts, recent_ts))
+
+        # Think-cycle node
+        c.execute("""
+            INSERT INTO thought_nodes
+            (id, content, node_type, domain, timestamp, last_accessed,
+             confidence, source_file, decayed)
+            VALUES ('think01', 'Think cycle output node', 'derived', 'general', ?, ?, 0.3, 'think_cycle_run', 0)
+        """, (old_ts, old_ts))
+
+        # Core memory node (protected type)
+        c.execute("""
+            INSERT INTO thought_nodes
+            (id, content, node_type, domain, timestamp, last_accessed,
+             confidence, source_file, decayed)
+            VALUES ('cmem01', 'Core memory node', 'core_memory', 'general', ?, ?, 0.3, 'test', 0)
+        """, (old_ts, old_ts))
+
+        conn.commit()
+        conn.close()
+
+        yield path
+        os.unlink(path)
+
+    def _make_metrics(self, db_path, fitness=0.0):
+        """Build a metrics dict for all nodes in the DB with a given fitness."""
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute("SELECT id FROM thought_nodes WHERE decayed = 0 OR decayed IS NULL")
+        ids = [r[0] for r in c.fetchall()]
+        conn.close()
+        return {nid: NodeMetrics(nid, 0, 0, 0, 0, fitness) for nid in ids}
+
+    # --- mode tests ---
+
+    def test_gc_off_does_nothing(self, gc_db):
+        """GC mode=off should not decay or delete any nodes."""
+        with patch.object(SleepProtocol, '_get_connection', return_value=sqlite3.connect(gc_db)):
+            pass  # just verifying config path
+
+        protocol = SleepProtocol(gc_db, tempfile.mktemp(suffix=".json"))
+        metrics = self._make_metrics(gc_db, fitness=0.0)
+
+        with patch("core.sleep.config") as mock_cfg:
+            mock_cfg.gc_mode = "off"
+            mock_cfg.gc_threshold = 0.05
+            mock_cfg.gc_grace_days = 7
+            mock_cfg.gc_protect_types = ["seed", "core_memory"]
+            mock_cfg.gc_protect_hotspots = True
+            mock_cfg.gc_think_cycle_penalty = 1.5
+
+            result = protocol.garbage_collect(metrics, k_nodes=20)
+
+        assert result == []
+
+        # Verify nothing changed
+        conn = sqlite3.connect(gc_db)
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM thought_nodes WHERE decayed = 1")
+        assert c.fetchone()[0] == 0
+        conn.close()
+
+    def test_gc_soft_sets_decayed(self, gc_db):
+        """GC mode=soft should set decayed=1, not delete rows."""
+        protocol = SleepProtocol(gc_db, tempfile.mktemp(suffix=".json"))
+        metrics = self._make_metrics(gc_db, fitness=0.0)
+
+        with patch("core.sleep.config") as mock_cfg:
+            mock_cfg.gc_mode = "soft"
+            mock_cfg.gc_threshold = 0.05
+            mock_cfg.gc_grace_days = 7
+            mock_cfg.gc_protect_types = ["seed", "core_memory"]
+            mock_cfg.gc_protect_hotspots = True
+            mock_cfg.gc_think_cycle_penalty = 1.5
+
+            result = protocol.garbage_collect(metrics, k_nodes=20)
+
+        assert len(result) > 0
+
+        conn = sqlite3.connect(gc_db)
+        c = conn.cursor()
+        # Soft mode: rows still exist
+        for nid in result:
+            c.execute("SELECT decayed FROM thought_nodes WHERE id = ?", (nid,))
+            row = c.fetchone()
+            assert row is not None, f"Node {nid} should still exist (soft mode)"
+            assert row[0] == 1, f"Node {nid} should be decayed=1"
+        conn.close()
+
+    def test_gc_hard_deletes_nodes(self, gc_db):
+        """GC mode=hard should DELETE nodes and their edges/embeddings."""
+        protocol = SleepProtocol(gc_db, tempfile.mktemp(suffix=".json"))
+        metrics = self._make_metrics(gc_db, fitness=0.0)
+
+        with patch("core.sleep.config") as mock_cfg:
+            mock_cfg.gc_mode = "hard"
+            mock_cfg.gc_threshold = 0.05
+            mock_cfg.gc_grace_days = 7
+            mock_cfg.gc_protect_types = ["seed", "core_memory"]
+            mock_cfg.gc_protect_hotspots = True
+            mock_cfg.gc_think_cycle_penalty = 1.5
+
+            result = protocol.garbage_collect(metrics, k_nodes=20)
+
+        assert len(result) > 0
+
+        conn = sqlite3.connect(gc_db)
+        c = conn.cursor()
+        for nid in result:
+            c.execute("SELECT id FROM thought_nodes WHERE id = ?", (nid,))
+            assert c.fetchone() is None, f"Node {nid} should be deleted (hard mode)"
+        conn.close()
+
+    # --- grace period tests ---
+
+    def test_gc_grace_period_protects_recent_nodes(self, gc_db):
+        """Nodes accessed within grace_days should not be collected."""
+        protocol = SleepProtocol(gc_db, tempfile.mktemp(suffix=".json"))
+        metrics = self._make_metrics(gc_db, fitness=0.0)
+
+        with patch("core.sleep.config") as mock_cfg:
+            mock_cfg.gc_mode = "soft"
+            mock_cfg.gc_threshold = 10.0  # Very high — everything is below threshold
+            mock_cfg.gc_grace_days = 7
+            mock_cfg.gc_protect_types = []
+            mock_cfg.gc_protect_hotspots = False
+            mock_cfg.gc_think_cycle_penalty = 1.0
+
+            # Force selection to include recent01
+            with patch("random.sample", return_value=["recent01"]):
+                result = protocol.garbage_collect(metrics, k_nodes=1)
+
+        assert "recent01" not in result
+
+    def test_gc_uses_last_accessed_not_created_at(self, gc_db):
+        """Grace period should check last_accessed, not timestamp/created_at."""
+        # Update a node: old timestamp but recent last_accessed
+        conn = sqlite3.connect(gc_db)
+        c = conn.cursor()
+        recent = datetime.now(timezone.utc).isoformat()
+        c.execute("UPDATE thought_nodes SET last_accessed = ? WHERE id = 'gc01'", (recent,))
+        conn.commit()
+        conn.close()
+
+        protocol = SleepProtocol(gc_db, tempfile.mktemp(suffix=".json"))
+        metrics = self._make_metrics(gc_db, fitness=0.0)
+
+        with patch("core.sleep.config") as mock_cfg:
+            mock_cfg.gc_mode = "soft"
+            mock_cfg.gc_threshold = 10.0
+            mock_cfg.gc_grace_days = 7
+            mock_cfg.gc_protect_types = []
+            mock_cfg.gc_protect_hotspots = False
+            mock_cfg.gc_think_cycle_penalty = 1.0
+
+            with patch("random.sample", return_value=["gc01"]):
+                result = protocol.garbage_collect(metrics, k_nodes=1)
+
+        assert "gc01" not in result
+
+    # --- protection tests ---
+
+    def test_gc_protects_hotspot_nodes(self, gc_db):
+        """When protect_hotspots=True, hotspot nodes should survive GC."""
+        protocol = SleepProtocol(gc_db, tempfile.mktemp(suffix=".json"))
+        metrics = self._make_metrics(gc_db, fitness=0.0)
+
+        with patch("core.sleep.config") as mock_cfg:
+            mock_cfg.gc_mode = "soft"
+            mock_cfg.gc_threshold = 10.0
+            mock_cfg.gc_grace_days = 0  # No grace period
+            mock_cfg.gc_protect_types = []
+            mock_cfg.gc_protect_hotspots = True
+            mock_cfg.gc_think_cycle_penalty = 1.0
+
+            with patch("random.sample", return_value=["hot01"]):
+                result = protocol.garbage_collect(metrics, k_nodes=1)
+
+        assert "hot01" not in result
+
+    def test_gc_protects_configured_types(self, gc_db):
+        """Nodes with types in protect_types should survive GC."""
+        protocol = SleepProtocol(gc_db, tempfile.mktemp(suffix=".json"))
+        metrics = self._make_metrics(gc_db, fitness=0.0)
+
+        with patch("core.sleep.config") as mock_cfg:
+            mock_cfg.gc_mode = "soft"
+            mock_cfg.gc_threshold = 10.0
+            mock_cfg.gc_grace_days = 0
+            mock_cfg.gc_protect_types = ["seed", "core_memory"]
+            mock_cfg.gc_protect_hotspots = False
+            mock_cfg.gc_think_cycle_penalty = 1.0
+
+            with patch("random.sample", return_value=["seed01", "cmem01"]):
+                result = protocol.garbage_collect(metrics, k_nodes=2)
+
+        assert "seed01" not in result
+        assert "cmem01" not in result
+
+    # --- threshold tests ---
+
+    def test_gc_threshold_boundary(self, gc_db):
+        """Nodes exactly at threshold should NOT be collected (< not <=)."""
+        protocol = SleepProtocol(gc_db, tempfile.mktemp(suffix=".json"))
+        # Set fitness exactly at threshold
+        metrics = self._make_metrics(gc_db, fitness=0.05)
+
+        with patch("core.sleep.config") as mock_cfg:
+            mock_cfg.gc_mode = "soft"
+            mock_cfg.gc_threshold = 0.05
+            mock_cfg.gc_grace_days = 0
+            mock_cfg.gc_protect_types = []
+            mock_cfg.gc_protect_hotspots = False
+            mock_cfg.gc_think_cycle_penalty = 1.0
+
+            with patch("random.sample", return_value=["gc01"]):
+                result = protocol.garbage_collect(metrics, k_nodes=1)
+
+        # fitness (0.05) is NOT < threshold (0.05), so node should survive
+        assert "gc01" not in result
+
+    def test_gc_think_cycle_penalty(self, gc_db):
+        """Think-cycle nodes should use threshold * penalty multiplier."""
+        protocol = SleepProtocol(gc_db, tempfile.mktemp(suffix=".json"))
+        # fitness = 0.06 — above base threshold (0.05) but below penalized (0.075)
+        metrics = self._make_metrics(gc_db, fitness=0.06)
+
+        with patch("core.sleep.config") as mock_cfg:
+            mock_cfg.gc_mode = "soft"
+            mock_cfg.gc_threshold = 0.05
+            mock_cfg.gc_grace_days = 0
+            mock_cfg.gc_protect_types = []
+            mock_cfg.gc_protect_hotspots = False
+            mock_cfg.gc_think_cycle_penalty = 1.5  # effective threshold = 0.075
+
+            with patch("random.sample", return_value=["think01", "gc01"]):
+                result = protocol.garbage_collect(metrics, k_nodes=2)
+
+        # think01 has source_file='think_cycle_run', effective threshold=0.075 > 0.06 → collected
+        assert "think01" in result
+        # gc01 has source_file='test', effective threshold=0.05 < 0.06 → survives
+        assert "gc01" not in result

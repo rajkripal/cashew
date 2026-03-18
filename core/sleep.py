@@ -20,7 +20,7 @@ import logging
 logger = logging.getLogger("cashew.sleep")
 
 # Database path is now configurable via environment variable or CLI
-from .config import get_db_path
+from .config import get_db_path, config
 DEFAULT_SLEEP_LOG_PATH = "./data/sleep_log.json"
 
 @dataclass
@@ -58,7 +58,13 @@ class SleepProtocol:
         self.sleep_frequency = 10  # Sleep every N thoughts (tunable)
         self.dedup_threshold = 0.9
         self.cross_link_threshold = 0.7
-        self.gc_threshold = 0.3  # Below this fitness score → decay
+        # GC settings from config
+        self.gc_mode = getattr(config, 'gc_mode', 'soft')
+        self.gc_threshold = getattr(config, 'gc_threshold', 0.05)
+        self.gc_grace_days = getattr(config, 'gc_grace_days', 7)
+        self.gc_protect_hotspots = getattr(config, 'gc_protect_hotspots', True)
+        self.gc_protect_types = getattr(config, 'gc_protect_types', ['seed', 'core_memory'])
+        self.gc_think_cycle_penalty = getattr(config, 'gc_think_cycle_penalty', 1.5)
         self.events: List[SleepEvent] = []
     
     def _get_connection(self) -> sqlite3.Connection:
@@ -469,53 +475,96 @@ class SleepProtocol:
     
     def garbage_collect(self, metrics: Dict[str, NodeMetrics], k_nodes: int = 20) -> List[str]:
         """
-        Randomly select K nodes and decay those below fitness threshold
-        Random selection introduces noise that forces rederivation through novel paths
+        Randomly select K nodes and GC those below fitness threshold.
+        Random selection introduces noise that forces rederivation through novel paths.
+
+        GC mode is read from config:
+          - soft: set decayed=1 (default, existing behavior)
+          - hard: DELETE the node + its edges
+          - off: skip GC entirely
         """
+        gc_mode = config.gc_mode
+        gc_threshold = config.gc_threshold
+        gc_grace_days = config.gc_grace_days
+        gc_protect_types = set(config.gc_protect_types)
+        gc_protect_hotspots = config.gc_protect_hotspots
+        gc_think_cycle_penalty = config.gc_think_cycle_penalty
+
+        if gc_mode == "off":
+            logger.info("GC mode is off — skipping garbage collection")
+            return []
+
         if len(metrics) <= k_nodes:
             return []  # Don't GC if we have too few nodes
-        
+
         # Randomly select K nodes
         node_ids = list(metrics.keys())
         selected = random.sample(node_ids, min(k_nodes, len(node_ids)))
-        
-        decayed_nodes = []
+
+        collected_nodes = []
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         for node_id in selected:
             metric = metrics[node_id]
-            
-            # Don't decay seeds or core memories
-            cursor.execute("SELECT node_type, source_file FROM thought_nodes WHERE id = ?", (node_id,))
+
+            cursor.execute(
+                "SELECT node_type, source_file, last_accessed FROM thought_nodes WHERE id = ?",
+                (node_id,),
+            )
             row = cursor.fetchone()
             if not row:
                 continue
-            node_type, source_file = row
-            if node_type in ("seed", "core_memory"):
+            node_type, source_file, last_accessed = row
+
+            # Protect configured types
+            if node_type in gc_protect_types:
                 continue
-            
-            # Think cycle nodes get a higher decay threshold — 
-            # they need to earn their place more than human-extracted knowledge
+
+            # Protect hotspots when configured
+            if gc_protect_hotspots and node_type == "hotspot":
+                continue
+
+            # Grace period — use last_accessed (NOT created_at)
+            if last_accessed and gc_grace_days > 0:
+                try:
+                    accessed_dt = datetime.fromisoformat(last_accessed.replace("Z", "+00:00"))
+                    age_days = (datetime.now(accessed_dt.tzinfo or None) - accessed_dt).days
+                    if age_days < gc_grace_days:
+                        continue
+                except (ValueError, TypeError):
+                    pass  # can't parse — don't block GC on bad data
+
+            # Think cycle nodes get a higher threshold (penalty multiplier)
             is_think_cycle = source_file and "think_cycle" in str(source_file)
-            effective_threshold = self.gc_threshold * 1.5 if is_think_cycle else self.gc_threshold
-            
+            effective_threshold = gc_threshold * gc_think_cycle_penalty if is_think_cycle else gc_threshold
+
             if metric.composite_fitness < effective_threshold:
-                # Mark as decayed
-                cursor.execute("UPDATE thought_nodes SET decayed = 1 WHERE id = ?", (node_id,))
-                decayed_nodes.append(node_id)
-                
+                if gc_mode == "hard":
+                    # DELETE the node and its edges
+                    cursor.execute("DELETE FROM derivation_edges WHERE parent_id = ? OR child_id = ?",
+                                   (node_id, node_id))
+                    cursor.execute("DELETE FROM embeddings WHERE node_id = ?", (node_id,))
+                    cursor.execute("DELETE FROM thought_nodes WHERE id = ?", (node_id,))
+                    logger.info(f"Hard-deleted node {node_id} (fitness={metric.composite_fitness:.3f})")
+                else:
+                    # soft mode (default): mark as decayed
+                    cursor.execute("UPDATE thought_nodes SET decayed = 1 WHERE id = ?", (node_id,))
+
+                collected_nodes.append(node_id)
+
                 self._log_event("gc_decay", {
                     "node_id": node_id,
+                    "mode": gc_mode,
                     "fitness_score": metric.composite_fitness,
-                    "threshold": self.gc_threshold,
+                    "threshold": effective_threshold,
                     "metrics": asdict(metric)
                 })
-        
+
         conn.commit()
         conn.close()
-        
-        return decayed_nodes
+
+        return collected_nodes
     
     def promote_core_memories(self, metrics: Dict[str, NodeMetrics]) -> Tuple[List[str], List[str]]:
         """

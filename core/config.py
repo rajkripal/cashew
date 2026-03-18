@@ -155,6 +155,14 @@ class CashewConfig:
                     {'fact': 'a concrete verifiable fact'},
                 ],
             },
+            'gc': {
+                'mode': 'soft',           # soft | hard | off
+                'threshold': 0.05,        # relevance score below which nodes are eligible
+                'grace_days': 7,          # days since last_accessed before eligible
+                'protect_hotspots': True,
+                'protect_types': ['seed', 'core_memory'],
+                'think_cycle_penalty': 1.5,  # multiplier on threshold for think-cycle nodes
+            },
             'features': {
                 'auto_extraction': True,
                 'think_cycles': True,
@@ -234,6 +242,15 @@ class CashewConfig:
         self.auth_profile_path = openclaw['auth_profile_path']
         self.workspace_path = openclaw['workspace_path']
         self.session_dir = openclaw.get('session_dir', '${HOME}/.openclaw/sessions')
+
+        # GC configuration
+        gc = self._raw_config.get('gc', {})
+        self.gc_mode = gc.get('mode', 'soft')
+        self.gc_threshold = float(gc.get('threshold', 0.05))
+        self.gc_grace_days = int(gc.get('grace_days', 7))
+        self.gc_protect_hotspots = bool(gc.get('protect_hotspots', True))
+        self.gc_protect_types = list(gc.get('protect_types', ['seed', 'core_memory']))
+        self.gc_think_cycle_penalty = float(gc.get('think_cycle_penalty', 1.5))
 
         # (node type taxonomy loaded above via _node_type_map)
     
@@ -371,6 +388,18 @@ def get_ai_domain() -> str:
 def map_domain(domain: str) -> str:
     """Map a domain name using the current configuration"""
     return config.map_domain(domain)
+
+def get_gc_config() -> dict:
+    """Get the GC policy configuration"""
+    return {
+        'mode': config.gc_mode,
+        'threshold': config.gc_threshold,
+        'grace_days': config.gc_grace_days,
+        'protect_hotspots': config.gc_protect_hotspots,
+        'protect_types': config.gc_protect_types,
+        'think_cycle_penalty': config.gc_think_cycle_penalty,
+    }
+
 
 def reload_config(config_path: Optional[str] = None):
     """Reload configuration from file"""
