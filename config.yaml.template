@@ -69,8 +69,9 @@ performance:
   temporal_weight: 0.1
   # embedding_weight calculated as remainder
   
-  # Clustering
+  # Clustering (increase eps for sparser graphs or longer node content)
   clustering_eps: 0.35
+  clustering_min_samples: 3
   
   # Think cycles
   think_cycle_nodes: 5

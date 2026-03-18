@@ -33,9 +33,16 @@ logger = logging.getLogger("cashew.complete_clustering")
 # Database path is now configurable via environment variable or CLI
 from .config import get_db_path
 
-# Clustering parameters (configurable via env vars for tuning)
-DBSCAN_EPS = float(os.environ.get('CASHEW_CLUSTER_EPS', '0.35'))  # Max distance (1 - cosine_sim). Higher = looser clusters.
-DBSCAN_MIN_SAMPLES = int(os.environ.get('CASHEW_CLUSTER_MIN_SAMPLES', '3'))  # Min nodes to form a cluster
+# Clustering parameters (configurable via config.yaml, env vars, or defaults)
+try:
+    from .config import config as _cfg
+    _default_eps = str(_cfg.clustering_eps)
+    _default_min = str(_cfg._raw_config.get('performance', {}).get('clustering_min_samples', 3))
+except Exception:
+    _default_eps = '0.35'
+    _default_min = '3'
+DBSCAN_EPS = float(os.environ.get('CASHEW_CLUSTER_EPS', _default_eps))  # Max distance (1 - cosine_sim). Higher = looser clusters.
+DBSCAN_MIN_SAMPLES = int(os.environ.get('CASHEW_CLUSTER_MIN_SAMPLES', _default_min))  # Min nodes to form a cluster
 MIN_CLUSTER_SIZE = 5        # Don't create hotspots for tiny clusters
 NOISE_ASSIGNMENT_THRESHOLD = float(os.environ.get('CASHEW_NOISE_THRESHOLD', '0.3'))  # Max distance for orphan assignment
 STALENESS_THRESHOLD = 0.65  # If hotspot-centroid similarity drops below this, regenerate

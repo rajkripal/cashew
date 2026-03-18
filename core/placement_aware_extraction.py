@@ -625,11 +625,11 @@ For each item, classify as:
 {config.node_type_prompt_fragment}
 
 CRITICAL — Speaker attribution:
-- "domain": must be "raj" if Raj (the human user) said/believes/decided this, or "bunny" if the AI assistant suggested/analyzed/hypothesized this.
-- If Bunny suggested something and Raj agreed, domain is "raj" (he adopted it).
-- If Bunny suggested something and Raj didn't explicitly agree, domain is "bunny".
-- AI-generated analysis, cross-domain pattern matching, and hypotheticals are ALWAYS "bunny".
-- Default to "raj" only for things Raj clearly stated himself.
+- "domain": must be "{config.user_domain}" if the human user said/believes/decided this, or "{config.ai_domain}" if the AI assistant suggested/analyzed/hypothesized this.
+- If the AI suggested something and the user agreed, domain is "{config.user_domain}" (they adopted it).
+- If the AI suggested something and the user didn't explicitly agree, domain is "{config.ai_domain}".
+- AI-generated analysis, cross-domain pattern matching, and hypotheticals are ALWAYS "{config.ai_domain}".
+- Default to "{config.user_domain}" only for things the human user clearly stated themselves.
 
 Each content field must be a specific, standalone statement that makes sense without the conversation context.
 
@@ -642,7 +642,7 @@ IMPORTANT: Only nodes with confidence >= 0.8 will be saved to the database. Be s
 
 Respond with ONLY a JSON array. No markdown, no explanation, no code fences.
 
-[{{"content": "specific knowledge here", "type": "{config.node_type_pipe_list}", "confidence": 0.7, "domain": "raj|bunny"}}]
+[{{"content": "specific knowledge here", "type": "{config.node_type_pipe_list}", "confidence": 0.7, "domain": "{config.user_domain}|{config.ai_domain}"}}]
 
 Conversation to extract from:
 {conversation_text}
@@ -697,10 +697,11 @@ Conversation to extract from:
         if node_type not in config.node_type_names:
             node_type = "observation"
         confidence = extraction.get("confidence", 0.5)
-        # Use LLM-provided domain if available (raj or bunny), otherwise infer
+        # Use LLM-provided domain if available, otherwise infer
         extraction_domain = extraction.get("domain", None)
-        # Validate domain — only accept raj or bunny
-        if extraction_domain not in ("raj", "bunny"):
+        # Validate domain — only accept configured user/ai domains
+        valid_domains = {config.user_domain, config.ai_domain, "raj", "bunny"}
+        if extraction_domain not in valid_domains:
             extraction_domain = None
         
         # Primary gate: semantic novelty check
