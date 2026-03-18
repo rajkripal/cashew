@@ -584,14 +584,27 @@ def run_clustering_cycle(
         }
         
         if cluster.existing_hotspot_id is None:
-            # No matching hotspot — DO NOT create one here.
-            # Hotspot creation is only allowed in placement_aware_extraction.py
-            # which has MIN_CLUSTER_SIZE gates and novelty checks.
-            # Creating hotspots in clustering causes runaway proliferation
-            # because DBSCAN produces different clusters each run.
-            detail["action"] = "skipped_no_hotspot_creation_in_clustering"
-            results.setdefault("skipped_clusters", 0)
-            results["skipped_clusters"] += 1
+            # Create hotspot only if cluster is large enough and we have a model
+            min_cluster_size = 10
+            if len(cluster.node_ids) >= min_cluster_size and model_fn and not dry_run:
+                representative = cluster.representative_content[:5]
+                summary = generate_hotspot_summary(representative, model_fn)
+                hotspot_id = create_hotspot(
+                    db_path=db_path,
+                    content=summary,
+                    cluster_node_ids=cluster.node_ids,
+                    domain=cluster.dominant_domain or "raj"
+                )
+                if hotspot_id:
+                    cluster_to_hotspot[cluster.cluster_id] = hotspot_id
+                    results["new_hotspots_created"] += 1
+                    detail["action"] = "created_hotspot"
+                else:
+                    detail["action"] = "hotspot_creation_failed"
+            else:
+                detail["action"] = "skipped_too_small_or_no_model"
+                results.setdefault("skipped_clusters", 0)
+                results["skipped_clusters"] += 1
         else:
             cluster_to_hotspot[cluster.cluster_id] = cluster.existing_hotspot_id
         

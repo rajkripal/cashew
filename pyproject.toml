@@ -24,7 +24,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "anthropic",
+    # anthropic removed - LLM access is external via model_fn parameter
     "numpy",
     "scikit-learn",
     "sentence-transformers",  # for embedding model

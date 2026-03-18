@@ -89,12 +89,11 @@ def cmd_init(args):
             CREATE TABLE IF NOT EXISTS derivation_edges (
                 parent_id TEXT,
                 child_id TEXT,
-                relation TEXT,
                 weight REAL,
                 reasoning TEXT,
                 confidence REAL,
                 timestamp TEXT,
-                PRIMARY KEY (parent_id, child_id, relation),
+                PRIMARY KEY (parent_id, child_id),
                 FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
                 FOREIGN KEY (child_id) REFERENCES thought_nodes(id)
             )

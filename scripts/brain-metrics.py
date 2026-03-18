@@ -19,6 +19,9 @@ from pathlib import Path
 import pickle
 from sklearn.metrics.pairwise import cosine_similarity
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+from core.stats import get_edge_count
+
 def load_embedding(blob_data):
     """Load embedding from BLOB data."""
     if not blob_data:
@@ -138,8 +141,7 @@ def get_graph_stats(db_path):
     cursor.execute("SELECT COUNT(*) FROM thought_nodes WHERE decayed = 0")
     total_nodes = cursor.fetchone()[0]
     
-    cursor.execute("SELECT COUNT(*) FROM derivation_edges")
-    total_edges = cursor.fetchone()[0]
+    total_edges = get_edge_count(cursor)
     
     # Embedding coverage
     cursor.execute("""

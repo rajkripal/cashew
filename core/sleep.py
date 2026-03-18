@@ -569,9 +569,18 @@ class SleepProtocol:
         
         return list(promotions), list(demotions)
     
-    def run_sleep_cycle(self) -> Dict:
-        """Run a complete sleep cycle"""
+    def run_sleep_cycle(self, model_fn=None) -> Dict:
+        """
+        Run a complete sleep cycle
+        
+        Args:
+            model_fn: Optional model function for LLM-powered operations (hotspot summaries).
+                     If None, LLM-dependent features will use fallbacks or be skipped.
+        """
         print("💤 Starting sleep cycle...")
+        
+        if not model_fn:
+            print("   ⚠️  No LLM access - hotspot summaries will use fallbacks")
         
         # Ensure schema is up to date
         self._ensure_decayed_column()
@@ -614,7 +623,7 @@ class SleepProtocol:
         
         # 6. Clustering & hotspot maintenance
         print("📍 Running cluster detection & hotspot maintenance...")
-        clustering_results = self._run_clustering_phase()
+        clustering_results = self._run_clustering_phase(model_fn)
         
         # 7. Build summary before saving (save clears events)
         events_count = len(self.events)
@@ -638,21 +647,13 @@ class SleepProtocol:
         print(f"✅ Sleep cycle complete: {summary}")
         return summary
     
-    def _run_clustering_phase(self) -> Dict:
+    def _run_clustering_phase(self, model_fn=None) -> Dict:
         """Run cluster detection and hotspot maintenance as part of sleep"""
         try:
             from .clustering import run_clustering_cycle
             
-            # Try to get a model function for summary generation
-            model_fn = None
-            try:
-                # Import the model function creator from openclaw integration
-                import sys, os
-                sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__))))
-                from integration.openclaw import _create_anthropic_model_fn
-                model_fn = _create_anthropic_model_fn()
-            except Exception as e:
-                logger.debug(f"No model function available for hotspot summaries: {e}")
+            if not model_fn:
+                logger.debug("No model function provided - hotspot summaries will use fallbacks")
             
             # Use recursive clustering with max cluster size = 15
             results = run_clustering_cycle(self.db_path, model_fn=model_fn, max_cluster_size=15)
@@ -781,6 +782,24 @@ def main():
             print("No sleep log found. Run a sleep cycle first.")
     
     return 0
+
+
+def run_sleep_cycle(db_path: str = None, model_fn = None) -> Dict:
+    """
+    Public function to run a sleep cycle on the graph database.
+    
+    Args:
+        db_path: Path to the SQLite database. Uses config default if None.
+        model_fn: Optional model function for LLM-powered operations. If None, some features will be skipped.
+        
+    Returns:
+        Dict with sleep cycle statistics
+    """
+    if db_path is None:
+        db_path = get_db_path()
+    
+    protocol = SleepProtocol(db_path)
+    return protocol.run_sleep_cycle(model_fn)
 
 
 if __name__ == "__main__":

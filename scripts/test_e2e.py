@@ -116,42 +116,32 @@ def show_database_stats():
     """Show basic statistics about the brain graph"""
     print("📊 Brain Graph Statistics")
     print("=" * 50)
-    
+
     try:
         import sqlite3
+        from core.stats import get_active_node_count, get_edge_count, get_embedding_coverage
         db_path = get_db_path()
-        
+
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
-        # Count nodes
-        cursor.execute("SELECT COUNT(*) FROM thought_nodes WHERE decayed IS NULL OR decayed = 0")
-        total_nodes = cursor.fetchone()[0]
-        
+
+        total_nodes = get_active_node_count(cursor)
+
         # Count by type
         cursor.execute("""
-            SELECT node_type, COUNT(*) 
-            FROM thought_nodes 
+            SELECT node_type, COUNT(*)
+            FROM thought_nodes
             WHERE decayed IS NULL OR decayed = 0
-            GROUP BY node_type 
+            GROUP BY node_type
             ORDER BY COUNT(*) DESC
         """)
         node_types = cursor.fetchall()
-        
-        # Count edges
-        cursor.execute("SELECT COUNT(*) FROM derivation_edges")
-        total_edges = cursor.fetchone()[0]
-        
-        # Check embeddings
-        cursor.execute("""
-            SELECT COUNT(*) FROM embeddings e
-            JOIN thought_nodes tn ON e.node_id = tn.id
-            WHERE tn.decayed IS NULL OR tn.decayed = 0
-        """)
-        embedded_nodes = cursor.fetchone()[0]
-        
+
+        total_edges = get_edge_count(cursor)
+        embedded_nodes, _ = get_embedding_coverage(cursor)
+
         conn.close()
-        
+
         print(f"Total active nodes: {total_nodes}")
         print(f"Total edges: {total_edges}")
         print(f"Embedded nodes: {embedded_nodes}")
@@ -161,9 +151,9 @@ def show_database_stats():
         for node_type, count in node_types:
             print(f"  {node_type}: {count}")
         print()
-        
+
         return total_nodes > 0
-        
+
     except Exception as e:
         print(f"❌ Error reading database: {e}")
         return False

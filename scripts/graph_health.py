@@ -239,18 +239,18 @@ def detect_retrieval_regressions(current_results, baseline_results):
 
 def get_health_stats(db_path):
     """Generate comprehensive health statistics for the graph."""
+    from core.stats import get_active_node_count, get_edge_count
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
+
     # Basic node/edge counts
-    cursor.execute("SELECT COUNT(*) FROM thought_nodes WHERE decayed = 0")
-    active_nodes = cursor.fetchone()[0]
-    
+    active_nodes = get_active_node_count(cursor)
+
     cursor.execute("SELECT COUNT(*) FROM thought_nodes WHERE decayed = 1")
     decayed_nodes = cursor.fetchone()[0]
-    
-    cursor.execute("SELECT COUNT(*) FROM derivation_edges")
-    total_edges = cursor.fetchone()[0]
+
+    total_edges = get_edge_count(cursor)
     
     # Orphan nodes (nodes with no edges)
     cursor.execute("""

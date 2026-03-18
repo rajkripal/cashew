@@ -139,15 +139,13 @@ class EdgeDensifier:
     
     def get_current_orphan_count(self) -> Tuple[int, int, List[str]]:
         """Get current orphan node count and total nodes"""
+        from core.stats import get_active_node_count
+
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         # Total non-decayed nodes
-        cursor.execute("""
-            SELECT COUNT(*) FROM thought_nodes 
-            WHERE (decayed = 0 OR decayed IS NULL)
-        """)
-        total_nodes = cursor.fetchone()[0]
+        total_nodes = get_active_node_count(cursor)
         
         # Orphan nodes (no parents, not seeds, not questions)
         cursor.execute("""

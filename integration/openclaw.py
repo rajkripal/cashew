@@ -7,63 +7,11 @@ Bridge between cashew's session layer and OpenClaw's lifecycle
 import os
 import json
 import logging
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Callable
 from pathlib import Path
 
 from core.session import start_session, end_session, think_cycle, tension_detection, SessionContext, ExtractionResult, ThinkResult
 from core.config import config, get_user_domain, get_ai_domain
-
-
-def _load_anthropic_api_key() -> Optional[str]:
-    """Load Anthropic API key from OpenClaw auth profiles"""
-    try:
-        # Look for auth profiles using configured path
-        auth_profiles_path = os.path.expanduser(config.auth_profile_path)
-        with open(auth_profiles_path, 'r') as f:
-            auth_data = json.load(f)
-        
-        api_key = auth_data.get("profiles", {}).get("anthropic:manual", {}).get("token")
-        if not api_key:
-            logging.warning("No Anthropic API key found in auth profiles")
-            return None
-        
-        return api_key
-    except Exception as e:
-        logging.error(f"Failed to load Anthropic API key: {e}")
-        return None
-
-
-def _create_anthropic_model_fn():
-    """Create a model function that uses the Anthropic API"""
-    api_key = _load_anthropic_api_key()
-    if not api_key:
-        return None
-    
-    try:
-        import anthropic
-    except ImportError:
-        logging.error("anthropic package not installed")
-        return None
-    
-    client = anthropic.Anthropic(api_key=api_key)
-    
-    def model_fn(prompt: str) -> str:
-        """Call Anthropic API with the given prompt"""
-        try:
-            response = client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=1024,
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }]
-            )
-            return response.content[0].text
-        except Exception as e:
-            logging.error(f"Anthropic API call failed: {e}")
-            raise
-    
-    return model_fn
 
 
 def generate_session_context(db_path: str, hints: Optional[List[str]] = None) -> str:
@@ -107,7 +55,7 @@ def generate_session_context(db_path: str, hints: Optional[List[str]] = None) ->
         return ""
 
 
-def extract_from_conversation(db_path: str, conversation_text: str, session_id: Optional[str] = None) -> Dict[str, Any]:
+def extract_from_conversation(db_path: str, conversation_text: str, session_id: Optional[str] = None, model_fn: Optional[Callable[[str], str]] = None) -> Dict[str, Any]:
     """
     Extract insights and knowledge from a conversation
     
@@ -115,6 +63,7 @@ def extract_from_conversation(db_path: str, conversation_text: str, session_id: 
         db_path: Path to the SQLite database
         conversation_text: Full conversation text to extract from
         session_id: Optional session identifier
+        model_fn: Optional model function for LLM-powered extraction. If None, uses heuristic extraction only.
         
     Returns:
         Dictionary with extraction results and summary
@@ -126,10 +75,8 @@ def extract_from_conversation(db_path: str, conversation_text: str, session_id: 
         
         session_id = session_id or "openclaw_extraction"
         
-        # Create model function for extraction
-        model_fn = _create_anthropic_model_fn()
         if not model_fn:
-            raise ValueError("Failed to create Anthropic model function")
+            logging.warning("No model function provided - LLM-dependent extraction features disabled")
         
         # Extract from conversation
         result = end_session(db_path, session_id, conversation_text, model_fn)
@@ -158,13 +105,14 @@ def extract_from_conversation(db_path: str, conversation_text: str, session_id: 
         }
 
 
-def run_think_cycle(db_path: str, focus_domain: Optional[str] = None) -> Dict[str, Any]:
+def run_think_cycle(db_path: str, focus_domain: Optional[str] = None, model_fn: Optional[Callable[[str], str]] = None) -> Dict[str, Any]:
     """
     Run a think cycle on the thought graph
     
     Args:
         db_path: Path to the SQLite database
         focus_domain: Optional domain to focus thinking on
+        model_fn: Optional model function for LLM-powered think cycles. If None, skips LLM-dependent operations.
         
     Returns:
         Dictionary with think cycle results and summary
@@ -174,10 +122,15 @@ def run_think_cycle(db_path: str, focus_domain: Optional[str] = None) -> Dict[st
         if not os.path.exists(db_path):
             raise ValueError(f"Database not found at {db_path}")
         
-        # Create model function for thinking
-        model_fn = _create_anthropic_model_fn()
         if not model_fn:
-            raise ValueError("Failed to create Anthropic model function")
+            return {
+                "success": False,
+                "error": "No model function provided - think cycles require LLM access",
+                "new_nodes": 0,
+                "new_edges": 0,
+                "cluster_topic": "Skipped",
+                "summary": "Think cycle skipped - no LLM access"
+            }
         
         # Run think cycle
         result = think_cycle(db_path, model_fn, focus_domain)
@@ -207,15 +160,21 @@ def run_think_cycle(db_path: str, focus_domain: Optional[str] = None) -> Dict[st
         }
 
 
-def run_tension_detection(db_path: str, focus_domain: Optional[str] = None) -> Dict[str, Any]:
+def run_tension_detection(db_path: str, focus_domain: Optional[str] = None, model_fn: Optional[Callable[[str], str]] = None) -> Dict[str, Any]:
     """Run tension detection on the thought graph."""
     try:
         if not os.path.exists(db_path):
             raise ValueError(f"Database not found at {db_path}")
         
-        model_fn = _create_anthropic_model_fn()
         if not model_fn:
-            raise ValueError("Failed to create Anthropic model function")
+            return {
+                "success": False,
+                "error": "No model function provided - tension detection requires LLM access",
+                "new_nodes": 0,
+                "new_edges": 0,
+                "cluster_topic": "Skipped",
+                "summary": "Tension detection skipped - no LLM access"
+            }
         
         result = tension_detection(db_path, model_fn, focus_domain)
         
@@ -349,24 +308,25 @@ def get_user_context(db_path: str, hints: Optional[List[str]] = None) -> str:
         return ""
 
 
-def run_work_think_cycle(db_path: str) -> Dict[str, Any]:
+def run_work_think_cycle(db_path: str, model_fn: Optional[Callable[[str], str]] = None) -> Dict[str, Any]:
     """Run a think cycle focused on work-related insights"""
-    return run_think_cycle(db_path, "work")
+    return run_think_cycle(db_path, "work", model_fn)
 
 
-def run_personal_think_cycle(db_path: str) -> Dict[str, Any]:
+def run_personal_think_cycle(db_path: str, model_fn: Optional[Callable[[str], str]] = None) -> Dict[str, Any]:
     """Run a think cycle focused on personal insights"""
-    return run_think_cycle(db_path, "personal")
+    return run_think_cycle(db_path, "personal", model_fn)
 
 
 # Main integration point for OpenClaw
-def integrate_with_openclaw(db_path: str, operation: str, **kwargs) -> Dict[str, Any]:
+def integrate_with_openclaw(db_path: str, operation: str, model_fn: Optional[Callable[[str], str]] = None, **kwargs) -> Dict[str, Any]:
     """
     Main integration function for OpenClaw to call cashew operations
     
     Args:
         db_path: Path to the SQLite database
         operation: Operation to perform ('context', 'extract', 'think')
+        model_fn: Optional model function for LLM-powered operations. If None, some operations will be skipped or use fallbacks.
         **kwargs: Operation-specific arguments
         
     Returns:
@@ -386,13 +346,13 @@ def integrate_with_openclaw(db_path: str, operation: str, **kwargs) -> Dict[str,
         elif operation == "extract":
             conversation = kwargs.get("conversation_text", "")
             session_id = kwargs.get("session_id")
-            result = extract_from_conversation(db_path, conversation, session_id)
+            result = extract_from_conversation(db_path, conversation, session_id, model_fn)
             result["operation"] = "extract"
             return result
         
         elif operation == "think":
             focus_domain = kwargs.get("focus_domain")
-            result = run_think_cycle(db_path, focus_domain)
+            result = run_think_cycle(db_path, focus_domain, model_fn)
             result["operation"] = "think"
             return result
         
@@ -443,9 +403,12 @@ if __name__ == "__main__":
         if not args.conversation:
             print("Error: --conversation required for extract operation")
         else:
-            result = extract_from_conversation(args.db, args.conversation, args.session_id)
+            # CLI usage has no model function - will use heuristic extraction only
+            result = extract_from_conversation(args.db, args.conversation, args.session_id, model_fn=None)
             print(json.dumps(result, indent=2))
     
     elif args.operation == "think":
-        result = run_think_cycle(args.db, args.domain)
+        # CLI usage has no model function - will be skipped
+        print("Think cycles require LLM access. Use through OpenClaw cron jobs instead.")
+        result = {"success": False, "error": "No LLM access from CLI", "summary": "CLI think cycles not supported"}
         print(json.dumps(result, indent=2))

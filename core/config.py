@@ -101,11 +101,8 @@ class CashewConfig:
                     'provider': 'sentence-transformers',
                     'cache_dir': './models'
                 },
-                'llm': {
-                    'provider': 'anthropic',
-                    'model': 'claude-sonnet-4-20250514',
-                    'api_key_env': 'ANTHROPIC_API_KEY'
-                }
+                # LLM section removed - cashew doesn't call LLMs directly
+                # LLM access is provided by the orchestrator via model_fn parameters
             },
             'domains': {
                 'default': 'general',
@@ -181,9 +178,7 @@ class CashewConfig:
         
         # Model configuration
         self.embedding_model = self._raw_config['models']['embedding']['name']
-        self.llm_model = self._raw_config['models']['llm']['model']
-        self.llm_provider = self._raw_config['models']['llm']['provider']
-        self.api_key_env = self._raw_config['models']['llm']['api_key_env']
+        # LLM properties removed - cashew doesn't call LLMs directly
         
         # Domain configuration
         domains = self._raw_config['domains']

@@ -29,10 +29,22 @@ Cashew is a **pure infrastructure** thought-graph memory engine that gives AI ag
 Unlike simple RAG systems, Cashew:
 
 - **Builds knowledge graphs**: Facts, insights, and decisions become interconnected nodes
-- **Learns autonomously**: Think cycles consolidate and extend knowledge without human input  
+- **Learns autonomously**: Think cycles consolidate and extend knowledge without human input (when LLM access provided)
 - **Provides smart context**: Retrieves relevant information using semantic similarity and graph traversal
 - **Handles scale**: Efficient clustering and indexing keeps performance high as knowledge grows
 - **Integrates seamlessly**: Drop-in enhancement for OpenClaw agents and other AI systems
+
+## LLM Architecture
+
+**Cashew does NOT call LLMs directly.** It follows a strict separation:
+
+- **Cashew (Brain)**: Storage, retrieval, clustering, structure
+- **Orchestrator (Processor)**: Provides LLM access via `model_fn` parameters
+
+### Feature Availability:
+- **CLI usage**: Heuristic extraction, graph operations, context retrieval (no LLM needed)
+- **OpenClaw crons**: Full LLM features (hotspot summaries, think cycles, smart extraction) via orchestrator
+- **Custom integrations**: Any system can provide LLM access through the `model_fn` parameter pattern
 
 ## Installation
 
@@ -92,20 +104,11 @@ performance:
 models:
   embedding:
     name: "all-MiniLM-L6-v2"
-  llm:
-    provider: "anthropic"
-    model: "claude-sonnet-4-20250514"
-    api_key_env: "ANTHROPIC_API_KEY"
+  # LLM config removed - cashew doesn't call LLMs directly
+  # LLM access provided by orchestrator via model_fn parameters
 ```
 
-### 3. Set Environment Variables
-
-```bash
-export ANTHROPIC_API_KEY="your-key-here"
-# or use .env file
-```
-
-### 4. Verify
+### 3. Verify
 
 ```bash
 cashew context --hints "test"
@@ -125,23 +128,25 @@ This returns relevant knowledge to inform your response.
 ### Extract Knowledge
 After important conversations, extract insights:
 ```bash
-# From file
+# From file (uses heuristic extraction - no LLM)
 cashew extract --input conversation.txt
 
 # From stdin  
 echo "User prefers TypeScript for type safety" | cashew extract --input -
 ```
 
+**Note**: CLI extraction uses heuristic methods. For smart LLM-powered extraction, use OpenClaw cron jobs which provide the necessary model functions.
+
 ### Think Cycles
-Run autonomous reasoning to consolidate knowledge:
+**Note**: Think cycles require LLM access. Use through OpenClaw cron jobs for full functionality.
 ```bash
-cashew think
+cashew think  # Limited functionality without LLM
 ```
 
 ### Sleep Cycles  
-Deep reorganization and clustering (run daily):
+Deep reorganization and clustering (structural operations work without LLM):
 ```bash
-cashew sleep
+cashew sleep  # Clustering works, hotspot summaries use fallbacks
 ```
 
 ### Statistics

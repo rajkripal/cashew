@@ -26,36 +26,7 @@ from core.embeddings import embed_nodes
 # Database path is now configurable via environment variable or CLI  
 from core.config import get_db_path, get_user_domain, get_ai_domain
 
-def _create_anthropic_model_fn() -> Optional[Callable[[str], str]]:
-    """Create model function for Anthropic API"""
-    try:
-        import anthropic
-        import os
-        
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        if not api_key:
-            logger.warning("No ANTHROPIC_API_KEY found - hotspot summaries will use fallbacks")
-            return None
-        
-        client = anthropic.Anthropic(api_key=api_key)
-        
-        def model_fn(prompt: str) -> str:
-            try:
-                message = client.messages.create(
-                    model="claude-3-5-sonnet-20241022",
-                    max_tokens=1000,
-                    temperature=0.7,
-                    messages=[{"role": "user", "content": prompt}]
-                )
-                return message.content[0].text
-            except Exception as e:
-                logger.warning(f"Anthropic API call failed: {e}")
-                return ""
-        
-        return model_fn
-    except ImportError:
-        logger.warning("Anthropic library not available - hotspot summaries will use fallbacks")
-        return None
+# Removed direct Anthropic API client creation - model_fn should be passed from external orchestrator
 
 def generate_complete_session_context(db_path: str = None, 
                                      hints: Optional[List[str]] = None,
@@ -108,7 +79,8 @@ def generate_complete_session_context(db_path: str = None,
 
 def extract_from_conversation_complete(db_path: str = None,
                                       conversation_text: str = "",
-                                      session_id: str = "complete_session") -> Dict:
+                                      session_id: str = "complete_session",
+                                      model_fn: Optional[Callable[[str], str]] = None) -> Dict:
     """
     Extract knowledge from conversation with placement-aware assignment.
     
@@ -116,6 +88,7 @@ def extract_from_conversation_complete(db_path: str = None,
         db_path: Path to graph database
         conversation_text: Full conversation to extract from
         session_id: Session identifier
+        model_fn: Optional model function for LLM-powered extraction. If None, uses heuristic extraction only.
         
     Returns:
         Dict with extraction and placement results
@@ -128,7 +101,8 @@ def extract_from_conversation_complete(db_path: str = None,
         from core.embeddings import ensure_schema
         ensure_schema(db_path)
         
-        model_fn = _create_anthropic_model_fn()
+        if not model_fn:
+            logger.warning("No model function provided - LLM-dependent extraction features disabled")
         
         result = extract_with_placement(
             db_path, conversation_text, session_id, model_fn
@@ -152,13 +126,15 @@ def extract_from_conversation_complete(db_path: str = None,
         }
 
 def run_complete_think_cycle(db_path: str = None,
-                            focus_domain: Optional[str] = None) -> Dict:
+                            focus_domain: Optional[str] = None,
+                            model_fn: Optional[Callable[[str], str]] = None) -> Dict:
     """
     Run a think cycle that creates nodes with immediate placement.
     
     Args:
         db_path: Path to graph database
         focus_domain: Optional domain to focus thinking on
+        model_fn: Optional model function for LLM-powered think cycles. If None, returns error.
         
     Returns:
         Dict with think cycle results and placements
@@ -169,11 +145,10 @@ def run_complete_think_cycle(db_path: str = None,
     try:
         from core.session import think_cycle
         
-        model_fn = _create_anthropic_model_fn()
         if not model_fn:
             return {
                 "success": False,
-                "error": "No model function available for think cycle",
+                "error": "No model function provided - think cycles require LLM access",
                 "new_nodes": []
             }
         
@@ -207,13 +182,15 @@ def run_complete_think_cycle(db_path: str = None,
         }
 
 def run_complete_sleep_cycle(db_path: str = None,
-                            enable_hierarchy_evolution: bool = True) -> Dict:
+                            enable_hierarchy_evolution: bool = True,
+                            model_fn: Optional[Callable[[str], str]] = None) -> Dict:
     """
     Run a complete sleep cycle with clustering, hierarchy evolution, and 100% coverage.
     
     Args:
         db_path: Path to graph database
         enable_hierarchy_evolution: Whether to run hierarchy evolution operations
+        model_fn: Optional model function for LLM-powered sleep operations. If None, some features will be disabled.
         
     Returns:
         Dict with comprehensive sleep cycle results
@@ -226,7 +203,8 @@ def run_complete_sleep_cycle(db_path: str = None,
         from core.embeddings import ensure_schema
         ensure_schema(db_path)
         
-        model_fn = _create_anthropic_model_fn()
+        if not model_fn:
+            logger.warning("No model function provided - LLM-dependent sleep features disabled")
         
         logger.info("Starting complete sleep cycle with 100% coverage")
         
@@ -236,9 +214,12 @@ def run_complete_sleep_cycle(db_path: str = None,
         
         # Phase 2: Hierarchy evolution (merge, split, promote, reclassify)
         evolution_results = {}
-        if enable_hierarchy_evolution:
+        if enable_hierarchy_evolution and model_fn:
             logger.info("Phase 2: Running hierarchy evolution cycle")
             evolution_results = run_hierarchy_evolution_cycle(db_path, model_fn, dry_run=False)
+        elif not model_fn:
+            logger.info("Phase 2: Skipping hierarchy evolution - no LLM access")
+            evolution_results = {"skipped": "no_llm_access"}
         
         # Phase 3: Verify 100% coverage
         logger.info("Phase 3: Verifying complete coverage")
@@ -247,8 +228,12 @@ def run_complete_sleep_cycle(db_path: str = None,
         # Phase 4: Assign any remaining orphans (shouldn't be any, but safety check)
         orphan_assignment = {"orphaned_nodes_found": 0}
         if coverage_stats.get("orphaned_nodes", 0) > 0:
-            logger.warning(f"Found {coverage_stats['orphaned_nodes']} orphans - running emergency assignment")
-            orphan_assignment = batch_assign_orphaned_nodes(db_path, model_fn, dry_run=False)
+            if model_fn:
+                logger.warning(f"Found {coverage_stats['orphaned_nodes']} orphans - running emergency assignment")
+                orphan_assignment = batch_assign_orphaned_nodes(db_path, model_fn, dry_run=False)
+            else:
+                logger.warning(f"Found {coverage_stats['orphaned_nodes']} orphans but no LLM access for assignment")
+                orphan_assignment = {"skipped": "no_llm_access", "orphaned_nodes_found": coverage_stats['orphaned_nodes']}
         
         # Combine results
         complete_sleep_results = {
@@ -282,7 +267,8 @@ def run_complete_sleep_cycle(db_path: str = None,
         }
 
 def migrate_to_complete_coverage(db_path: str = None,
-                                dry_run: bool = False) -> Dict:
+                                dry_run: bool = False,
+                                model_fn: Optional[Callable[[str], str]] = None) -> Dict:
     """
     Migrate an existing cashew graph to the complete coverage system.
     
@@ -291,6 +277,7 @@ def migrate_to_complete_coverage(db_path: str = None,
     Args:
         db_path: Path to graph database  
         dry_run: If True, don't modify database
+        model_fn: Optional model function for LLM-powered migration. If None, migration will be limited.
         
     Returns:
         Dict with migration results
@@ -315,7 +302,14 @@ def migrate_to_complete_coverage(db_path: str = None,
                 "assignments": []
             }
         
-        model_fn = _create_anthropic_model_fn()
+        if not model_fn:
+            return {
+                "migration_needed": True,
+                "error": "No model function provided - migration requires LLM access for node assignment",
+                "initial_coverage": initial_coverage,
+                "final_coverage": initial_coverage,
+                "assignment_results": {"skipped": "no_llm_access"}
+            }
         
         # Assign all orphaned nodes
         assignment_result = batch_assign_orphaned_nodes(db_path, model_fn, dry_run)

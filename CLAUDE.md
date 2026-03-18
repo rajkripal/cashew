@@ -2,6 +2,8 @@
 
 Cashew is a thought-graph memory engine for AI agents. It stores knowledge as nodes in a SQLite graph, connects them with typed edges, clusters them into hierarchical hotspots, and retrieves relevant context via hybrid embedding + graph traversal.
 
+**IMPORTANT**: Cashew does NOT call LLMs directly. It is purely the BRAIN (storage + retrieval + structure). The PROCESSOR (LLM) is external and provided by the orchestrator (OpenClaw) via `model_fn` parameters. This allows cashew to be used by any system that can provide LLM access, without being coupled to specific API keys or providers.
+
 ## Architecture
 
 ```
@@ -78,6 +80,29 @@ Environment variables override config: `${VAR:-default}` syntax supported in YAM
 - **Hotspot cluster_node_ids** — JSON array of node IDs stored as TEXT
 - **Embeddings** — 384-dimensional numpy arrays stored as BLOBs
 
+## External LLM Pattern
+
+Cashew follows a strict separation of concerns:
+
+- **Cashew (Brain)**: Stores, retrieves, clusters, and structures knowledge. Embeds nodes locally using sentence-transformers.
+- **Orchestrator (Processor)**: Provides LLM access via `model_fn` parameters when calling cashew functions.
+
+### Functions that accept model_fn:
+- `extract_from_conversation(model_fn=None)` — Uses heuristic extraction if None
+- `run_think_cycle(model_fn=None)` — Skips think cycles if None  
+- `run_sleep_cycle(model_fn=None)` — Uses fallback hotspot summaries if None
+- `run_clustering_cycle(model_fn=None)` — Creates text summaries only if provided
+
+### CLI vs Orchestrated Usage:
+- **CLI**: No LLM access. Pure heuristic extraction, structural operations only.
+- **OpenClaw crons**: Full LLM access provided via model_fn from the orchestrator.
+
+### Never do in cashew:
+- `import anthropic` or any LLM client library
+- Store API keys or auth tokens
+- Make direct API calls to LLM providers
+- Create `Client()` objects
+
 ## Important Rules
 
 - **Never delete nodes** — set `decayed=1` instead. The graph is append-mostly.
@@ -87,6 +112,7 @@ Environment variables override config: `${VAR:-default}` syntax supported in YAM
 - **No hardcoded paths** — use `config.get_db_path()` or accept `--db` CLI arg.
 - **Hotspot integrity** — when modifying cluster membership, update both the hotspot's `cluster_node_ids` AND the `summarizes` edges.
 - **Backward compatibility** — old databases may have 'raj'/'bunny' as domain names. The config system maps these automatically. Don't break this.
+- **No direct LLM calls** — Accept model_fn parameters, never create LLM clients internally.
 
 ## Testing
 

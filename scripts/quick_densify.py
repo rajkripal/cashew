@@ -243,15 +243,14 @@ class QuickDensifier:
         
     def get_stats(self):
         """Get current graph stats"""
+        from core.stats import get_total_node_count, get_edge_count
+
         conn = self.get_connection()
         cursor = conn.cursor()
-        
-        cursor.execute("SELECT COUNT(*) FROM thought_nodes")
-        total_nodes = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM derivation_edges")
-        total_edges = cursor.fetchone()[0]
-        
+
+        total_nodes = get_total_node_count(cursor, include_decayed=True)
+        total_edges = get_edge_count(cursor)
+
         cursor.execute("""
             SELECT COUNT(*)
             FROM thought_nodes tn
@@ -259,9 +258,9 @@ class QuickDensifier:
             WHERE de.child_id IS NULL AND tn.node_type != 'seed'
         """)
         orphans = cursor.fetchone()[0]
-        
+
         conn.close()
-        
+
         return {
             'nodes': total_nodes,
             'edges': total_edges,

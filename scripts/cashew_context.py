@@ -23,6 +23,83 @@ from integration.complete_integration import (
     explain_complete_system, get_complete_system_stats
 )
 from core.hotspots import create_hotspot, update_hotspot, list_hotspots, get_hotspot
+
+
+def _build_model_fn():
+    """Build a model_fn by routing through the OpenClaw gateway.
+    
+    OpenClaw is provider-agnostic — works with Anthropic, OpenAI, local models,
+    whatever the user configured. No need for separate API keys or CLI tools.
+    
+    Discovery order for gateway config:
+    1. OPENCLAW_GATEWAY_URL + OPENCLAW_GATEWAY_TOKEN env vars
+    2. cashew config.yaml (integration.openclaw.gateway_*)
+    3. ~/.openclaw/openclaw.json (auto-discover running gateway)
+    
+    Returns a callable (prompt → response string) or None.
+    """
+    import json as _json
+    import urllib.request
+    import urllib.error
+    
+    gateway_url = os.environ.get("OPENCLAW_GATEWAY_URL", "")
+    gateway_token = os.environ.get("OPENCLAW_GATEWAY_TOKEN", "")
+    
+    # Try cashew config.yaml
+    if not gateway_token:
+        try:
+            config_path = Path(__file__).parent.parent / "config.yaml"
+            if config_path.exists():
+                import yaml
+                with open(config_path) as f:
+                    cfg = yaml.safe_load(f)
+                oc = cfg.get("integration", {}).get("openclaw", {})
+                gateway_url = gateway_url or oc.get("gateway_url", "")
+                gateway_token = oc.get("gateway_token", "")
+        except Exception:
+            pass
+    
+    # Auto-discover from OpenClaw config
+    if not gateway_token:
+        try:
+            oc_config = Path.home() / ".openclaw" / "openclaw.json"
+            if oc_config.exists():
+                with open(oc_config) as f:
+                    oc_data = _json.load(f)
+                gateway_token = oc_data.get("gateway", {}).get("auth", {}).get("token", "")
+                port = oc_data.get("gateway", {}).get("port", 18789)
+                gateway_url = gateway_url or f"http://127.0.0.1:{port}"
+        except Exception:
+            pass
+    
+    if not gateway_url:
+        gateway_url = "http://127.0.0.1:18789"
+    
+    if not gateway_token:
+        print("⚠️  No OpenClaw gateway found. Ensure OpenClaw is running (openclaw gateway start)")
+        print("   Or set OPENCLAW_GATEWAY_TOKEN env var")
+        return None
+    
+    def model_fn(prompt: str) -> str:
+        payload = _json.dumps({
+            "model": "openclaw",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 4096
+        }).encode()
+        req = urllib.request.Request(
+            f"{gateway_url}/v1/chat/completions",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {gateway_token}",
+                "Content-Type": "application/json"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = _json.loads(resp.read())
+            return data["choices"][0]["message"]["content"]
+    
+    print(f"🔑 LLM enabled via OpenClaw ({gateway_url})")
+    return model_fn
 from core.decay import auto_decay, get_decay_candidates
 from core.stats import get_active_node_count, get_edge_count, get_embedding_coverage
 
@@ -71,8 +148,9 @@ def cmd_extract(args):
     print("🧠 Extracting insights...")
     print()
     
+    model_fn = _build_model_fn()
     t0 = time.time()
-    result = extract_from_conversation(args.db, conversation_text, args.session_id)
+    result = extract_from_conversation(args.db, conversation_text, args.session_id, model_fn=model_fn)
     elapsed = time.time() - t0
     
     print(json.dumps(result, indent=2))
@@ -98,13 +176,14 @@ def cmd_think(args):
     domain = args.domain if args.domain else None
     mode = getattr(args, 'mode', 'general')
     
+    model_fn = _build_model_fn()
     if mode == "tension":
         print("⚡ Running tension detection...")
         if domain:
             print(f"   Focused on domain: {domain}")
         print()
         t0 = time.time()
-        result = run_tension_detection(args.db, domain)
+        result = run_tension_detection(args.db, domain, model_fn=model_fn)
         elapsed = time.time() - t0
     else:
         if domain:
@@ -113,7 +192,7 @@ def cmd_think(args):
             print("🤔 Running general think cycle...")
         print()
         t0 = time.time()
-        result = run_think_cycle(args.db, domain)
+        result = run_think_cycle(args.db, domain, model_fn=model_fn)
         elapsed = time.time() - t0
     
     print(json.dumps(result, indent=2))
@@ -433,9 +512,10 @@ def cmd_complete_think(args):
         print(f"   Focused on domain: {domain}")
     print()
     
+    model_fn = _build_model_fn()
     t0 = time.time()
     try:
-        result = run_complete_think_cycle(args.db, domain)
+        result = run_complete_think_cycle(args.db, domain, model_fn=model_fn)
         elapsed = time.time() - t0
         
         print(json.dumps(result, indent=2))
@@ -466,9 +546,10 @@ def cmd_complete_sleep(args):
     print(f"   Hierarchy evolution: {'enabled' if enable_evolution else 'disabled'}")
     print()
     
+    model_fn = _build_model_fn()
     t0 = time.time()
     try:
-        result = run_complete_sleep_cycle(args.db, enable_evolution)
+        result = run_complete_sleep_cycle(args.db, enable_evolution, model_fn=model_fn)
         elapsed = time.time() - t0
         
         print(json.dumps(result, indent=2))
@@ -660,58 +741,10 @@ def _migrate_extract_file(db_path: str, content: str, filename: str, session_id:
     
     ensure_schema(db_path)
     
-    # Try LLM extraction with migration-specific prompt
-    try:
-        import anthropic
-        import os
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        if not api_key:
-            return _migrate_extract_heuristic(db_path, content, filename, session_id)
-        
-        client = anthropic.Anthropic(api_key=api_key)
-        
-        prompt = f"""You are migrating a personal knowledge document into a thought graph. Extract the KEY ENTITIES and INSIGHTS as self-contained statements.
-
-CRITICAL RULES:
-1. Each statement must be SELF-CONTAINED — understandable without reading the source document
-2. Include WHAT something is, not just that it exists. "DisClawd is a multi-agent collaboration framework for Discord bots" not just "DisClawd lives at /home/disclawd"
-3. Capture projects with their PURPOSE and STATUS, not just file paths
-4. Capture decisions with their REASONING, not just the choice
-5. Merge related fragments into single comprehensive statements
-6. Aim for 5-15 high-quality nodes per document, not 50 fragments
-
-Types: belief, insight, decision, observation, fact
-
-Respond with ONLY a JSON array:
-[{{"content": "self-contained statement", "type": "belief|insight|decision|observation|fact", "confidence": 0.8}}]
-
-Document ({filename}):
-{content[:8000]}"""
-        
-        message = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=2000,
-            temperature=0.3,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        response = message.content[0].text
-        
-        # Parse JSON
-        cleaned = response.strip()
-        if cleaned.startswith('```'):
-            lines = cleaned.split('\n')
-            lines = [l for l in lines if not l.strip().startswith('```')]
-            cleaned = '\n'.join(lines).strip()
-        start = cleaned.find('[')
-        end = cleaned.rfind(']')
-        if start == -1 or end == -1:
-            return _migrate_extract_heuristic(db_path, content, filename, session_id)
-        
-        extractions = json.loads(cleaned[start:end+1])
-        
-    except Exception as e:
-        print(f"   ⚠️  LLM extraction failed ({e}), using heuristic")
-        return _migrate_extract_heuristic(db_path, content, filename, session_id)
+    # CLI usage doesn't have direct LLM access - use heuristic extraction only
+    # When called from OpenClaw cron jobs, the LLM processing happens at the orchestrator level
+    print(f"   📝 CLI extraction - using heuristic method (LLM extraction available through OpenClaw crons)")
+    return _migrate_extract_heuristic(db_path, content, filename, session_id)
     
     # Insert nodes
     now = datetime.now(timezone.utc).isoformat()
