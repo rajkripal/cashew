@@ -20,10 +20,14 @@ from integration.openclaw import (
     generate_session_context,
     extract_from_conversation,
     run_think_cycle,
-    _load_anthropic_api_key,
-    _create_anthropic_model_fn,
     integrate_with_openclaw
 )
+
+# These were removed — cashew no longer loads API keys directly.
+# model_fn is provided by the orchestrator (OpenClaw).
+# Tests referencing these are skipped.
+_load_anthropic_api_key = None
+_create_anthropic_model_fn = None
 
 
 class TestOpenClawIntegration(unittest.TestCase):
@@ -143,47 +147,41 @@ class TestOpenClawIntegration(unittest.TestCase):
             result = generate_session_context(self.test_db, ["work", "productivity"])
             self.assertIsInstance(result, str)
     
-    @patch('integration.openclaw._create_anthropic_model_fn')
-    def test_extract_with_mock_api(self, mock_create_fn):
-        """Test extract_from_conversation with mocked API"""
-        # Mock the model function
+    def test_extract_with_mock_api(self):
+        """Test extract_from_conversation with mocked model_fn"""
         mock_model_fn = MagicMock()
         mock_model_fn.return_value = '[{"content": "Mock insight", "type": "insight", "confidence": 0.8}]'
-        mock_create_fn.return_value = mock_model_fn
         
         with patch('core.embeddings.embed_nodes'), patch('core.embeddings.search') as mock_search:
             mock_search.return_value = []  # No similar nodes found
             
             conversation = "This is a test conversation with some insights about work and productivity."
-            result = extract_from_conversation(self.test_db, conversation, "test_session")
+            result = extract_from_conversation(self.test_db, conversation, "test_session", model_fn=mock_model_fn)
             
             self.assertIsInstance(result, dict)
             self.assertIn("success", result)
             self.assertIn("new_nodes", result)
             self.assertIn("summary", result)
     
-    @patch('integration.openclaw._create_anthropic_model_fn')  
-    def test_think_cycle_with_mock_api(self, mock_create_fn):
-        """Test run_think_cycle with mocked API"""
+    def test_think_cycle_with_mock_api(self):
+        """Test run_think_cycle with mocked model_fn"""
         mock_model_fn = MagicMock()
         mock_model_fn.return_value = '[{"content": "Mock think cycle insight", "type": "insight", "confidence": 0.7}]'
-        mock_create_fn.return_value = mock_model_fn
         
         with patch('core.embeddings.embed_nodes'), patch('core.embeddings.search') as mock_search:
             mock_search.return_value = []
             
-            result = run_think_cycle(self.test_db, "work")
+            result = run_think_cycle(self.test_db, "work", model_fn=mock_model_fn)
             
             self.assertIsInstance(result, dict)
             self.assertIn("success", result)
             self.assertIn("new_nodes", result)
             self.assertIn("cluster_topic", result)
     
-    @patch('builtins.open', side_effect=FileNotFoundError())
-    def test_api_key_loading_handles_missing_file(self, mock_open):
-        """Test that API key loading handles missing auth file gracefully"""
-        api_key = _load_anthropic_api_key()
-        self.assertIsNone(api_key)
+    def test_api_key_loading_removed(self):
+        """API key loading was removed — cashew no longer loads keys directly.
+        model_fn is provided by the orchestrator."""
+        self.assertIsNone(_load_anthropic_api_key, "Function was removed, placeholder should be None")
     
     def test_api_key_loading_handles_invalid_json(self):
         """Test that API key loading handles invalid JSON gracefully"""
@@ -215,14 +213,13 @@ class TestOpenClawIntegration(unittest.TestCase):
     
     def test_extract_handles_missing_conversation(self):
         """Test that extract handles missing conversation text gracefully"""
-        with patch('integration.openclaw._create_anthropic_model_fn') as mock_create:
-            mock_create.return_value = lambda x: "mock response"
-            
-            result = extract_from_conversation(self.test_db, "", "test_session")
-            
-            # Should handle empty conversation gracefully
-            self.assertIsInstance(result, dict)
-            self.assertIn("success", result)
+        mock_model_fn = lambda x: "mock response"
+        
+        result = extract_from_conversation(self.test_db, "", "test_session", model_fn=mock_model_fn)
+        
+        # Should handle empty conversation gracefully
+        self.assertIsInstance(result, dict)
+        self.assertIn("success", result)
     
     def test_think_cycle_handles_missing_db(self):
         """Test that think cycle handles missing database gracefully"""
@@ -243,14 +240,11 @@ class TestAPIKeyLoading(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.test_dir)
     
-    def test_load_anthropic_api_key_success(self):
-        """Test successful API key loading"""
-        # Test that the function can load a key when auth profiles exist
-        # Since we have real auth profiles in the system, this tests the actual integration
-        api_key = _load_anthropic_api_key()
-        self.assertIsNotNone(api_key)
-        self.assertIsInstance(api_key, str)
-        self.assertTrue(len(api_key) > 0)
+    def test_api_key_loading_was_removed(self):
+        """API key loading was removed — cashew uses pluggable model_fn now.
+        The orchestrator (OpenClaw) provides LLM access, not cashew."""
+        self.assertIsNone(_load_anthropic_api_key, 
+                         "Function was removed — cashew doesn't load API keys directly")
 
 
 if __name__ == '__main__':

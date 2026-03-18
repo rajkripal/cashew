@@ -127,6 +127,14 @@ def cmd_context(args):
 
 def cmd_extract(args):
     """Extract from a conversation file"""
+    # Handle --prepare-only mode
+    if getattr(args, 'prepare_only', False):
+        return _cmd_extract_prepare_only(args)
+    
+    # Handle --ingest mode
+    if getattr(args, 'ingest', None):
+        return _cmd_extract_ingest(args)
+    
     if not args.input:
         print("❌ Error: --input file required for extract command")
         return 1
@@ -171,8 +179,176 @@ def cmd_extract(args):
         return 1
 
 
+def _cmd_extract_prepare_only(args):
+    """Output extraction plan as JSON without executing."""
+    if not args.input or not os.path.exists(args.input):
+        print(json.dumps({"status": "error", "message": "Input file required"}))
+        return 1
+    
+    with open(args.input, 'r') as f:
+        conversation_text = f.read()
+    
+    if not conversation_text.strip():
+        print(json.dumps({"status": "empty", "message": "Empty input"}))
+        return 0
+    
+    # Return the plan as JSON (no LLM or DB needed for prepare-only)
+    result = {
+        "status": "ready",
+        "conversation_text": conversation_text,
+        "conversation_length": len(conversation_text),
+        "extraction_prompt": f"Extract insights from the following conversation as a JSON array of objects with 'content', 'type', and 'confidence' fields:\n\n{conversation_text[:500]}",
+        "session_id": getattr(args, 'session_id', None) or "prepare_only",
+        "file_path": args.input,
+        "input_length": len(conversation_text),
+        "input_file": args.input,
+    }
+    print(json.dumps(result))
+    return 0
+
+
+def _cmd_extract_ingest(args):
+    """Ingest pre-prepared extraction JSON."""
+    ingest_path = args.ingest
+    if not os.path.exists(ingest_path):
+        print(f"❌ Error: Ingest file not found: {ingest_path}")
+        return 1
+    
+    with open(ingest_path, 'r') as f:
+        data = json.load(f)
+    
+    from core.session import _ensure_schema, _create_node, _get_connection
+    _ensure_schema(args.db)
+    
+    new_nodes = 0
+    for item in data.get("insights", []):
+        content = item.get("content", "")
+        node_type = item.get("type", "insight")
+        confidence = item.get("confidence", 0.7)
+        if content:
+            _create_node(args.db, content, node_type, "openclaw_extraction",
+                        confidence=confidence, domain="bunny")
+            new_nodes += 1
+    
+    print(json.dumps({"success": True, "new_nodes": new_nodes}))
+    return 0
+
+
+def _cmd_think_prepare_only(args):
+    """Output think cycle preparation as JSON without executing."""
+    from core.session import _find_cluster_for_thinking, _get_connection, _get_saturated_themes
+    
+    cluster_nodes = _find_cluster_for_thinking(args.db, getattr(args, 'domain', None))
+    
+    if not cluster_nodes:
+        print(json.dumps({"status": "empty", "message": "No cluster found"}))
+        return 0
+    
+    conn = _get_connection(args.db)
+    cursor = conn.cursor()
+    
+    placeholders = ','.join(['?'] * len(cluster_nodes))
+    cursor.execute(f"""
+        SELECT id, content, node_type, COALESCE(domain, 'unknown') as domain
+        FROM thought_nodes WHERE id IN ({placeholders})
+    """, cluster_nodes)
+    
+    nodes = cursor.fetchall()
+    conn.close()
+    
+    domains = list(set(n[3] for n in nodes))
+    cluster_desc = "\n".join([f"[{n[2]}] {n[1]} (Domain: {n[3]})" for n in nodes])
+    
+    # Get saturated themes to include
+    saturated = _get_saturated_themes(args.db)
+    saturated_block = "\n".join(saturated[:10]) if saturated else ""
+    
+    result = {
+        "status": "ready",
+        "node_ids": cluster_nodes,
+        "domains": domains,
+        "cluster_description": cluster_desc,
+        "saturated_block": saturated_block
+    }
+    print(json.dumps(result))
+    return 0
+
+
+def _cmd_think_ingest(args):
+    """Ingest pre-prepared think insights JSON."""
+    ingest_path = args.ingest
+    if not os.path.exists(ingest_path):
+        print(json.dumps({"success": False, "error": f"File not found: {ingest_path}"}))
+        return 1
+    
+    with open(ingest_path, 'r') as f:
+        data = json.load(f)
+    
+    from core.session import _ensure_schema, _create_node, _create_edge, _get_connection
+    _ensure_schema(args.db)
+    
+    new_nodes = 0
+    new_edges = 0
+    filtered_out = 0
+    source_ids = data.get("source_node_ids", [])
+    
+    # Check for novelty before inserting
+    try:
+        from core.placement_aware_extraction import check_novelty, load_all_embeddings
+        preloaded = load_all_embeddings(args.db)
+    except Exception:
+        preloaded = None
+    
+    for item in data.get("insights", []):
+        content = item.get("content", "")
+        node_type = item.get("type", "insight")
+        confidence = item.get("confidence", 0.7)
+        if not content:
+            continue
+        
+        # Novelty check
+        if preloaded is not None:
+            try:
+                is_novel, max_sim, _ = check_novelty(args.db, content, preloaded_embeddings=preloaded)
+                if not is_novel:
+                    filtered_out += 1
+                    continue
+            except Exception:
+                pass
+        
+        node_id = _create_node(args.db, content, node_type, "system_generated",
+                              confidence=confidence, domain="bunny")
+        new_nodes += 1
+        
+        # Link to source nodes
+        for src_id in source_ids[:3]:
+            try:
+                _create_edge(args.db, src_id, node_id, f"Think cycle insight from {src_id}")
+                new_edges += 1
+            except Exception:
+                pass
+    
+    # Embed new nodes
+    try:
+        from core.embeddings import embed_nodes
+        embed_nodes(args.db)
+    except Exception:
+        pass
+    
+    print(json.dumps({"success": True, "new_nodes": new_nodes, "new_edges": new_edges, "filtered_out": filtered_out}))
+    return 0
+
+
 def cmd_think(args):
     """Run a think cycle"""
+    # Handle --prepare-only mode
+    if getattr(args, 'prepare_only', False):
+        return _cmd_think_prepare_only(args)
+    
+    # Handle --ingest mode
+    if getattr(args, 'ingest', None):
+        return _cmd_think_ingest(args)
+    
     domain = args.domain if args.domain else None
     mode = getattr(args, 'mode', 'general')
     
@@ -1194,8 +1370,11 @@ def main():
     
     # Extract command  
     extract_parser = subparsers.add_parser("extract", help="Extract from a conversation file")
-    extract_parser.add_argument("--input", required=True, help="Input conversation file")
+    extract_parser.add_argument("--input", help="Input conversation file")
     extract_parser.add_argument("--session-id", help="Optional session ID")
+    extract_parser.add_argument("--prepare-only", action="store_true",
+                               help="Output extraction plan as JSON without executing")
+    extract_parser.add_argument("--ingest", help="Ingest a JSON file of pre-prepared extractions")
     extract_parser.set_defaults(func=cmd_extract)
     
     # Think command
@@ -1203,6 +1382,9 @@ def main():
     think_parser.add_argument("--domain", help="Focus domain (e.g., 'career')")
     think_parser.add_argument("--mode", choices=["general", "tension"], default="general",
                              help="Think mode: general (default) or tension (find contradictions)")
+    think_parser.add_argument("--prepare-only", action="store_true",
+                             help="Output think cycle preparation as JSON without executing")
+    think_parser.add_argument("--ingest", help="Ingest a JSON file of pre-prepared think insights")
     think_parser.set_defaults(func=cmd_think)
     
     # Sleep command
@@ -1314,8 +1496,9 @@ def main():
     
     # Commands that don't require existing database
     init_commands = ['init']
+    skip_db_check = getattr(args, 'prepare_only', False)
     
-    if args.command not in init_commands and not os.path.exists(args.db):
+    if args.command not in init_commands and not skip_db_check and not os.path.exists(args.db):
         print(f"❌ Error: Database not found: {args.db}")
         print(f"💡 Run `cashew init --db {args.db}` to create a new database")
         return 1

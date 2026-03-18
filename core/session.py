@@ -1127,3 +1127,33 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+def _get_saturated_themes(db_path: str, days: int = 14, min_count: int = 3) -> List[str]:
+    """Get themes that are saturated (frequently generated) in recent think cycles.
+    
+    Returns content snippets from recent system_generated nodes to help
+    the think cycle avoid producing redundant insights.
+    
+    Args:
+        db_path: Path to SQLite database
+        days: Look back window in days
+        min_count: Minimum occurrences to consider saturated
+        
+    Returns:
+        List of content strings from frequently generated themes
+    """
+    conn = _get_connection(db_path)
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT content FROM thought_nodes
+        WHERE source_file = 'system_generated'
+        AND timestamp > datetime('now', ? || ' days')
+        AND (decayed IS NULL OR decayed = 0)
+        ORDER BY timestamp DESC
+    """, (f"-{days}",))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [row[0] for row in rows]
