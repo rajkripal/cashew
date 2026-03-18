@@ -30,15 +30,13 @@ def export(db_path: str, output_path: str, title: str = "cashew"):
         WHERE decayed = 0 OR decayed IS NULL
     """)
     nodes = []
-    # Map DB domains to dashboard domains
-    user_domain = get_user_domain()
-    ai_domain = get_ai_domain()
+    # Map DB domains to dashboard display names
     DOMAIN_MAP = {
-        "raj": user_domain,  # backward compatibility
-        "bunny": ai_domain,   # backward compatibility
-        user_domain: user_domain,
-        ai_domain: ai_domain,
-        "default": user_domain
+        "raj": "raj",
+        "bunny": "bunny",
+        "user": "raj",
+        "ai": "bunny",
+        "default": "raj"
     }
     for row in c.fetchall():
         db_domain = row[7] or "default"
@@ -50,7 +48,7 @@ def export(db_path: str, output_path: str, title: str = "cashew"):
             "source_file": row[4] or "",
             "timestamp": row[5] or "",
             "mood_state": row[6] or "",
-            "domain": DOMAIN_MAP.get(db_domain, "user")
+            "domain": DOMAIN_MAP.get(db_domain, "raj")
         })
     
     # Export edges — use source/target format for dashboard compatibility
