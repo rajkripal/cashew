@@ -122,12 +122,13 @@ def auto_decay(db_path: str, min_age_days: int = 14, max_confidence_for_decay: f
     
     cutoff = (datetime.now(timezone.utc) - timedelta(days=min_age_days)).isoformat()
     
-    # First, find nodes that will be decayed (including hotspots now)
-    # Skip permanent nodes entirely
+    # First, find nodes that will be decayed
+    # Skip permanent nodes and hotspots (structural summary nodes)
     cursor.execute("""
         SELECT id FROM thought_nodes
         WHERE (decayed IS NULL OR decayed = 0)
         AND (permanent IS NULL OR permanent = 0)
+        AND node_type != 'hotspot'
         AND access_count = 0
         AND confidence < ?
         AND timestamp < ?
@@ -135,11 +136,12 @@ def auto_decay(db_path: str, min_age_days: int = 14, max_confidence_for_decay: f
     
     nodes_to_decay = [row[0] for row in cursor.fetchall()]
     
-    # Mark them as decayed (skip permanent nodes)
+    # Mark them as decayed (skip permanent nodes and hotspots)
     cursor.execute("""
         UPDATE thought_nodes SET decayed = 1, last_updated = ?
         WHERE (decayed IS NULL OR decayed = 0)
         AND (permanent IS NULL OR permanent = 0)
+        AND node_type != 'hotspot'
         AND access_count = 0
         AND confidence < ?
         AND timestamp < ?
