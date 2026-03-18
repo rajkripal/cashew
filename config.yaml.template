@@ -34,6 +34,24 @@ domains:
     - system
   auto_classify: true
 
+# Node type taxonomy — customize for your domain
+node_types:
+  # Core types (always available)
+  core:
+    - belief: "a held opinion or conviction"
+    - insight: "a non-obvious connection or pattern discovered"
+    - decision: "a commitment or choice made"
+    - observation: "a factual pattern noticed"
+    - fact: "a concrete verifiable fact"
+  # Domain-specific types (add your own)
+  # Uncomment and customize for your use case:
+  # custom:
+  #   - person: "a specific individual with relationships"
+  #   - org: "an organization, company, or institution"
+  #   - deal: "a business transaction or investment"
+  #   - thesis: "an investment or strategic thesis"
+  #   - network: "a network, protocol, or infrastructure"
+
 # Performance and behavior tuning
 performance:
   # Context generation
@@ -97,6 +115,23 @@ logging:
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   file: "${CASHEW_LOG_FILE:-./logs/cashew.log}"
   
+# Node type taxonomy — customize for your domain
+# Core types are the default extraction categories. Add custom types for domain-specific entities.
+node_types:
+  core:
+    belief: "a held opinion or conviction"
+    insight: "a non-obvious connection or pattern discovered"
+    decision: "a commitment or choice made"
+    observation: "a factual pattern noticed"
+    fact: "a concrete verifiable fact"
+  # Uncomment and customize for your domain:
+  # custom:
+  #   person: "a specific individual with relationships"
+  #   org: "an organization, company, or institution"
+  #   deal: "a business transaction or investment"
+  #   thesis: "an investment or strategic thesis"
+  #   network: "a network, protocol, or infrastructure"
+
 # Feature flags
 features:
   # Enable/disable various features

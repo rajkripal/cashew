@@ -111,6 +111,16 @@ class CashewConfig:
                 'classifications': ['personal', 'work', 'projects', 'learning', 'system'],
                 'auto_classify': True
             },
+            'node_types': {
+                'core': {
+                    'belief': 'a held opinion or conviction',
+                    'insight': 'a non-obvious connection or pattern discovered',
+                    'decision': 'a commitment or choice made',
+                    'observation': 'a factual pattern noticed',
+                    'fact': 'a concrete verifiable fact',
+                },
+                'custom': {},
+            },
             'performance': {
                 'token_budget': DEFAULT_TOKEN_BUDGET,
                 'top_k_results': DEFAULT_TOP_K,
@@ -135,6 +145,15 @@ class CashewConfig:
                 'level': 'INFO',
                 'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                 'file': './logs/cashew.log'
+            },
+            'node_types': {
+                'core': [
+                    {'belief': 'a held opinion or conviction'},
+                    {'insight': 'a non-obvious connection or pattern discovered'},
+                    {'decision': 'a commitment or choice made'},
+                    {'observation': 'a factual pattern noticed'},
+                    {'fact': 'a concrete verifiable fact'},
+                ],
             },
             'features': {
                 'auto_extraction': True,
@@ -187,11 +206,36 @@ class CashewConfig:
         self.ai_domain = domains['ai']
         self.domain_classifications = domains['classifications']
         
+        # Node type taxonomy
+        nt_config = self._raw_config.get('node_types', {})
+        core_types = nt_config.get('core', {}) or {}
+        custom_types = nt_config.get('custom', {}) or {}
+        # Handle YAML list-of-dicts format: [{k: v}, ...] -> {k: v, ...}
+        if isinstance(core_types, list):
+            merged = {}
+            for item in core_types:
+                if isinstance(item, dict):
+                    merged.update(item)
+            core_types = merged
+        if isinstance(custom_types, list):
+            merged = {}
+            for item in custom_types:
+                if isinstance(item, dict):
+                    merged.update(item)
+            custom_types = merged
+        # Merge: custom can override core descriptions
+        self._node_type_map = {**core_types, **custom_types}
+        # System types are always valid but not in extraction prompts
+        self._system_types = {'hotspot', 'dream', 'tension', 'core_memory', 'derived'}
+        self.node_type_names = set(self._node_type_map.keys()) | self._system_types
+        
         # Integration configuration
         openclaw = self._raw_config['integration']['openclaw']
         self.auth_profile_path = openclaw['auth_profile_path']
         self.workspace_path = openclaw['workspace_path']
         self.session_dir = openclaw.get('session_dir', '${HOME}/.openclaw/sessions')
+
+        # (node type taxonomy loaded above via _node_type_map)
     
     def _validate_config(self):
         """Validate configuration values"""
@@ -226,6 +270,25 @@ class CashewConfig:
             'temporal': self.temporal_weight
         }
     
+    @property
+    def node_type_prompt_fragment(self) -> str:
+        """Generate the type classification block for LLM extraction prompts."""
+        lines = []
+        for name, desc in self._node_type_map.items():
+            lines.append(f'- "{name}": {desc}')
+        return '\n'.join(lines)
+
+    @property
+    def node_type_pipe_list(self) -> str:
+        """Pipe-separated list of valid extraction types for JSON examples."""
+        return '|'.join(self._node_type_map.keys())
+
+    def validate_node_type(self, node_type: str) -> str:
+        """Validate and return a node type, falling back to 'observation' if invalid."""
+        if node_type in self.node_type_names:
+            return node_type
+        return 'observation'
+
     def get_raw_config(self) -> Dict[str, Any]:
         """Get the raw configuration dictionary"""
         return self._raw_config

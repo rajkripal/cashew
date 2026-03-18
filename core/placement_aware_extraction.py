@@ -21,7 +21,7 @@ from core.complete_clustering import infer_emergent_domains
 logger = logging.getLogger("cashew.placement_aware_extraction")
 
 # Database path is now configurable via environment variable or CLI
-from .config import get_db_path
+from .config import get_db_path, config
 
 # Quality gate parameters
 # MiniLM-L6 cosine similarity distribution: mean ~0.13, P99 ~0.49, true dupes peak ~0.85-0.90
@@ -622,11 +622,7 @@ def extract_with_placement(db_path: str, conversation_text: str, session_id: str
         extraction_prompt = f"""You are extracting knowledge from a conversation into a personal thought graph with immediate cluster placement. Extract ONLY genuinely new, specific, substantive knowledge — not summaries or meta-comments.
 
 For each item, classify as:
-- "belief": a held opinion or conviction
-- "insight": a non-obvious connection or pattern discovered  
-- "decision": a commitment or choice made
-- "observation": a factual pattern noticed
-- "fact": a concrete verifiable fact
+{config.node_type_prompt_fragment}
 
 CRITICAL — Speaker attribution:
 - "domain": must be "raj" if Raj (the human user) said/believes/decided this, or "bunny" if the AI assistant suggested/analyzed/hypothesized this.
@@ -646,7 +642,7 @@ IMPORTANT: Only nodes with confidence >= 0.8 will be saved to the database. Be s
 
 Respond with ONLY a JSON array. No markdown, no explanation, no code fences.
 
-[{{"content": "specific knowledge here", "type": "belief|insight|decision|observation|fact", "confidence": 0.7, "domain": "raj|bunny"}}]
+[{{"content": "specific knowledge here", "type": "{config.node_type_pipe_list}", "confidence": 0.7, "domain": "raj|bunny"}}]
 
 Conversation to extract from:
 {conversation_text}
@@ -696,7 +692,10 @@ Conversation to extract from:
             continue
         
         content = extraction["content"]
-        node_type = extraction.get("type", "observation") 
+        node_type = extraction.get("type", "observation")
+        # Validate type against configured taxonomy
+        if node_type not in config.node_type_names:
+            node_type = "observation"
         confidence = extraction.get("confidence", 0.5)
         # Use LLM-provided domain if available (raj or bunny), otherwise infer
         extraction_domain = extraction.get("domain", None)

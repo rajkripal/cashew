@@ -506,11 +506,7 @@ def end_session(db_path: str, session_id: str, conversation_text: str,
         extraction_prompt = f"""You are extracting knowledge from a conversation into a personal thought graph. Extract ONLY genuinely new, specific, substantive knowledge — not summaries or meta-comments.
 
 For each item, classify as:
-- "belief": a held opinion or conviction
-- "insight": a non-obvious connection or pattern discovered  
-- "decision": a commitment or choice made
-- "observation": a factual pattern noticed
-- "fact": a concrete verifiable fact
+{config.node_type_prompt_fragment}
 
 Each content field must be a specific, standalone statement that makes sense without the conversation context.
 
@@ -521,7 +517,7 @@ GOOD: "Extraction should be triggered by context fullness monitoring, not left t
 
 Respond with ONLY a JSON array. No markdown, no explanation, no code fences.
 
-[{{"content": "specific knowledge here", "type": "belief|insight|decision|observation|fact", "confidence": 0.7}}]
+[{{"content": "specific knowledge here", "type": "{config.node_type_pipe_list}", "confidence": 0.7}}]
 
 Conversation to extract from:
 {conversation_text}
@@ -566,7 +562,8 @@ Conversation to extract from:
             continue
         
         content = extraction["content"]
-        node_type = extraction.get("type", "observation") 
+        node_type = extraction.get("type", "observation")
+        node_type = config.validate_node_type(node_type)
         confidence = extraction.get("confidence", 0.5)
         
         # Create the new node
