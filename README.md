@@ -100,7 +100,7 @@ Read it: [PHILOSOPHY.md](PHILOSOPHY.md)
 ## Development
 
 ```bash
-git clone https://github.com/jugaad-lab/cashew.git
+git clone https://github.com/rajkripal/cashew.git
 cd cashew
 pip install -e ".[dev]"
 pytest
@@ -114,4 +114,4 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-Built by [jugaad-lab](https://github.com/jugaad-lab).
+Built by [rajkripal](https://github.com/rajkripal).

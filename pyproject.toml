@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "cashew-brain"
 version = "1.0.0"
 description = "Persistent thought-graph memory for AI agents. Provides context generation, knowledge extraction, and autonomous think cycles."
-authors = [{name = "jugaad-lab"}]
+authors = [{name = "rajkripal"}]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.10"
@@ -38,9 +38,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/jugaad-lab/cashew"
-Repository = "https://github.com/jugaad-lab/cashew"
-Issues = "https://github.com/jugaad-lab/cashew/issues"
+Homepage = "https://github.com/rajkripal/cashew"
+Repository = "https://github.com/rajkripal/cashew"
+Issues = "https://github.com/rajkripal/cashew/issues"
 
 [project.scripts]
 cashew = "cashew_cli:main"

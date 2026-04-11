@@ -13,7 +13,7 @@ Cashew gives you a persistent brain across sessions. Without it, you forget ever
 ```bash
 pip install cashew-brain
 # Or from source:
-pip install git+https://github.com/jugaad-lab/cashew.git
+pip install git+https://github.com/rajkripal/cashew.git
 
 # Initialize your database
 cashew --db ~/.cashew/graph.db init
