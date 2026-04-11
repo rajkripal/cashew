@@ -274,11 +274,28 @@ class CashewConfig:
 
         # (node type taxonomy loaded above via _node_type_map)
         
+        # Think configuration
+        think_config = self._raw_config.get('think', {})
+        self.think_enabled = think_config.get('enabled', True)
+        self.think_frequency = think_config.get('frequency', '12h')
+        self.think_schedule = think_config.get('schedule', '0 5,17 * * *')
+        
         # Sleep configuration
         sleep_config = self._raw_config.get('sleep', {})
         self.sleep_enabled = sleep_config.get('enabled', True)
         self.sleep_frequency = sleep_config.get('frequency', '6h')
         self.sleep_schedule = sleep_config.get('schedule', '0 */6 * * *')
+        
+        # Extract configuration
+        extract_config = self._raw_config.get('extract', {})
+        self.extract_enabled = extract_config.get('enabled', True)
+        self.extract_frequency = extract_config.get('frequency', '2h')
+        self.extract_schedule = extract_config.get('schedule', '0 */2 * * *')
+        
+        # Backup configuration
+        backup_config = self._raw_config.get('backup', {})
+        self.backup_schedule = backup_config.get('schedule', '0 */6 * * *')
+        self.backup_frequency = backup_config.get('frequency', '6h')
         
         # Feature flags
         features = self._raw_config.get('features', {})
@@ -466,12 +483,35 @@ def get_gc_config() -> dict:
     }
 
 
+def get_think_config() -> dict:
+    """Get the think cycle configuration"""
+    return {
+        'enabled': config.think_enabled,
+        'frequency': config.think_frequency,
+        'schedule': config.think_schedule
+    }
+
 def get_sleep_config() -> dict:
     """Get the sleep cycle configuration"""
     return {
         'enabled': config.sleep_enabled,
         'frequency': config.sleep_frequency,
         'schedule': config.sleep_schedule
+    }
+
+def get_extract_config() -> dict:
+    """Get the extraction schedule configuration"""
+    return {
+        'enabled': config.extract_enabled,
+        'frequency': config.extract_frequency,
+        'schedule': config.extract_schedule
+    }
+
+def get_backup_config() -> dict:
+    """Get the backup schedule configuration"""
+    return {
+        'frequency': config.backup_frequency,
+        'schedule': config.backup_schedule
     }
 
 def get_feature_flags() -> dict:
