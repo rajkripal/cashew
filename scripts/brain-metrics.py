@@ -4,23 +4,23 @@ Brain Quality Metrics Tracking for cashew thought-graph engine.
 Daily tracking of retrieval quality, graph health, and performance metrics.
 """
 
+import os
+os.environ.setdefault('KMP_DUPLICATE_LIB_OK', 'TRUE')
+
 import sqlite3
 import json
 import numpy as np
-import os
 import sys
-import subprocess
 import argparse
 import time
 import re
 from datetime import datetime, timedelta
-from collections import Counter, defaultdict
-from pathlib import Path
 import pickle
 from sklearn.metrics.pairwise import cosine_similarity
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from core.stats import get_edge_count
+from integration.openclaw import generate_session_context
 
 def load_embedding(blob_data):
     """Load embedding from BLOB data."""
@@ -42,10 +42,14 @@ def load_embedding(blob_data):
                 return None
 
 def run_retrieval_queries(db_path):
-    """Run standardized retrieval quality queries and measure performance."""
+    """Run standardized retrieval quality queries and measure performance.
+
+    Calls generate_session_context() in-process so the embedding model
+    is loaded once and reused across all queries.
+    """
     test_queries = [
         "E5 promotion simulation testing manager",
-        "Partner Chiki family personal", 
+        "Partner Chiki family personal",
         "cashew Dagger blog series projects",
         "silence pattern perfectionism streak mentality",
         "Nag Friend-S Cristian Vinny pastor people",
@@ -55,45 +59,34 @@ def run_retrieval_queries(db_path):
         "blog reactions weight loss Microsoft lunch",
         "Mac Mini email accounts cron infrastructure"
     ]
-    
-    results = []
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    context_script = os.path.join(script_dir, 'cashew_context.py')
-    
-    if not os.path.exists(context_script):
-        print(f"Error: cashew_context.py not found at {context_script}", file=sys.stderr)
+
+    if not os.path.exists(db_path):
+        print(f"Error: database not found at {db_path}", file=sys.stderr)
         return None
-    
+
+    results = []
+
     for query in test_queries:
         try:
-            # Run context query with timing
             start_time = time.time()
-            
-            env = os.environ.copy()
-            env['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
-            
-            cmd = [sys.executable, context_script, 'context', '--hints', query]
-            cashew_root = os.path.dirname(os.path.dirname(context_script))
-            result = subprocess.run(cmd, capture_output=True, text=True, 
-                                  cwd=cashew_root, env=env, timeout=60)
-            
+
+            output = generate_session_context(db_path, hints=[query])
+
             end_time = time.time()
             latency_ms = int((end_time - start_time) * 1000)
-            
-            if result.returncode == 0:
-                # Parse output to count nodes and tokens
-                output = result.stdout
+
+            if output:
                 # Count lines that match context format: "1. [TYPE] content..."
                 node_lines = [line for line in output.split('\n') if re.match(r'^\d+\. \[', line)]
                 node_count = len(node_lines)
-                
+
                 # Extract token count from footer line, fallback to chars/4 estimate
                 token_match = re.search(r'\(~(\d+) tokens\)', output)
                 if token_match:
                     token_count = int(token_match.group(1))
                 else:
-                    token_count = len(output) // 4  # Fallback estimate
-                
+                    token_count = len(output) // 4
+
                 results.append({
                     'query': query,
                     'node_count': node_count,
@@ -108,18 +101,9 @@ def run_retrieval_queries(db_path):
                     'token_count': 0,
                     'latency_ms': latency_ms,
                     'success': False,
-                    'error': result.stderr
+                    'error': 'Empty context returned'
                 })
-                
-        except subprocess.TimeoutExpired:
-            results.append({
-                'query': query,
-                'node_count': 0,
-                'token_count': 0,
-                'latency_ms': 60000,  # timeout
-                'success': False,
-                'error': 'Timeout'
-            })
+
         except Exception as e:
             results.append({
                 'query': query,
@@ -129,7 +113,7 @@ def run_retrieval_queries(db_path):
                 'success': False,
                 'error': str(e)
             })
-    
+
     return results
 
 def get_graph_stats(db_path):

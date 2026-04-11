@@ -9,14 +9,9 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif;
-            background: #0a0a0a;
-            color: #e0e0e0;
-            overflow: hidden;
-            height: 100vh;
-            height: 100dvh;
+            background: #0a0a0a; color: #e0e0e0; overflow: hidden;
+            height: 100vh; height: 100dvh;
         }
-
-        /* === PASSWORD GATE === */
         #gate {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -28,33 +23,19 @@
         #gate input {
             width: 260px; padding: 12px 16px; background: #1a1a1a;
             border: 1px solid #333; border-radius: 10px; color: #e0e0e0;
-            font-size: 16px; text-align: center; outline: none;
-            letter-spacing: 2px;
+            font-size: 16px; text-align: center; outline: none; letter-spacing: 2px;
         }
         #gate input:focus { border-color: #f5c542; }
         #gate input::placeholder { color: #444; letter-spacing: 0; }
         #gate .error { color: #ff4444; font-size: 12px; margin-top: 10px; opacity: 0; transition: opacity 0.3s; }
         #gate .error.show { opacity: 1; }
         #gate .hint { color: #333; font-size: 11px; margin-top: 20px; }
-
-        /* === GRAPH (hidden until auth) === */
         #app { display: none; }
-
-        #graph { touch-action: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
-        svg { width: 100%; height: 100%; }
-        .node { cursor: pointer; }
-        .node circle { stroke-width: 1.5; transition: r 0.2s; }
-        .node.selected circle { stroke: #fff; stroke-width: 3; }
-        .node text { font-size: 9px; fill: #999; pointer-events: none; text-anchor: middle; }
-        .link { stroke-opacity: 0.3; }
-        .link.contradicts { stroke: #ff4444; stroke-dasharray: 4,2; }
-        .link.supports { stroke: #44aa44; }
-        .link.derived_from { stroke: #4488cc; }
-        .link.questions { stroke: #22d3ee; stroke-dasharray: 2,3; }
-        .link.influences { stroke: #da77f2; }
-        .link.summarizes { stroke: #ff2d55; stroke-opacity: 0.5; stroke-dasharray: 6,3; }
-        .hotspot-label { font-size: 11px; fill: #ff2d55; font-weight: 600; pointer-events: none; text-anchor: middle; }
-
+        #graph-canvas {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            cursor: grab; touch-action: none;
+        }
+        #graph-canvas:active { cursor: grabbing; }
         #topbar {
             position: fixed; top: 0; left: 0; right: 0; height: 44px;
             background: rgba(17,17,17,0.92); backdrop-filter: blur(12px);
@@ -65,7 +46,6 @@
         #topbar .title { font-size: 14px; font-weight: 600; color: #f5c542; }
         #topbar .stats { font-size: 11px; color: #666; margin-left: auto; display: flex; gap: 8px; }
         #topbar .stats b { color: #f5c542; }
-
         #filters {
             position: fixed; top: 44px; left: 0; right: 0; height: 40px;
             background: rgba(17,17,17,0.88); backdrop-filter: blur(8px);
@@ -87,8 +67,29 @@
             cursor: pointer; margin-left: auto; white-space: nowrap;
         }
         .layout-btn.active { border-color: #f5c542; color: #f5c542; background: rgba(245,197,66,0.1); }
-
-        #search-wrap { position: fixed; top: 92px; left: 8px; right: 8px; z-index: 90; }
+        .tag-toggle {
+            padding: 4px 10px; border-radius: 14px; font-size: 11px;
+            border: 1px solid #333; background: transparent; color: #999;
+            cursor: pointer; white-space: nowrap; transition: all 0.2s;
+        }
+        .tag-toggle.active { border-color: #f5c542; color: #f5c542; background: rgba(245,197,66,0.1); }
+        #tag-filters {
+            position: fixed; top: 84px; left: 0; right: 0; height: 32px;
+            background: rgba(17,17,17,0.85); backdrop-filter: blur(8px);
+            display: none; align-items: center; padding: 0 10px; gap: 4px;
+            z-index: 94; border-bottom: 1px solid #1a1a1a; overflow-x: auto;
+        }
+        #tag-filters.visible { display: flex; }
+        .tag-pill {
+            display: inline-block; font-size: 10px; padding: 2px 8px;
+            border-radius: 10px; background: #1a1a1a; border: 1px solid #333;
+            color: #aaa; margin: 2px 3px 2px 0; cursor: pointer; transition: all 0.2s;
+        }
+        .tag-pill:hover { border-color: #f5c542; color: #f5c542; }
+        .tag-pill.active { border-color: #f5c542; color: #f5c542; background: rgba(245,197,66,0.1); }
+        #tag-filters .tag-pill { font-size: 9px; padding: 2px 6px; }
+        #search-wrap { position: fixed; top: 92px; left: 8px; right: 8px; z-index: 90; transition: top 0.2s; }
+        #search-wrap.tags-open { top: 124px; }
         #search {
             width: 100%; padding: 10px 14px;
             background: rgba(30,30,30,0.92); backdrop-filter: blur(8px);
@@ -97,7 +98,6 @@
         }
         #search:focus { border-color: #f5c542; }
         #search::placeholder { color: #555; }
-
         #panel {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: rgba(17,17,17,0.95); backdrop-filter: blur(16px);
@@ -121,7 +121,7 @@
             display: inline-block; font-size: 9px; padding: 2px 6px;
             border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 6px;
         }
-
+        .panel-tags { margin-top: 8px; }
         #legend {
             position: fixed; bottom: 44px; right: 8px;
             background: rgba(17,17,17,0.85); border-radius: 8px;
@@ -130,7 +130,18 @@
         }
         .legend-row { display: flex; align-items: center; gap: 6px; }
         .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
+        #analytics {
+            display: none; padding: 12px 16px; position: fixed; top: 84px; left: 0; right: 0;
+            background: rgba(17,17,17,0.95); backdrop-filter: blur(12px); z-index: 93;
+            max-height: 60vh; overflow-y: auto; border-bottom: 1px solid #222;
+        }
+        #tooltip {
+            position: fixed; pointer-events: none; z-index: 200;
+            background: rgba(20,20,20,0.95); backdrop-filter: blur(8px);
+            border: 1px solid #333; border-radius: 8px; padding: 8px 12px;
+            font-size: 12px; color: #ddd; max-width: 300px; display: none;
+            line-height: 1.4;
+        }
         @media (min-width: 768px) {
             #search-wrap { left: 16px; right: auto; width: 300px; }
             #panel { left: auto; right: 0; top: 0; bottom: 0; width: 380px; border-radius: 0; transform: translateX(100%); max-height: 100vh; }
@@ -142,7 +153,6 @@
 </head>
 <body>
 
-<!-- PASSWORD GATE -->
 <div id="gate">
     <div class="emoji">🧠</div>
     <h1>cashew thought graph</h1>
@@ -152,7 +162,6 @@
     <div class="hint">cashew thought-graph engine</div>
 </div>
 
-<!-- DASHBOARD (hidden) -->
 <div id="app">
     <div id="topbar">
         <span class="logo">🥜</span>
@@ -168,17 +177,20 @@
         <button class="filter-btn active" data-domain="all" style="--fc:#fff"><span class="filter-dot" style="background:#fff"></span>All</button>
         <button class="filter-btn" data-domain="raj" style="--fc:#74c0fc"><span class="filter-dot" style="background:#74c0fc"></span>🧠 Raj <span class="filter-count" data-domain="raj"></span></button>
         <button class="filter-btn" data-domain="bunny" style="--fc:#ff8c42"><span class="filter-dot" style="background:#ff8c42"></span>🐰 Bunny <span class="filter-count" data-domain="bunny"></span></button>
+        <button class="filter-btn" data-group="think" style="--fc:#b197fc"><span class="filter-dot" style="background:#b197fc"></span>🧠 Think Cycle <span class="filter-count" data-group="think"></span></button>
         <span style="width:1px;background:#222;margin:0 4px;align-self:stretch;"></span>
-        <button class="filter-btn" data-type="hotspot" style="--fc:#ff2d55"><span class="filter-dot" style="background:#ff2d55"></span>🔥 Hotspot <span class="filter-count" data-type="hotspot"></span></button>
         <button class="filter-btn" data-type="belief" style="--fc:#f5c542"><span class="filter-dot" style="background:#f5c542"></span>Belief <span class="filter-count" data-type="belief"></span></button>
         <button class="filter-btn" data-type="insight" style="--fc:#74c0fc"><span class="filter-dot" style="background:#74c0fc"></span>Insight <span class="filter-count" data-type="insight"></span></button>
         <button class="filter-btn" data-type="observation" style="--fc:#da77f2"><span class="filter-dot" style="background:#da77f2"></span>Observation <span class="filter-count" data-type="observation"></span></button>
         <button class="filter-btn" data-type="decision" style="--fc:#22d3ee"><span class="filter-dot" style="background:#22d3ee"></span>Decision <span class="filter-count" data-type="decision"></span></button>
         <button class="filter-btn" data-type="fact" style="--fc:#44aa44"><span class="filter-dot" style="background:#44aa44"></span>Fact <span class="filter-count" data-type="fact"></span></button>
+        <button class="tag-toggle" id="tag-toggle-btn">🏷 Tags</button>
         <button class="layout-btn" id="timeline-btn">⏱ Timeline</button>
     </div>
 
-    <div id="analytics" style="display:none; padding:12px 16px;">
+    <div id="tag-filters"></div>
+
+    <div id="analytics">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <span style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px;">Analytics</span>
             <button id="analytics-close" style="background:none; border:none; color:#555; cursor:pointer; font-size:14px;">✕</button>
@@ -197,6 +209,10 @@
                 <div style="font-size:10px; color:#555; margin-bottom:6px; text-transform:uppercase;">Domain Breakdown</div>
                 <div id="domain-bars"></div>
             </div>
+            <div style="flex:1; min-width:200px;">
+                <div style="font-size:10px; color:#555; margin-bottom:6px; text-transform:uppercase;">Top Tags</div>
+                <div id="tag-bars"></div>
+            </div>
         </div>
     </div>
 
@@ -204,11 +220,13 @@
         <input type="text" id="search" placeholder="Search thoughts...">
     </div>
 
-    <div id="graph"></div>
+    <canvas id="graph-canvas"></canvas>
+
+    <div id="tooltip"></div>
 
     <div id="legend">
         <div style="font-size:9px;color:#555;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.5px;">Node Types</div>
-        <div class="legend-row"><div class="legend-dot" style="background:#ff2d55;width:12px;height:12px"></div> 🔥 Hotspot (cluster hub)</div>
+        <!-- hotspots removed -->
         <div class="legend-row"><div class="legend-dot" style="background:#f5c542"></div> Belief</div>
         <div class="legend-row"><div class="legend-dot" style="background:#74c0fc"></div> Insight</div>
         <div class="legend-row"><div class="legend-dot" style="background:#da77f2"></div> Observation</div>
@@ -222,22 +240,18 @@
     <div id="panel">
         <div id="panel-handle-zone"><div id="panel-handle"></div></div>
         <div id="panel-content">
-            <div style="color:#666;font-size:13px;text-align:center;padding:20px 0;">
-                Tap a node to inspect it
-            </div>
+            <div style="color:#666;font-size:13px;text-align:center;padding:20px 0;">Tap a node to inspect it</div>
         </div>
     </div>
 </div>
 
 <script>
-// === PASSWORD GATE ===
+// === PASSWORD ===
 const HASH = '8c24cd43fafd4ec0c3c799d53a5fb884832cfdab5322b3280cc3844eed9a4ab7';
-
 async function sha256(text) {
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
-
 document.getElementById('gate-pw').addEventListener('keydown', async (e) => {
     if (e.key !== 'Enter') return;
     const hash = await sha256(e.target.value);
@@ -252,53 +266,230 @@ document.getElementById('gate-pw').addEventListener('keydown', async (e) => {
     }
 });
 
-// === DASHBOARD ===
+// === COLORS ===
 const COLORS = {
-    belief: '#f5c542',
-    insight: '#74c0fc',
-    derived: '#74c0fc',
-    observation: '#da77f2',
-    decision: '#22d3ee',
-    fact: '#44aa44',
-    core_memory: '#e599f7',
-    cross_link: '#b197fc',
-    question: '#22d3ee',
-    implication: '#20c997',
-    prediction: '#66d9e8',
-    tension: '#ff6b6b',
-    meta: '#868e96',
-    seed: '#f5c542',
-    dream: '#b197fc'
+    belief: '#ffcf33', insight: '#5eb8ff', derived: '#5eb8ff',
+    observation: '#e668f5', decision: '#00e5ff', fact: '#55dd55',
+    core_memory: '#f080ff', cross_link: '#c4a0ff', question: '#00e5ff',
+    implication: '#30e8b0', prediction: '#77eeff', tension: '#ff5555',
+    meta: '#aab0b8', seed: '#ffcf33', dream: '#c4a0ff',
+    behavioral: '#ff9966'
 };
-
-const SYSTEM_COLORS = {
-    observation: '#ff8c42',
-    decision: '#ff6b6b',
-    fact: '#ffd43b',
-    belief: '#ffa94d'
-};
+const SYS_COLORS = { observation: '#ff9944', decision: '#ff5555', fact: '#ffe044', belief: '#ffb533', insight: '#ffaa44' };
 
 function getNodeColor(d) {
-    if (d.type === 'hotspot') return '#ff2d55'; // bright pink for hotspots
-    if (d.domain === 'bunny') return SYSTEM_COLORS[d.type] || '#ff8c42';
+    if (d.domain === 'bunny') return SYS_COLORS[d.type] || '#ff8c42';
     return COLORS[d.type] || '#888';
 }
 
-function getNodeRadius(d) {
-    if (d.type === 'hotspot') return 12; // hotspots are large
+// === GLOBALS ===
+let allNodes = [], allEdges = [], degree = {};
+let simulation, selectedNode = null, hoveredNode = null;
+let activeFilter = 'all', activeDomain = null, activeTag = null;
+let timelineMode = false;
+let transform = d3.zoomIdentity;
+let canvas, ctx, W, H, dpr;
+let dragNode = null, isDragging = false;
+let nodeOpacity = null; // null = all visible, Map<id, opacity>
+
+function getNodeR(d) {
     const deg = degree[d.id] || 0;
-    return Math.max(4, Math.min(10, 3 + Math.sqrt(deg)));
+    return Math.max(3, Math.min(8, 3 + Math.sqrt(deg) * 0.8));
+}
+function truncate(s, n) { return !s ? '' : s.length > n ? s.slice(0, n) + '…' : s; }
+
+// === CANVAS RENDERING ===
+function draw() {
+    ctx.save();
+    ctx.clearRect(0, 0, W, H);
+    ctx.translate(transform.x, transform.y);
+    ctx.scale(transform.k, transform.k);
+
+    // Draw edges — visible and structural
+    ctx.lineWidth = 0.5 / Math.max(transform.k, 0.2);
+    allEdges.forEach(e => {
+        if (!e.source || !e.target || e.source.x == null) return;
+        let alpha = 0.25;
+        if (nodeOpacity) {
+            const sOp = nodeOpacity.get(typeof e.source === 'object' ? e.source.id : e.source) || 0.05;
+            const tOp = nodeOpacity.get(typeof e.target === 'object' ? e.target.id : e.target) || 0.05;
+            alpha = Math.min(sOp, tOp) * 0.5;
+        }
+        if (selectedNode) {
+            const sid = typeof e.source === 'object' ? e.source.id : e.source;
+            const tid = typeof e.target === 'object' ? e.target.id : e.target;
+            alpha = (sid === selectedNode.id || tid === selectedNode.id) ? 0.7 : 0.04;
+        }
+        ctx.strokeStyle = '#667';
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.moveTo(e.source.x, e.source.y);
+        ctx.lineTo(e.target.x, e.target.y);
+        ctx.stroke();
+    });
+
+    // Draw nodes
+    allNodes.forEach(d => {
+        if (d.x == null) return;
+        const r = getNodeR(d);
+        let alpha = 1;
+        if (nodeOpacity) alpha = nodeOpacity.get(d.id) || 0.05;
+        if (selectedNode) {
+            alpha = d.id === selectedNode.id ? 1 :
+                (allEdges.some(e => {
+                    const sid = typeof e.source === 'object' ? e.source.id : e.source;
+                    const tid = typeof e.target === 'object' ? e.target.id : e.target;
+                    return (sid === selectedNode.id && tid === d.id) || (tid === selectedNode.id && sid === d.id);
+                }) ? 0.8 : 0.08);
+        }
+        ctx.globalAlpha = alpha;
+        const color = getNodeColor(d);
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Selected ring
+        if (selectedNode && d.id === selectedNode.id) {
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(d.x, d.y, r + 3, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    });
+
+    // Draw labels for hovered/selected nodes only
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    allNodes.forEach(d => {
+        if (d.x == null) return;
+        const isHovered = hoveredNode && d.id === hoveredNode.id;
+        const isSelected = selectedNode && d.id === selectedNode.id;
+        if (!isHovered && !isSelected) return;
+
+        let alpha = 1;
+        if (nodeOpacity) alpha = nodeOpacity.get(d.id) || 0.05;
+        if (alpha < 0.2) return;
+
+        ctx.globalAlpha = alpha;
+        const r = getNodeR(d);
+        const label = truncate(d.content, 40);
+        ctx.font = '10px -apple-system, sans-serif';
+
+        const metrics = ctx.measureText(label);
+        const tx = d.x, ty = d.y - r - 6;
+        ctx.globalAlpha = alpha * 0.7;
+        ctx.fillStyle = 'rgba(10,10,10,0.8)';
+        ctx.fillRect(tx - metrics.width / 2 - 3, ty - 12, metrics.width + 6, 14);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = '#ccc';
+        ctx.fillText(label, tx, ty);
+    });
+
+    ctx.restore();
+    requestAnimationFrame(draw);
 }
 
-let graphData, simulation, svg, g, link, node, labels, zoom;
-let selectedNode = null;
-let activeFilter = 'all';
-let activeDomain = null;
-let timelineMode = false;
-let allNodes, allEdges, degree;
+// === HIT TESTING ===
+function nodeAtPoint(mx, my) {
+    // Transform screen coords to graph coords
+    const gx = (mx - transform.x) / transform.k;
+    const gy = (my - transform.y) / transform.k;
+    let closest = null, closestDist = Infinity;
+    for (let i = allNodes.length - 1; i >= 0; i--) {
+        const d = allNodes[i];
+        if (d.x == null) continue;
+        const dx = d.x - gx, dy = d.y - gy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const r = getNodeR(d) + 4; // padding
+        if (dist < r && dist < closestDist) {
+            closest = d;
+            closestDist = dist;
+        }
+    }
+    return closest;
+}
 
+// === OPACITY MANAGEMENT ===
+function clearOpacity() { nodeOpacity = null; }
+function setOpacity(fn) {
+    nodeOpacity = new Map();
+    allNodes.forEach(d => nodeOpacity.set(d.id, fn(d)));
+}
+
+function applyFilter() {
+    if (activeFilter === 'all' && !activeDomain && !activeTag) {
+        clearOpacity();
+        return;
+    }
+    let matchIds;
+    if (activeTag) {
+        matchIds = new Set(allNodes.filter(n => (n.tags || []).includes(activeTag)).map(n => n.id));
+    } else if (activeDomain) {
+        matchIds = new Set(allNodes.filter(n => n.domain === activeDomain).map(n => n.id));
+    } else if (activeFilter === 'think') {
+        const thinkTypes = new Set(['dream', 'cross_link', 'implication', 'prediction', 'tension']);
+        matchIds = new Set(allNodes.filter(n => thinkTypes.has(n.type)).map(n => n.id));
+    } else {
+        matchIds = new Set(allNodes.filter(n => n.type === activeFilter).map(n => n.id));
+    }
+    const connected = new Set(matchIds);
+    allEdges.forEach(e => {
+        const sid = typeof e.source === 'object' ? e.source.id : e.source;
+        const tid = typeof e.target === 'object' ? e.target.id : e.target;
+        if (matchIds.has(sid)) connected.add(tid);
+        if (matchIds.has(tid)) connected.add(sid);
+    });
+    setOpacity(d => matchIds.has(d.id) ? 1 : (connected.has(d.id) ? 0.3 : 0.05));
+}
+
+// === PANEL ===
+function showPanel(d) {
+    const panel = document.getElementById('panel');
+    const content = document.getElementById('panel-content');
+    const c = getNodeColor(d);
+    const typeBadge = `<span class="node-type-badge" style="background:${c}33;color:${c}">${d.type}</span>`;
+    const parents = allEdges
+        .filter(e => (typeof e.target === 'object' ? e.target.id : e.target) === d.id)
+        .map(e => { const pid = typeof e.source === 'object' ? e.source.id : e.source; return { node: allNodes.find(n => n.id === pid), edge: e }; })
+        .filter(p => p.node);
+    const children = allEdges
+        .filter(e => (typeof e.source === 'object' ? e.source.id : e.source) === d.id)
+        .map(e => { const cid = typeof e.target === 'object' ? e.target.id : e.target; return { node: allNodes.find(n => n.id === cid), edge: e }; })
+        .filter(c => c.node);
+    let html = `
+        <div class="panel-label">Thought ${typeBadge}</div>
+        <div class="panel-text" style="font-size:16px;font-weight:500;">${d.content}</div>
+        <div class="panel-meta">Confidence: ${d.confidence} · ${d.domain === 'bunny' ? '🐰 Bunny' : '🧠 Raj'} · ${d.source_file === 'system_generated' ? '🤖 AI Generated' : '✍️ Human'}</div>
+        ${d.tags && d.tags.length ? `<div class="panel-tags">${d.tags.map(t => `<span class="tag-pill" onclick="window.filterByTag('${t}')">${t}</span>`).join('')}</div>` : ''}
+    `;
+    if (parents.length) {
+        html += `<div class="panel-label">Derived From (${parents.length})</div>`;
+        parents.forEach(p => {
+            const reason = p.edge.reasoning ? `<div class="chain-reason">${p.edge.reasoning}</div>` : '';
+            html += `<div class="chain-step"><div class="chain-content">${p.node.content}</div>${reason}</div>`;
+        });
+    }
+    if (children.length) {
+        html += `<div class="panel-label">Leads To (${children.length})</div>`;
+        children.forEach(c => {
+            const reason = c.edge.reasoning ? `<div class="chain-reason">${c.edge.reasoning}</div>` : '';
+            html += `<div class="chain-step"><div class="chain-content">${c.node.content}</div>${reason}</div>`;
+        });
+    }
+    if (!parents.length && !children.length) {
+        html += `<div class="panel-label">Connections</div><div class="panel-meta">Orphan node — no derivation edges</div>`;
+    }
+    content.innerHTML = html;
+    panel.classList.add('open');
+}
+function closePanel() { document.getElementById('panel').classList.remove('open'); }
+
+// === ANALYTICS ===
 function buildAnalytics(counts) {
-    // Metric cards
     const degMap = {};
     allNodes.forEach(n => degMap[n.id] = 0);
     allEdges.forEach(e => {
@@ -313,69 +504,117 @@ function buildAnalytics(counts) {
     const orphans = degrees.filter(d => d === 0).length;
     const domains = {};
     allNodes.forEach(n => { const dom = n.domain || 'untagged'; domains[dom] = (domains[dom] || 0) + 1; });
-    const domCount = Object.keys(domains).length;
 
-    const metricsHTML = [
-        { v: allNodes.length, l: 'Nodes' },
-        { v: allEdges.length, l: 'Edges' },
-        { v: avgDeg, l: 'Avg Degree' },
-        { v: maxDeg, l: 'Max Degree' },
-        { v: orphans, l: 'Orphans' },
-        { v: domCount, l: 'Domains' }
+    document.getElementById('metrics-grid').innerHTML = [
+        { v: allNodes.length, l: 'Nodes' }, { v: allEdges.length, l: 'Edges' },
+        { v: avgDeg, l: 'Avg Degree' }, { v: maxDeg, l: 'Max Degree' },
+        { v: orphans, l: 'Orphans' }, { v: Object.keys(domains).length, l: 'Domains' }
     ].map(m => `<div style="background:#111;border:1px solid #1a1a1a;border-radius:10px;padding:10px;text-align:center;">
         <div style="font-size:22px;font-weight:700;color:#f5c542;">${m.v}</div>
         <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">${m.l}</div>
     </div>`).join('');
-    document.getElementById('metrics-grid').innerHTML = metricsHTML;
 
-    // Type distribution bars
     const maxCount = Math.max(...Object.values(counts));
-    const typeHTML = Object.entries(counts)
-        .sort((a,b) => b[1] - a[1])
-        .map(([type, count]) => {
-            const pct = (count / maxCount * 100).toFixed(0);
-            const color = COLORS[type] || '#888';
-            return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                <span style="width:70px;font-size:10px;color:${color};text-align:right;">${type}</span>
-                <div style="flex:1;background:#1a1a1a;border-radius:3px;height:14px;overflow:hidden;">
-                    <div style="width:${pct}%;background:${color};height:100%;border-radius:3px;transition:width 0.3s;"></div>
-                </div>
-                <span style="font-size:10px;color:#666;width:30px;">${count}</span>
-            </div>`;
-        }).join('');
-    document.getElementById('type-bars').innerHTML = typeHTML;
+    document.getElementById('type-bars').innerHTML = Object.entries(counts).sort((a,b) => b[1] - a[1]).map(([type, count]) => {
+        const pct = (count / maxCount * 100).toFixed(0);
+        const color = COLORS[type] || '#888';
+        return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="width:70px;font-size:10px;color:${color};text-align:right;">${type}</span>
+            <div style="flex:1;background:#1a1a1a;border-radius:3px;height:14px;overflow:hidden;">
+                <div style="width:${pct}%;background:${color};height:100%;border-radius:3px;"></div>
+            </div><span style="font-size:10px;color:#666;width:30px;">${count}</span></div>`;
+    }).join('');
 
-    // Top connected nodes
     const sorted = Object.entries(degMap).sort((a,b) => b[1] - a[1]).slice(0, 8);
-    const topHTML = sorted.map(([id, deg]) => {
+    document.getElementById('top-nodes').innerHTML = sorted.map(([id, deg]) => {
         const n = allNodes.find(x => x.id === id);
         const label = n ? (n.content || n.id).slice(0, 50) : id.slice(0, 8);
         const color = n ? (COLORS[n.type] || '#888') : '#888';
-        return `<div style="display:flex;gap:6px;align-items:baseline;margin-bottom:3px;cursor:pointer;" onclick="selectNode(allNodes.find(x=>x.id==='${id}'))">
+        return `<div style="display:flex;gap:6px;align-items:baseline;margin-bottom:3px;cursor:pointer;">
             <span style="color:#f5c542;font-weight:700;width:20px;text-align:right;">${deg}</span>
             <span style="color:${color};">·</span>
-            <span style="color:#ccc;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</span>
-        </div>`;
+            <span style="color:#ccc;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</span></div>`;
     }).join('');
-    document.getElementById('top-nodes').innerHTML = topHTML;
 
-    // Domain breakdown
     const domSorted = Object.entries(domains).sort((a,b) => b[1] - a[1]);
     const domMax = Math.max(...domSorted.map(d => d[1]));
-    const domHTML = domSorted.map(([dom, count]) => {
+    document.getElementById('domain-bars').innerHTML = domSorted.map(([dom, count]) => {
         const pct = (count / domMax * 100).toFixed(0);
         return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <span style="width:70px;font-size:10px;color:#999;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${dom}</span>
+            <span style="width:70px;font-size:10px;color:#999;text-align:right;">${dom}</span>
             <div style="flex:1;background:#1a1a1a;border-radius:3px;height:14px;overflow:hidden;">
                 <div style="width:${pct}%;background:#f5c542;height:100%;border-radius:3px;opacity:0.6;"></div>
-            </div>
-            <span style="font-size:10px;color:#666;width:30px;">${count}</span>
-        </div>`;
+            </div><span style="font-size:10px;color:#666;width:30px;">${count}</span></div>`;
     }).join('');
-    document.getElementById('domain-bars').innerHTML = domHTML;
+
+    const tagCnts = {};
+    allNodes.forEach(n => (n.tags || []).forEach(t => { tagCnts[t] = (tagCnts[t] || 0) + 1; }));
+    const tagSorted = Object.entries(tagCnts).sort((a,b) => b[1] - a[1]).slice(0, 12);
+    const tagMax = tagSorted.length ? tagSorted[0][1] : 1;
+    document.getElementById('tag-bars').innerHTML = tagSorted.map(([tag, count]) => {
+        const pct = (count / tagMax * 100).toFixed(0);
+        return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="width:70px;font-size:10px;color:#f5c542;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tag}</span>
+            <div style="flex:1;background:#1a1a1a;border-radius:3px;height:14px;overflow:hidden;">
+                <div style="width:${pct}%;background:#f5c542;height:100%;border-radius:3px;opacity:0.7;"></div>
+            </div><span style="font-size:10px;color:#666;width:30px;">${count}</span></div>`;
+    }).join('');
 }
 
+// === TIMELINE ===
+function enterTimeline() {
+    const margin = { top: 100, bottom: 80, left: 60, right: 60 };
+    const plotW = W / dpr - margin.left - margin.right;
+    const plotH = H / dpr - margin.top - margin.bottom;
+    const typeOrder = ['core_memory','belief','decision','insight','observation','fact','derived','question','tension','prediction','meta','dream','implication','cross_link','behavioral'];
+    const typeY = {};
+    typeOrder.forEach((t, i) => typeY[t] = i / (typeOrder.length - 1));
+
+    const jitter = (id) => {
+        let h = 0;
+        for (let i = 0; i < id.length; i++) h = ((h << 5) - h) + id.charCodeAt(i);
+        return (((h & 0xFFFF) / 0xFFFF) - 0.5) * 2;
+    };
+
+    const timed = allNodes.filter(d => d.timestamp && !isNaN(new Date(d.timestamp)));
+    if (!timed.length) return;
+    const times = timed.map(d => new Date(d.timestamp).getTime());
+    const tMin = Math.min(...times), tMax = Math.max(...times), tRange = tMax - tMin || 1;
+
+    timed.forEach(n => {
+        const t = new Date(n.timestamp).getTime();
+        n.fx = margin.left + ((t - tMin) / tRange) * plotW;
+        const tyBase = (typeY[n.type] || 0.5) * plotH * 0.7;
+        const domOff = n.domain === 'bunny' ? plotH * 0.15 : -plotH * 0.15;
+        n.fy = margin.top + plotH * 0.15 + tyBase + domOff + jitter(n.id) * 30;
+    });
+
+    const untimed = allNodes.filter(d => !d.timestamp || isNaN(new Date(d.timestamp)));
+    untimed.forEach((n, i) => {
+        n.fx = margin.left - 30;
+        n.fy = margin.top + (i / untimed.length) * plotH;
+    });
+    simulation.alpha(0.3).restart();
+}
+
+function exitTimeline() {
+    allNodes.forEach(n => { n.fx = null; n.fy = null; });
+    simulation.alpha(0.8).restart();
+}
+
+// === INIT ===
 async function initDashboard() {
+    canvas = document.getElementById('graph-canvas');
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth * dpr;
+    H = window.innerHeight * dpr;
+    canvas.width = W;
+    canvas.height = H;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
     const resp = await fetch('./data/graph.json');
     const graphData = await resp.json();
     allNodes = graphData.nodes.map(n => ({...n, type: n.type || n.node_type}));
@@ -394,19 +633,12 @@ async function initDashboard() {
     allNodes.forEach(n => counts[n.type] = (counts[n.type] || 0) + 1);
     const domCounts = {};
     allNodes.forEach(n => domCounts[n.domain] = (domCounts[n.domain] || 0) + 1);
+    const thinkTypes = new Set(['dream', 'cross_link', 'implication', 'prediction', 'tension']);
+    const thinkCount = allNodes.filter(n => thinkTypes.has(n.type)).length;
     document.querySelectorAll('.filter-count').forEach(el => {
         if (el.dataset.type) el.textContent = `(${counts[el.dataset.type] || 0})`;
         if (el.dataset.domain) el.textContent = `(${domCounts[el.dataset.domain] || 0})`;
-    });
-
-    // === ANALYTICS ===
-    buildAnalytics(counts);
-    document.getElementById('analytics-btn').addEventListener('click', () => {
-        const a = document.getElementById('analytics');
-        a.style.display = a.style.display === 'none' ? 'block' : 'none';
-    });
-    document.getElementById('analytics-close').addEventListener('click', () => {
-        document.getElementById('analytics').style.display = 'none';
+        if (el.dataset.group === 'think') el.textContent = `(${thinkCount})`;
     });
 
     degree = {};
@@ -416,273 +648,229 @@ async function initDashboard() {
         degree[e.target] = (degree[e.target] || 0) + 1;
     });
 
-    // Derivation depth
-    const adj = {};
-    allNodes.forEach(n => adj[n.id] = []);
-    allEdges.forEach(e => { if (!adj[e.source]) adj[e.source] = []; adj[e.source].push(e.target); });
-    const depthMap = {};
-    const queue = [];
-    allNodes.forEach(n => {
-        if (n.type === 'seed' || n.type === 'core_memory') { depthMap[n.id] = 0; queue.push(n.id); }
-    });
-    let qi = 0;
-    while (qi < queue.length) {
-        const cur = queue[qi++];
-        (adj[cur] || []).forEach(child => {
-            if (depthMap[child] === undefined || depthMap[child] > depthMap[cur] + 1) {
-                depthMap[child] = depthMap[cur] + 1; queue.push(child);
-            }
-        });
-    }
-    allNodes.forEach(n => { n._depth = depthMap[n.id] !== undefined ? depthMap[n.id] : 10; });
+    buildAnalytics(counts);
 
-    const W = window.innerWidth, H = window.innerHeight;
-    svg = d3.select('#graph').append('svg').attr('width', W).attr('height', H);
-    g = svg.append('g');
-    zoom = d3.zoom().scaleExtent([0.1, 5]).on('zoom', e => g.attr('transform', e.transform));
-    svg.call(zoom);
+    // Simulation
+    const vW = window.innerWidth, vH = window.innerHeight;
+    // Random initial positions near center
+    allNodes.forEach((n) => {
+        n.x = vW / 2 + (Math.random() - 0.5) * 400;
+        n.y = vH / 2 + (Math.random() - 0.5) * 400;
+    });
 
     simulation = d3.forceSimulation(allNodes)
         .force('link', d3.forceLink(allEdges).id(d => d.id).distance(60).strength(0.3))
-        .force('charge', d3.forceManyBody().strength(-120))
-        .force('center', d3.forceCenter(W / 2, H / 2))
-        .force('collision', d3.forceCollide().radius(d => getNodeR(d) + 4));
+        .force('charge', d3.forceManyBody().strength(-80).theta(0.8).distanceMax(600))
+        .force('center', d3.forceCenter(vW / 2, vH / 2))
+        .alphaDecay(0.01)
+        .velocityDecay(0.4);
 
-    link = g.append('g').selectAll('line')
-        .data(allEdges).enter().append('line')
-        .attr('class', d => 'link ' + (d.relation || ''))
-        .attr('stroke-width', d => Math.max(0.5, (d.weight || 0.5) * 2))
-        .attr('stroke', '#333');
+    // Zoom + drag integrated
+    const zoomBehavior = d3.zoom()
+        .scaleExtent([0.05, 5])
+        .filter((e) => {
+            // Allow all zoom events, but if clicking on a node, we handle drag separately
+            return true;
+        })
+        .on('zoom', (e) => { transform = e.transform; });
+    d3.select(canvas).call(zoomBehavior);
 
-    node = g.append('g').selectAll('g')
-        .data(allNodes).enter().append('g')
-        .attr('class', 'node')
-        .call(d3.drag().on('start', dragstart).on('drag', dragging).on('end', dragend));
+    // Start render loop
+    requestAnimationFrame(draw);
 
-    node.append('circle')
-        .attr('r', d => getNodeR(d))
-        .attr('fill', d => getNodeColor(d))
-        .attr('stroke', d => d3.color(getNodeColor(d)).darker(0.5))
-        .attr('stroke-dasharray', d => d.source_file === 'system_generated' ? '3,2' : null)
-        .attr('stroke-width', d => d.type === 'hotspot' ? 3 : 1.5)
-        .attr('stroke-opacity', d => d.type === 'hotspot' ? 0.8 : 0.6);
+    // Fit graph after simulation settles
+    setTimeout(() => fitGraph(zoomBehavior), 2000);
+    setTimeout(() => { simulation.alphaTarget(0); fitGraph(zoomBehavior); }, 5000);
 
-    labels = node.append('text')
-        .text(d => d.type === 'hotspot' ? '🔥 ' + truncate(d.content, 30) : truncate(d.content, 20))
-        .attr('dy', d => -(getNodeR(d) + 4))
-        .attr('class', d => d.type === 'hotspot' ? 'hotspot-label' : '')
-        .style('font-size', d => d.type === 'hotspot' ? '11px' : null)
-        .style('font-weight', d => d.type === 'hotspot' ? '600' : null);
+    // === MOUSE INTERACTION ===
+    canvas.addEventListener('mousemove', (e) => {
+        if (isDragging && dragNode) {
+            const rect = canvas.getBoundingClientRect();
+            const gx = (e.clientX - rect.left - transform.x) / transform.k;
+            const gy = (e.clientY - rect.top - transform.y) / transform.k;
+            dragNode.fx = gx;
+            dragNode.fy = gy;
+            return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const n = nodeAtPoint(mx, my);
+        hoveredNode = n;
+        canvas.style.cursor = n ? 'pointer' : 'grab';
 
-    node.on('click', (e, d) => { e.stopPropagation(); selectNode(d); });
-    svg.on('click', () => { selectedNode = null; node.classed('selected', false); resetOpacity(); closePanel(); });
-
-    simulation.on('tick', () => {
-        link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
-        node.attr('transform', d => `translate(${d.x},${d.y})`);
+        const tooltip = document.getElementById('tooltip');
+        if (n) {
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.clientX + 12) + 'px';
+            tooltip.style.top = (e.clientY - 10) + 'px';
+            tooltip.innerHTML = `<span style="color:${getNodeColor(n)};font-weight:600;">${n.type}</span> · ${n.domain}<br>${truncate(n.content, 120)}`;
+        } else {
+            tooltip.style.display = 'none';
+        }
     });
 
-    document.getElementById('search').addEventListener('input', e => {
-        const q = e.target.value.toLowerCase();
-        if (!q) { applyFilter(); return; }
-        node.style('opacity', d => d.content.toLowerCase().includes(q) ? 1 : 0.08);
-        labels.style('opacity', d => d.content.toLowerCase().includes(q) ? 1 : 0.08);
-        link.style('opacity', 0.03);
-        const matches = allNodes.filter(n => n.content.toLowerCase().includes(q));
-        if (matches.length === 1) selectNode(matches[0]);
+    canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const n = nodeAtPoint(e.clientX - rect.left, e.clientY - rect.top);
+        if (n) {
+            isDragging = true;
+            dragNode = n;
+            simulation.alphaTarget(0.3).restart();
+            n.fx = n.x;
+            n.fy = n.y;
+            // Prevent zoom from interfering
+            e.stopPropagation();
+        }
     });
 
+    canvas.addEventListener('mouseup', (e) => {
+        if (isDragging && dragNode) {
+            if (!timelineMode) {
+                dragNode.fx = null;
+                dragNode.fy = null;
+            }
+            simulation.alphaTarget(0);
+            dragNode = null;
+            isDragging = false;
+            return;
+        }
+    });
+
+    canvas.addEventListener('click', (e) => {
+        if (isDragging) return;
+        const rect = canvas.getBoundingClientRect();
+        const n = nodeAtPoint(e.clientX - rect.left, e.clientY - rect.top);
+        if (n) {
+            selectedNode = n;
+            showPanel(n);
+        } else {
+            selectedNode = null;
+            closePanel();
+        }
+    });
+
+    // === FILTER BUTTONS ===
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            activeFilter = btn.dataset.type || btn.dataset.domain || 'all';
+            activeFilter = btn.dataset.type || btn.dataset.domain || btn.dataset.group || 'all';
             activeDomain = btn.dataset.domain || null;
+            activeTag = null;
+            document.querySelectorAll('#tag-filters .tag-pill').forEach(p => p.classList.remove('active'));
             applyFilter();
         });
     });
 
+    // === TAG FILTERS ===
+    const tagCounts = {};
+    allNodes.forEach(n => { (n.tags || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }); });
+    const topTags = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]).slice(0, 30);
+    const tagBar = document.getElementById('tag-filters');
+    tagBar.innerHTML = topTags.map(([tag, count]) =>
+        `<span class="tag-pill" data-tag="${tag}" onclick="window.filterByTag('${tag}')">${tag} <span style="color:#555">${count}</span></span>`
+    ).join('');
+
+    window.filterByTag = function(tag) {
+        if (activeTag === tag) {
+            activeTag = null;
+            tagBar.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('active'));
+            applyFilter();
+            return;
+        }
+        activeTag = tag;
+        tagBar.querySelectorAll('.tag-pill').forEach(p => p.classList.toggle('active', p.dataset.tag === tag));
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.filter-btn[data-domain="all"]').classList.add('active');
+        activeFilter = 'all'; activeDomain = null;
+        applyFilter();
+    };
+
+    document.getElementById('tag-toggle-btn').addEventListener('click', () => {
+        const btn = document.getElementById('tag-toggle-btn');
+        btn.classList.toggle('active');
+        tagBar.classList.toggle('visible');
+        document.getElementById('search-wrap').classList.toggle('tags-open');
+        if (!tagBar.classList.contains('visible') && activeTag) {
+            activeTag = null;
+            tagBar.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('active'));
+            applyFilter();
+        }
+    });
+
+    // === SEARCH ===
+    document.getElementById('search').addEventListener('input', e => {
+        const q = e.target.value.toLowerCase();
+        if (!q) { applyFilter(); return; }
+        const matchSearch = d => d.content.toLowerCase().includes(q) || (d.tags || []).some(t => t.toLowerCase().includes(q));
+        setOpacity(d => matchSearch(d) ? 1 : 0.05);
+        const matches = allNodes.filter(matchSearch);
+        if (matches.length === 1) { selectedNode = matches[0]; showPanel(matches[0]); }
+    });
+
+    // === TIMELINE ===
     document.getElementById('timeline-btn').addEventListener('click', () => {
         timelineMode = !timelineMode;
         document.getElementById('timeline-btn').classList.toggle('active', timelineMode);
         if (timelineMode) enterTimeline(); else exitTimeline();
     });
 
+    // === ANALYTICS TOGGLE ===
+    document.getElementById('analytics-btn').addEventListener('click', () => {
+        const a = document.getElementById('analytics');
+        a.style.display = a.style.display === 'none' ? 'block' : 'none';
+    });
+    document.getElementById('analytics-close').addEventListener('click', () => {
+        document.getElementById('analytics').style.display = 'none';
+    });
+
+    // === PANEL DRAG (mobile) ===
     const panel = document.getElementById('panel');
     const handleZone = document.getElementById('panel-handle-zone');
     let startY = 0, panelDragging = false;
     handleZone.addEventListener('touchstart', e => { panelDragging = true; startY = e.touches[0].clientY; panel.style.transition = 'none'; });
     handleZone.addEventListener('touchmove', e => { if (!panelDragging) return; const dy = e.touches[0].clientY - startY; if (dy > 0) panel.style.transform = `translateY(${dy}px)`; });
-    handleZone.addEventListener('touchend', e => { if (!panelDragging) return; panelDragging = false; panel.style.transition = 'transform 0.3s ease'; if (e.changedTouches[0].clientY - startY > 80) { panel.classList.remove('open'); panel.style.transform = ''; } else { panel.style.transform = ''; } });
+    handleZone.addEventListener('touchend', e => {
+        if (!panelDragging) return; panelDragging = false;
+        panel.style.transition = 'transform 0.3s ease';
+        if (e.changedTouches[0].clientY - startY > 80) { panel.classList.remove('open'); panel.style.transform = ''; }
+        else { panel.style.transform = ''; }
+    });
     handleZone.addEventListener('click', e => { e.stopPropagation(); panel.classList.toggle('open'); });
 
-    function fitGraph() {
-        const bounds = g.node().getBBox();
-        if (bounds.width === 0) return;
-        const pad = 60;
-        const scale = Math.min((W - pad) / bounds.width, (H - pad) / bounds.height) * 0.85;
-        const tx = W/2 - (bounds.x + bounds.width/2) * scale;
-        const ty = H/2 - (bounds.y + bounds.height/2) * scale;
-        svg.transition().duration(800).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(Math.min(scale, 1.5)));
+    // Resize
+    window.addEventListener('resize', () => {
+        dpr = window.devicePixelRatio || 1;
+        W = window.innerWidth * dpr;
+        H = window.innerHeight * dpr;
+        canvas.width = W;
+        canvas.height = H;
+        canvas.style.width = window.innerWidth + 'px';
+        canvas.style.height = window.innerHeight + 'px';
+        ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+    });
+
+    function fitGraph(zoomB) {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        allNodes.forEach(d => {
+            if (d.x == null) return;
+            if (d.x < minX) minX = d.x;
+            if (d.x > maxX) maxX = d.x;
+            if (d.y < minY) minY = d.y;
+            if (d.y > maxY) maxY = d.y;
+        });
+        if (minX === Infinity) return;
+        const gW = maxX - minX || 1, gH = maxY - minY || 1;
+        const pad = 80;
+        const scale = Math.min((window.innerWidth - pad) / gW, (window.innerHeight - pad) / gH) * 0.85;
+        const tx = window.innerWidth / 2 - (minX + gW / 2) * scale;
+        const ty = window.innerHeight / 2 - (minY + gH / 2) * scale;
+        const t = d3.zoomIdentity.translate(tx, ty).scale(Math.min(scale, 1.5));
+        d3.select(canvas).transition().duration(800).call(zoomB.transform, t);
     }
-    setTimeout(fitGraph, 500);
-    setTimeout(fitGraph, 2000);
-    setTimeout(() => { simulation.alphaTarget(0); fitGraph(); }, 4000);
 }
-
-function applyFilter() {
-    if (activeFilter === 'all' && !activeDomain) { node.style('opacity', 1); labels.style('opacity', 1); link.style('opacity', null); return; }
-    let matchIds;
-    if (activeDomain) {
-        matchIds = new Set(allNodes.filter(n => n.domain === activeDomain).map(n => n.id));
-    } else {
-        matchIds = new Set(allNodes.filter(n => n.type === activeFilter).map(n => n.id));
-    }
-    const connected = new Set(matchIds);
-    allEdges.forEach(e => {
-        const sid = typeof e.source === 'object' ? e.source.id : e.source;
-        const tid = typeof e.target === 'object' ? e.target.id : e.target;
-        if (matchIds.has(sid)) connected.add(tid);
-        if (matchIds.has(tid)) connected.add(sid);
-    });
-    node.style('opacity', d => matchIds.has(d.id) ? 1 : (connected.has(d.id) ? 0.3 : 0.05));
-    labels.style('opacity', d => matchIds.has(d.id) ? 1 : (connected.has(d.id) ? 0.3 : 0.05));
-    link.style('opacity', e => {
-        const sid = typeof e.source === 'object' ? e.source.id : e.source;
-        const tid = typeof e.target === 'object' ? e.target.id : e.target;
-        return (matchIds.has(sid) || matchIds.has(tid)) ? 0.6 : 0.02;
-    });
-}
-
-function enterTimeline() {
-    const W = window.innerWidth, H = window.innerHeight;
-    const margin = { top: 80, bottom: 80, left: 60, right: 60 };
-
-    // Parse timestamps — sort nodes by time
-    const parseT = d => {
-        if (!d.timestamp) return null;
-        const t = new Date(d.timestamp);
-        return isNaN(t) ? null : t;
-    };
-    const timed = allNodes.filter(d => parseT(d) !== null);
-    const untimed = allNodes.filter(d => parseT(d) === null);
-
-    if (timed.length === 0) return;
-
-    const times = timed.map(d => parseT(d).getTime());
-    const tMin = Math.min(...times), tMax = Math.max(...times);
-    const tRange = tMax - tMin || 1;
-
-    // X = time, Y = domain + jitter by node_type for spread
-    const typeOrder = ['hotspot','core_memory','belief','decision','insight','observation','fact','derived','question','tension','prediction','meta','dream','implication','cross_link'];
-    const typeY = {};
-    typeOrder.forEach((t, i) => typeY[t] = i / (typeOrder.length - 1));
-
-    // Seeded pseudo-random for consistent jitter
-    const jitter = (id) => {
-        let h = 0;
-        for (let i = 0; i < id.length; i++) h = ((h << 5) - h) + id.charCodeAt(i);
-        return (((h & 0xFFFF) / 0xFFFF) - 0.5) * 2; // -1 to 1
-    };
-
-    const plotW = W - margin.left - margin.right;
-    const plotH = H - margin.top - margin.bottom;
-
-    timed.forEach(n => {
-        const t = parseT(n).getTime();
-        const tx = margin.left + ((t - tMin) / tRange) * plotW;
-        const tyBase = (typeY[n.node_type] || 0.5) * plotH * 0.7;
-        const domainOffset = n.domain === 'bunny' ? plotH * 0.15 : -plotH * 0.15;
-        const j = jitter(n.id) * 30;
-        n.fx = tx;
-        n.fy = margin.top + plotH * 0.15 + tyBase + domainOffset + j;
-    });
-
-    // Park untimed nodes off to the left
-    untimed.forEach((n, i) => {
-        n.fx = margin.left - 30;
-        n.fy = margin.top + (i / untimed.length) * plotH;
-    });
-
-    // Hide labels in timeline mode (too dense)
-    if (labels) labels.style('display', 'none');
-
-    simulation.alpha(0.3).restart();
-    setTimeout(() => {
-        const bounds = g.node().getBBox();
-        if (bounds.width === 0) return;
-        const pad = 40;
-        const scale = Math.min((W - pad) / bounds.width, (H - pad) / bounds.height) * 0.85;
-        const tx = W/2 - (bounds.x + bounds.width/2) * scale;
-        const ty = H/2 - (bounds.y + bounds.height/2) * scale;
-        svg.transition().duration(800).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(Math.min(scale, 1.2)));
-    }, 600);
-}
-
-function exitTimeline() { allNodes.forEach(n => { n.fx = null; n.fy = null; }); if (labels) labels.style('display', null); simulation.alpha(0.8).restart(); }
-function getRadius(deg) { return Math.max(4, Math.min(16, 4 + deg * 1.5)); }
-function getNodeR(d) { return d.type === 'hotspot' ? 14 : getRadius(degree[d.id] || 0); }
-function truncate(s, n) { return !s ? '' : s.length > n ? s.slice(0, n) + '…' : s; }
-
-function selectNode(d) {
-    selectedNode = d;
-    node.classed('selected', n => n.id === d.id);
-    const connected = new Set([d.id]);
-    allEdges.forEach(e => {
-        const sid = typeof e.source === 'object' ? e.source.id : e.source;
-        const tid = typeof e.target === 'object' ? e.target.id : e.target;
-        if (sid === d.id) connected.add(tid);
-        if (tid === d.id) connected.add(sid);
-    });
-    node.style('opacity', n => connected.has(n.id) ? 1 : 0.1);
-    labels.style('opacity', n => connected.has(n.id) ? 1 : 0.1);
-    link.style('opacity', e => {
-        const sid = typeof e.source === 'object' ? e.source.id : e.source;
-        const tid = typeof e.target === 'object' ? e.target.id : e.target;
-        return (sid === d.id || tid === d.id) ? 0.8 : 0.03;
-    });
-    showPanel(d);
-}
-
-function showPanel(d) {
-    const panel = document.getElementById('panel');
-    const content = document.getElementById('panel-content');
-    const c = getNodeColor(d);
-    const typeBadge = `<span class="node-type-badge" style="background:${c}33;color:${c}">${d.type}</span>`;
-    const parents = allEdges
-        .filter(e => (typeof e.target === 'object' ? e.target.id : e.target) === d.id)
-        .map(e => { const pid = typeof e.source === 'object' ? e.source.id : e.source; return { node: allNodes.find(n => n.id === pid), edge: e }; })
-        .filter(p => p.node);
-    const children = allEdges
-        .filter(e => (typeof e.source === 'object' ? e.source.id : e.source) === d.id)
-        .map(e => { const cid = typeof e.target === 'object' ? e.target.id : e.target; return { node: allNodes.find(n => n.id === cid), edge: e }; })
-        .filter(c => c.node);
-    let html = `
-        <div class="panel-label">Thought ${typeBadge} <span style="color:#555;font-size:9px;margin-left:8px;">depth ${d._depth}</span></div>
-        <div class="panel-text" style="font-size:16px;font-weight:500;">${d.content}</div>
-        <div class="panel-meta">Confidence: ${d.confidence} · ${d.domain === 'bunny' ? '🐰 Bunny' : '🧠 Raj'} · ${d.source_file === 'system_generated' ? '🤖 AI Generated' : '✍️ Human'}</div>
-    `;
-    if (parents.length) {
-        html += `<div class="panel-label">Derived From (${parents.length})</div>`;
-        parents.forEach(p => { const reason = p.edge.reasoning ? `<div class="chain-reason">${p.edge.reasoning}</div>` : ''; html += `<div class="chain-step"><div class="chain-content">${p.node.content}</div>${reason}</div>`; });
-    }
-    if (children.length) {
-        html += `<div class="panel-label">Leads To (${children.length})</div>`;
-        children.forEach(c => { const reason = c.edge.reasoning ? `<div class="chain-reason">${c.edge.reasoning}</div>` : ''; html += `<div class="chain-step"><div class="chain-content">${c.node.content}</div>${reason}</div>`; });
-    }
-    if (!parents.length && !children.length) {
-        html += `<div class="panel-label">Connections</div><div class="panel-meta">Orphan node — no derivation edges</div>`;
-    }
-    content.innerHTML = html;
-    panel.classList.add('open');
-}
-
-function closePanel() { document.getElementById('panel').classList.remove('open'); }
-function resetOpacity() { node.style('opacity', 1); labels.style('opacity', 1); link.style('opacity', null); }
-function dragstart(e, d) { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
-function dragging(e, d) { d.fx = e.x; d.fy = e.y; }
-function dragend(e, d) { if (!e.active) simulation.alphaTarget(0); if (!timelineMode) { d.fx = null; d.fy = null; } }
 </script>
 </body>
 </html>

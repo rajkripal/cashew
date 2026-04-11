@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+    (function() {
+        const HASH = "8c24cd43fafd4ec0c3c799d53a5fb884832cfdab5322b3280cc3844eed9a4ab7";
+        const stored = sessionStorage.getItem("cashew_auth");
+        if (stored === HASH) return;
+        const pw = prompt("🥜 cashew metrics — enter password:");
+        if (!pw) { document.body.innerHTML = "<h2 style=\"color:#888;text-align:center;margin-top:40vh\">Access denied</h2>"; throw "denied"; }
+        crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw)).then(buf => {
+            const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+            if (hash === HASH) { sessionStorage.setItem("cashew_auth", HASH); }
+            else { document.body.innerHTML = "<h2 style=\"color:#888;text-align:center;margin-top:40vh\">Wrong password</h2>"; throw "denied"; }
+        });
+    })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cashew Metrics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            line-height: 1.4;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+        
+        h1 {
+            color: #c9a227;
+            font-size: 2em;
+            font-weight: 600;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+        
+        .status-indicator {
+            font-size: 1.2em;
+            color: #4CAF50;
+        }
+        
+        .status-indicator.error {
+            color: #f44336;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        
+        .card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .card.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .card h2, .card h3 {
+            color: #c9a227;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .overview-cards .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+        
+        .metric-card {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #c9a227;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            font-size: 0.8em;
+            color: #aaa;
+        }
+        
+        .health-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        
+        .health-grid > div {
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 4px;
+        }
+        
+        .health-grid span {
+            color: #c9a227;
+            font-weight: bold;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+        
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        
+        th {
+            background: #2a2a2a;
+            color: #c9a227;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: #1a1a1a;
+        }
+        
+        canvas {
+            max-width: 100%;
+            height: 300px !important; min-height: 200px;
+        }
+        
+        .error {
+            color: #f44336;
+            padding: 10px;
+            background: rgba(244, 67, 54, 0.1);
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🥜 Cashew Metrics Dashboard</h1>
+            <div class="status" id="status">
+                <span class="status-indicator" id="metrics-status">●</span>
+                <span id="status-text">Loading...</span>
+            </div>
+        </header>
+        
+        <div class="grid">
+            <!-- Overview Cards -->
+            <div class="card overview-cards" id="overview">
+                <h2>Overview (24h)</h2>
+                <div class="cards-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="total-queries">-</div>
+                        <div class="metric-label">Total Queries</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="avg-retrieval">-</div>
+                        <div class="metric-label">Avg Retrieval (ms)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="recent-queries">-</div>
+                        <div class="metric-label">Recent (1h)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="bfs-bonus">-</div>
+                        <div class="metric-label">BFS Bonus</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Retrieval Breakdown -->
+            <div class="card">
+                <h3>Retrieval Timing Breakdown</h3>
+                <canvas id="breakdown-chart" ></canvas>
+            </div>
+            
+            <!-- BFS Value Over Time -->
+            <div class="card">
+                <h3>BFS Value (Overlap Ratio)</h3>
+                <canvas id="bfs-chart" ></canvas>
+            </div>
+            
+            <!-- Latency Over Time -->
+            <div class="card">
+                <h3>Retrieval Latency Over Time</h3>
+                <canvas id="latency-chart" ></canvas>
+            </div>
+            
+            <!-- System Health -->
+            <div class="card">
+                <h3>System Health</h3>
+                <div class="health-grid" id="health">
+                    <div>Nodes: <span id="node-count">-</span></div>
+                    <div>Edges: <span id="edge-count">-</span></div>
+                    <div>Vec Sync: <span id="vec-sync">-</span></div>
+                    <div>Uptime: <span id="uptime">-</span></div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="card full-width">
+                <h3>Recent Activity</h3>
+                <table id="recent-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Duration (ms)</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-tbody">
+                        <tr><td colspan="4">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        
+        let charts = {};
+        
+        // Chart.js default configuration
+        Chart.defaults.color = '#e0e0e0';
+        Chart.defaults.borderColor = '#333';
+        Chart.defaults.backgroundColor = 'rgba(201, 162, 39, 0.1)';
+        Chart.defaults.font.family = 'Monaco, Menlo, Ubuntu Mono, monospace';
+        Chart.defaults.font.size = 11;
+        Chart.defaults.responsive = true;
+        Chart.defaults.maintainAspectRatio = false;
+        
+        async function fetchData(endpoint) {
+            try {
+                const response = await fetch(endpoint);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error('Fetch error:', error);
+                updateStatus('error', `Connection failed: ${error.message}`);
+                throw error;
+            }
+        }
+        
+        function updateStatus(type, message) {
+            const indicator = document.getElementById('metrics-status');
+            const text = document.getElementById('status-text');
+            
+            indicator.className = `status-indicator ${type}`;
+            text.textContent = message;
+        }
+        
+        async function updateOverview() {
+            try {
+                const data = await fetchData('./data/summary.json');
+                
+                document.getElementById('total-queries').textContent = data.total_queries || 0;
+                document.getElementById('avg-retrieval').textContent = 
+                    data.avg_retrieval_time ? Math.round(data.avg_retrieval_time) : '-';
+                document.getElementById('recent-queries').textContent = data.recent_queries_1h || 0;
+                
+                // BFS bonus calculation
+                const retrievalStats = await fetchData('./data/timeseries.json');
+                const bfsBonus = calculateBfsBonus(retrievalStats);
+                document.getElementById('bfs-bonus').textContent = bfsBonus;
+                
+                // System health
+                const health = data.system_health || {};
+                document.getElementById('node-count').textContent = health.node_count || '-';
+                document.getElementById('edge-count').textContent = health.edge_count || '-';
+                document.getElementById('vec-sync').textContent = 
+                    health.vec_sync_ratio ? `${Math.round(health.vec_sync_ratio * 100)}%` : '-';
+                document.getElementById('uptime').textContent = `${data.uptime_hours || 24}h`;
+                
+            } catch (error) {
+                console.error('Failed to update overview:', error);
+            }
+        }
+        
+        function calculateBfsBonus(retrievalData) {
+            if (!retrievalData.length) return '-';
+            
+            let totalBonus = 0;
+            let count = 0;
+            
+            for (const point of retrievalData) {
+                if (point.metadata && point.metadata.bfs_explored && point.metadata.seeds_found) {
+                    const bonus = Math.max(0, point.metadata.bfs_explored - point.metadata.seeds_found);
+                    totalBonus += bonus;
+                    count++;
+                }
+            }
+            
+            return count > 0 ? Math.round(totalBonus / count) : '-';
+        }
+        
+        async function updateBreakdownChart() {
+            try {
+                const data = await fetchData('./data/summary.json');
+                const byType = data.by_type || {};
+                
+                const ctx = document.getElementById('breakdown-chart');
+                
+                if (charts.breakdown) {
+                    charts.breakdown.destroy();
+                }
+                
+                charts.breakdown = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(byType),
+                        datasets: [{
+                            data: Object.values(byType).map(t => t.avg_duration),
+                            backgroundColor: [
+                                'rgba(201, 162, 39, 0.8)',
+                                'rgba(76, 175, 80, 0.8)',
+                                'rgba(33, 150, 243, 0.8)',
+                                'rgba(156, 39, 176, 0.8)',
+                                'rgba(255, 152, 0, 0.8)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to update breakdown chart:', error);
+            }
+        }
+        
+        async function updateLatencyChart() {
+            try {
+                const data = await fetchData('./data/timeseries.json');
+                
+                const ctx = document.getElementById('latency-chart');
+                
+                if (charts.latency) {
+                    charts.latency.destroy();
+                }
+                
+                charts.latency = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.map(d => new Date(d.timestamp).toLocaleTimeString()),
+                        datasets: [{
+                            label: 'Retrieval Time (ms)',
+                            data: data.map(d => d.duration_ms),
+                            borderColor: 'rgba(201, 162, 39, 1)',
+                            backgroundColor: 'rgba(201, 162, 39, 0.1)',
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Duration (ms)'
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to update latency chart:', error);
+            }
+        }
+        
+        async function updateBfsChart() {
+            try {
+                const data = await fetchData('./data/timeseries.json');
+                
+                const bfsData = data
+                    .filter(d => d.metadata && d.metadata.overlap_ratio !== undefined)
+                    .map(d => ({
+                        x: new Date(d.timestamp).toLocaleTimeString(),
+                        y: d.metadata.overlap_ratio * 100
+                    }));
+                
+                const ctx = document.getElementById('bfs-chart');
+                
+                if (charts.bfs) {
+                    charts.bfs.destroy();
+                }
+                
+                charts.bfs = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: bfsData.map(d => d.x),
+                        datasets: [{
+                            label: 'Seeds vs Total (%)',
+                            data: bfsData.map(d => d.y),
+                            borderColor: 'rgba(76, 175, 80, 1)',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                title: {
+                                    display: true,
+                                    text: 'Overlap Ratio (%)'
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to update BFS chart:', error);
+            }
+        }
+        
+        async function updateRecentTable() {
+            try {
+                const data = await fetchData('./data/recent.json');
+                const tbody = document.getElementById('recent-tbody');
+                
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4">No recent activity</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.map(row => {
+                    const time = new Date(row.timestamp).toLocaleTimeString();
+                    const details = formatMetadata(row.metadata);
+                    
+                    return `<tr>
+                        <td>${time}</td>
+                        <td>${row.metric_type}</td>
+                        <td>${row.duration_ms}</td>
+                        <td>${details}</td>
+                    </tr>`;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Failed to update recent table:', error);
+                document.getElementById('recent-tbody').innerHTML = 
+                    '<tr><td colspan="4">Error loading data</td></tr>';
+            }
+        }
+        
+        function formatMetadata(metadata) {
+            if (!metadata || Object.keys(metadata).length === 0) return '-';
+            
+            const parts = [];
+            if (metadata.result_count !== undefined) parts.push(`${metadata.result_count} results`);
+            if (metadata.nodes_created) parts.push(`${metadata.nodes_created} nodes`);
+            if (metadata.edges_created) parts.push(`${metadata.edges_created} edges`);
+            if (metadata.used_sqlite_vec !== undefined) {
+                parts.push(metadata.used_sqlite_vec ? 'vec' : 'brute-force');
+            }
+            if (metadata.bfs_explored) parts.push(`${metadata.bfs_explored} explored`);
+            
+            return parts.join(', ') || JSON.stringify(metadata);
+        }
+        
+        async function updateDashboard() {
+            try {
+                updateStatus('ok', 'Refreshing...');
+                
+                await Promise.all([
+                    updateOverview(),
+                    updateBreakdownChart(),
+                    updateLatencyChart(),
+                    updateBfsChart(),
+                    updateRecentTable()
+                ]);
+                
+                updateStatus('ok', `Updated ${new Date().toLocaleTimeString()}`);
+            } catch (error) {
+                updateStatus('error', 'Update failed');
+            }
+        }
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDashboard();
+            
+            // Auto-refresh every 10 seconds
+            setInterval(updateDashboard, 10000);
+        });
+        
+    </script>
+</body>
+</html>
