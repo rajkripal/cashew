@@ -2,7 +2,11 @@
 
 **Persistent thought-graph memory for AI agents.**
 
-The name comes from asking "do cats eat cashews?" — a question from a curious kid visiting family in India, watching stray cats sneak into kitchens to steal food. That kid never stopped asking questions. Cashew is a system that never stops asking questions either — autonomous think cycles find connections you didn't know existed.
+The name comes from asking "do cats eat cashews?" — a question I asked my aunt as a 10-year-old kid in India, because the cashews were left open in the kitchen and I knew stray cats sneak into homes to eat food. My family still brings it up every time I visit. I never stopped asking questions. This system doesn't either — autonomous think cycles find connections you didn't know existed.
+
+## Architecture
+
+![Cashew Architecture](docs/architecture-diagram.png)
 
 ## What It Does
 
