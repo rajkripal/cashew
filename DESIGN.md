@@ -45,7 +45,7 @@ cashew combines persistent derivation, recursive BFS retrieval, and organic grap
                                          │  - parent_id  │
                                          │  - child_id   │
                                          │  - weight     │
-                                         │  - relation   │
+                                         │  - reasoning  │
                                          └─────────────┘
                                                 │
 ┌───────────┬───────────────┬─────────────────┴───────────────┐
@@ -79,7 +79,9 @@ CREATE TABLE thought_nodes (
     last_updated TEXT DEFAULT NULL,
     last_accessed TEXT,
     access_count INTEGER DEFAULT 0,
-    domain TEXT
+    domain TEXT,
+    permanent INTEGER DEFAULT 0,
+    tags TEXT
 );
 
 CREATE TABLE derivation_edges (
@@ -87,6 +89,7 @@ CREATE TABLE derivation_edges (
     child_id TEXT NOT NULL,
     weight REAL NOT NULL,
     confidence REAL NOT NULL,
+    reasoning TEXT,
     FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
     FOREIGN KEY (child_id) REFERENCES thought_nodes(id),
     PRIMARY KEY (parent_id, child_id)
@@ -192,7 +195,7 @@ def run_sleep_cycle():
 
 **Results:** Graph organically develops high-connectivity nodes and semantic neighborhoods via cross-linking. BFS traversal successfully retrieves contextually relevant knowledge without synthetic hierarchy.
 
-**Scaled to:** 2,160 nodes, 3,499 edges, zero hotspots required
+**Scaled to:** 3,064 nodes, 6,122 edges, zero hotspots required (as of April 2026, author's personal graph)
 
 ### Experiment 2: General Domain Architecture ✅ ACHIEVED
 **Goal:** Test domain-agnostic knowledge organization
@@ -205,7 +208,7 @@ def run_sleep_cycle():
 
 **Results:** Multi-domain graphs successfully maintain domain separation while enabling cross-domain synthesis. BFS retrieval finds relevant knowledge across domains. Sleep cycles create meaningful inter-domain connections without synthetic hierarchy.
 
-**Scaled to:** Multiple domains (user/ai) with 2,160 nodes across knowledge areas
+**Scaled to:** Multiple domains (user/ai) with 3,064 nodes across knowledge areas (as of April 2026, author's personal graph)
 
 ### Experiment 3: Capable Agent Framework (Future)
 **Goal:** Graph as agency engine for AI agents
@@ -280,7 +283,7 @@ Cross-domain context synthesis produces insights that connect disparate knowledg
 1. ✅ Multiple domains (user/ai) co-exist in single graph
 2. ✅ Cross-domain sleep cycles create inter-domain connections
 3. ✅ BFS retrieval finds relevant nodes across domains
-4. ✅ System scales to 2000+ nodes across knowledge areas
+4. ✅ System scales to 3000+ nodes across knowledge areas
 5. ✅ Domain tags enable filtering while preserving cross-pollination
 
 ### Phase 3: Agency Engine (Future)
@@ -331,7 +334,7 @@ cashew/
 │   ├── index.html           # Dashboard interface
 │   └── data/               # Graph exports
 ├── data/                    # Database and exports
-│   └── graph.db            # SQLite database (2160 nodes, 3499 edges)
+│   └── graph.db            # SQLite database (3064 nodes, 6122 edges, as of April 2026)
 └── docs/                    # Documentation
     └── architecture.md      # Technical architecture details
 ```
@@ -396,14 +399,16 @@ Connect isolated thought chains, deduplicate, garbage collect, and consolidate �
 
 ---
 
-## 12. Current State (March 2026)
+## 12. Current State (April 2026)
 
-### Graph Statistics
-- **2,160 thought nodes** across 9 distinct types (fact, insight, observation, etc.)
-- **3,499 derivation edges** with weight and confidence
+### Graph Statistics (Author's Personal Graph)
+- **3,064 thought nodes** across 9 distinct types (fact, insight, observation, etc.)
+- **6,122 derivation edges** with weight and confidence
 - **Domain separation** — user/ai domains in single graph
-- **191/191 tests passing** — comprehensive coverage
+- **288/288 tests passing** — comprehensive coverage
 - **sqlite-vec integration** — O(log N) vector search
+
+*Note: These statistics reflect the author's personal knowledge graph as of April 2026. New users start with an empty graph.*
 
 ### Proven Capabilities  
 1. **BFS retrieval at scale** — 2000+ nodes with sub-second response
@@ -424,13 +429,13 @@ Connect isolated thought chains, deduplicate, garbage collect, and consolidate �
 
 **Done = You look at the graph and it surprises you.**
 
-Concrete achievements (March 20, 2026):
-1. ✅ Graph scaled — 2160 nodes, 3499 edges from organic growth
+Concrete achievements (April 2026):
+1. ✅ Graph scaled — 3,064 nodes, 6,122 edges from organic growth (author's personal graph)
 2. ✅ sqlite-vec integration — O(log N) vector search with cosine distance
 3. ✅ BFS retrieval — recursive traversal replaces hierarchical hotspots  
 4. ✅ Sleep cycle evolution — cross-linking, decay, dedup without clustering
 5. ✅ Think cycles via session.py — function-based, not class-based
-6. ✅ Test coverage — 191/191 tests passing after major refactor
+6. ✅ Test coverage — 288/288 tests passing after major refactor
 
 ### Key Learning: Foundation Model AS Reasoning Engine
 Don't build Python reasoning modules — the LLM reasoning over structured graph context IS the think cycle. Only tooling needed is graph plumbing (retrieve nodes, insert results).

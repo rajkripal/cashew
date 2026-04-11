@@ -11,13 +11,15 @@ Cashew implements a flat-graph retrieval system that uses recursive BFS (Breadth
 3. **Organic connectivity is the index** - Cross-linked relationships provide implicit hierarchy
 4. **Emergent structure** - No synthetic categories; organization forms through cross-linking and decay
 
-## Current System State
+## Current System State (April 2026, Author's Personal Graph)
 
-- **2,160 thought nodes** across 9 distinct node types
-- **3,499 derivation edges** with weight and confidence scores  
+- **3,064 thought nodes** across 9 distinct node types
+- **6,122 derivation edges** with weight and confidence scores  
 - **Flat graph structure** with organic cross-linking (0 hotspots)
 - **O(log N) retrieval** via sqlite-vec seeding + recursive BFS traversal
 - **Domain separation** with cross-domain insight generation
+
+*Note: These statistics reflect the author's personal knowledge graph as of April 2026. New users start with an empty graph.*
 
 ## Recursive BFS Retrieval System
 
@@ -198,7 +200,7 @@ python3 scripts/cashew_context.py think
 - **Deduplication**: O(N log N) for similarity clustering
 
 ### Storage Efficiency
-- **Database size**: ~768KB for 2,160 nodes (smaller than a photo)
+- **Database size**: ~16MB for 3,064 nodes (as of April 2026, author's personal graph)
 - **Embedding vectors**: Local sentence-transformers, no API dependencies
 - **sqlite-vec overhead**: Minimal additional storage for accelerated search
 - **No synthetic nodes**: 100% of storage used for real knowledge

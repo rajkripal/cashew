@@ -768,3 +768,219 @@ class TestGCConfigModes:
         assert "think01" in result
         # gc01 has source_file='test', effective threshold=0.05 < 0.06 → survives
         assert "gc01" not in result
+
+    # --- Permanence Tests ---
+
+    @pytest.fixture
+    def permanence_db(self):
+        """Create a test database for permanence testing"""
+        fd, db_path = tempfile.mkstemp(suffix='.db')
+        os.close(fd)
+        
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Create tables with permanent column
+        cursor.execute("""
+            CREATE TABLE thought_nodes (
+                id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                node_type TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                confidence REAL NOT NULL,
+                mood_state TEXT,
+                metadata TEXT,
+                source_file TEXT,
+                decayed INTEGER DEFAULT 0,
+                permanent INTEGER DEFAULT 0,
+                access_count INTEGER DEFAULT 0,
+                last_updated TEXT,
+                last_accessed TEXT
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE derivation_edges (
+                parent_id TEXT NOT NULL,
+                child_id TEXT NOT NULL,
+                weight REAL NOT NULL,
+                reasoning TEXT,
+                FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
+                FOREIGN KEY (child_id) REFERENCES thought_nodes(id),
+                PRIMARY KEY (parent_id, child_id)
+            )
+        """)
+        
+        # Insert test nodes with varying access counts
+        nodes = [
+            ("high_access_1", "Frequently accessed thought", "derived", "2023-01-01T00:00:00", 0.8, "confident", "{}", "test", 0, 0, 25),  # Should become permanent
+            ("high_access_2", "Another frequent thought", "derived", "2023-01-02T00:00:00", 0.7, "stable", "{}", "test", 0, 0, 15),  # Should become permanent
+            ("medium_access", "Moderately accessed", "derived", "2023-01-03T00:00:00", 0.6, "neutral", "{}", "test", 0, 0, 8),   # Below threshold
+            ("low_access", "Rarely accessed", "derived", "2023-01-04T00:00:00", 0.5, "uncertain", "{}", "test", 0, 0, 2),     # Below threshold
+            ("zero_access", "Never accessed", "derived", "2023-01-05T00:00:00", 0.4, "doubtful", "{}", "test", 0, 0, 0),      # Below threshold
+            ("already_permanent", "Already permanent node", "derived", "2023-01-06T00:00:00", 0.9, "certain", "{}", "test", 0, 1, 20),  # Already permanent
+            ("core_memory_1", "Core memory node", "core_memory", "2023-01-07T00:00:00", 0.8, "stable", "{}", "test", 0, 0, 5),   # Should become permanent
+            ("decayed_node", "Decayed node", "derived", "2023-01-08T00:00:00", 0.3, "forgotten", "{}", "test", 1, 0, 12),    # Decayed, shouldn't be touched
+        ]
+        
+        cursor.executemany("""
+            INSERT INTO thought_nodes 
+            (id, content, node_type, timestamp, confidence, mood_state, metadata, source_file, decayed, permanent, access_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, nodes)
+        
+        conn.commit()
+        conn.close()
+        
+        yield db_path
+        
+        try:
+            os.unlink(db_path)
+        except OSError:
+            pass
+
+    def test_permanence_promotion_by_access_count(self, permanence_db):
+        """Test that nodes with high access counts get promoted to permanent status"""
+        from core.permanence import promote_permanent_nodes
+        
+        # Promote with threshold of 10
+        result = promote_permanent_nodes(permanence_db, access_threshold=10)
+        
+        # Should promote the 2 nodes with access_count >= 10 that aren't already permanent
+        assert result["nodes_promoted"] == 2
+        assert result["nodes_evaluated"] == 2
+        assert result["access_threshold"] == 10
+        
+        # Verify the right nodes were promoted
+        conn = sqlite3.connect(permanence_db)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT id FROM thought_nodes WHERE permanent = 1")
+        permanent_nodes = set(row[0] for row in cursor.fetchall())
+        
+        # Should include the originally permanent node plus the 2 newly promoted
+        expected_permanent = {"high_access_1", "high_access_2", "already_permanent"}
+        assert permanent_nodes == expected_permanent
+        
+        conn.close()
+
+    def test_permanence_protects_from_decay(self, permanence_db):
+        """Test that permanent nodes are skipped by decay operations"""
+        from core.decay import auto_decay
+        from core.permanence import promote_permanent_nodes
+        
+        # First promote some nodes to permanent status
+        promote_permanent_nodes(permanence_db, access_threshold=10)
+        
+        # Try to decay with very aggressive settings
+        result = auto_decay(
+            permanence_db, 
+            min_age_days=0,  # No age restriction
+            max_confidence_for_decay=1.0,  # Even high confidence nodes
+            enable_cascading=False
+        )
+        
+        # Verify permanent nodes were not decayed
+        conn = sqlite3.connect(permanence_db)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, decayed FROM thought_nodes 
+            WHERE permanent = 1 AND (decayed IS NULL OR decayed = 0)
+        """)
+        protected_permanent = cursor.fetchall()
+        
+        # All permanent nodes should still be alive
+        assert len(protected_permanent) == 3  # high_access_1, high_access_2, already_permanent
+        
+        conn.close()
+
+    def test_promote_core_memories_sets_permanent(self, permanence_db):
+        """Test that promoting core memories also sets permanent=1"""
+        protocol = SleepProtocol(permanence_db, tempfile.mktemp(suffix=".json"))
+        
+        # Calculate metrics for all nodes
+        metrics = protocol.calculate_node_metrics()
+        
+        # Run core memory promotion
+        promotions, demotions = protocol.promote_core_memories(metrics)
+        
+        # Verify that core memories are now permanent
+        conn = sqlite3.connect(permanence_db)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT id, permanent FROM thought_nodes WHERE node_type = 'core_memory'")
+        core_memories = cursor.fetchall()
+        
+        # All core memories should be permanent
+        for node_id, permanent in core_memories:
+            assert permanent == 1, f"Core memory {node_id} should be permanent"
+        
+        conn.close()
+
+    def test_permanence_is_irreversible(self, permanence_db):
+        """Test that permanent nodes are never demoted"""
+        from core.permanence import promote_permanent_nodes
+        
+        # Promote nodes to permanent status
+        promote_permanent_nodes(permanence_db, access_threshold=10)
+        
+        # Manually reduce access count of a permanent node
+        conn = sqlite3.connect(permanence_db)
+        cursor = conn.cursor()
+        
+        cursor.execute("UPDATE thought_nodes SET access_count = 0 WHERE id = 'high_access_1'")
+        conn.commit()
+        
+        # Try to promote again with same threshold - should not demote permanent nodes
+        result = promote_permanent_nodes(permanence_db, access_threshold=10)
+        
+        # Verify the node is still permanent despite low access count
+        cursor.execute("SELECT permanent FROM thought_nodes WHERE id = 'high_access_1'")
+        is_still_permanent = cursor.fetchone()[0]
+        
+        assert is_still_permanent == 1, "Permanent status should be irreversible"
+        
+        conn.close()
+
+    def test_evaluate_permanence_integration(self, permanence_db):
+        """Test the full permanence evaluation in sleep protocol"""
+        protocol = SleepProtocol(permanence_db, tempfile.mktemp(suffix=".json"))
+        
+        # Run permanence evaluation
+        result = protocol.evaluate_permanence()
+        
+        # Should find and promote high-access nodes
+        assert result["nodes_made_permanent"] > 0
+        assert result["access_threshold"] >= 5  # Should be reasonable threshold
+        assert result["integrity_ok"] == True
+        
+        # Verify event was logged
+        permanence_events = [e for e in protocol.events if e.event_type == "permanence_promotion"]
+        assert len(permanence_events) > 0
+        
+        event_details = permanence_events[0].details
+        assert event_details["nodes_promoted"] == result["nodes_made_permanent"]
+        assert "access_threshold" in event_details
+
+    def test_permanence_stats_and_validation(self, permanence_db):
+        """Test permanence statistics and validation functions"""
+        from core.permanence import get_permanence_stats, validate_permanence_integrity, promote_permanent_nodes
+        
+        # Get initial stats
+        initial_stats = get_permanence_stats(permanence_db)
+        assert initial_stats["permanent_count"] == 1  # Only 'already_permanent'
+        assert initial_stats["non_permanent_count"] == 7  # The rest
+        
+        # Promote some nodes
+        promote_permanent_nodes(permanence_db, access_threshold=10)
+        
+        # Get updated stats  
+        updated_stats = get_permanence_stats(permanence_db)
+        assert updated_stats["permanent_count"] == 3  # Now 3 permanent nodes
+        assert updated_stats["non_permanent_count"] == 5  # Remaining non-permanent
+        
+        # Validate integrity
+        integrity = validate_permanence_integrity(permanence_db)
+        assert integrity["permanent_but_decayed"] == 0  # No permanent nodes should be decayed
+        assert integrity["integrity_ok"] == True

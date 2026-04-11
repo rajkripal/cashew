@@ -586,14 +586,27 @@ class SleepProtocol:
         # Top nodes should be core memories
         should_be_core = set(m.node_id for m in ranked_nodes[:target_core_memories])
         
-        # Promote new core memories
+        # Promote new core memories (and make them permanent)
         promotions = should_be_core - current_core
         for node_id in promotions:
-            cursor.execute("UPDATE thought_nodes SET node_type = 'core_memory' WHERE id = ?", (node_id,))
+            cursor.execute(
+                "UPDATE thought_nodes SET node_type = 'core_memory', permanent = 1 WHERE id = ?", 
+                (node_id,)
+            )
             self._log_event("core_promotion", {
                 "node_id": node_id,
                 "fitness_score": metrics[node_id].composite_fitness,
-                "rank": next(i for i, m in enumerate(ranked_nodes) if m.node_id == node_id) + 1
+                "rank": next(i for i, m in enumerate(ranked_nodes) if m.node_id == node_id) + 1,
+                "set_permanent": True
+            })
+        
+        # Ensure all existing core memories are also permanent (repair any inconsistencies)
+        cursor.execute("UPDATE thought_nodes SET permanent = 1 WHERE node_type = 'core_memory' AND (permanent IS NULL OR permanent = 0)")
+        existing_core_repairs = cursor.rowcount
+        if existing_core_repairs > 0:
+            self._log_event("core_memory_repair", {
+                "nodes_repaired": existing_core_repairs,
+                "action": "set_permanent_for_existing_core_memories"
             })
         
         # Demote old core memories
@@ -696,13 +709,33 @@ class SleepProtocol:
     
     def evaluate_permanence(self) -> Dict:
         """
-        Evaluate node permanence. Hotspot-based fractal propagation removed.
-        TODO: Re-implement simple permanence based on access_count + edge_count.
+        Evaluate node permanence based on access_count threshold.
+        Implements simple, data-driven permanence promotion.
         """
+        from .permanence import promote_permanent_nodes, calculate_recommended_threshold, validate_permanence_integrity
+        
+        # Calculate recommended threshold based on current data
+        recommended_threshold = calculate_recommended_threshold(self.db_path)
+        
+        # Promote nodes that meet the threshold
+        promotion_stats = promote_permanent_nodes(self.db_path, recommended_threshold)
+        
+        # Validate integrity
+        integrity_stats = validate_permanence_integrity(self.db_path)
+        
+        # Log promotion events
+        if promotion_stats["nodes_promoted"] > 0:
+            self._log_event("permanence_promotion", {
+                "nodes_promoted": promotion_stats["nodes_promoted"],
+                "access_threshold": promotion_stats["access_threshold"],
+                "integrity_check": integrity_stats
+            })
+        
         return {
-            'nodes_evaluated': 0,
-            'nodes_made_permanent': 0,
-            'nodes_lost_permanence': 0,
+            'nodes_evaluated': promotion_stats["nodes_evaluated"],
+            'nodes_made_permanent': promotion_stats["nodes_promoted"],
+            'access_threshold': promotion_stats["access_threshold"],
+            'integrity_ok': integrity_stats["integrity_ok"]
         }
 
     def save_sleep_log(self):
