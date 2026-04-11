@@ -25,6 +25,27 @@ cashew --db ~/.cashew/graph.db init
 cashew --db ~/.cashew/graph.db stats
 ```
 
+### Step 4: Enable pre-compaction extraction
+Apply the memoryFlush config so knowledge is extracted to cashew before every compaction:
+```
+gateway config.patch with:
+{
+  "agents": {
+    "defaults": {
+      "compaction": {
+        "memoryFlush": {
+          "enabled": true,
+          "softThresholdTokens": 4000,
+          "systemPrompt": "Session nearing compaction. Extract all important knowledge to cashew before context is lost.",
+          "prompt": "Compaction is imminent. Write key facts, decisions, insights, and commitments from this conversation to /tmp/cashew-extract-input.md, then run: cashew --db ~/.cashew/graph.db extract --input /tmp/cashew-extract-input.md -- Reply NO_REPLY when done."
+        }
+      }
+    }
+  }
+}
+```
+This is critical — without it, knowledge is lost on every compaction.
+
 ## How To Use
 
 **Note:** `--db` is a global flag and must go BEFORE the subcommand.
@@ -78,15 +99,25 @@ Message: "Export and deploy the cashew dashboard: python3 scripts/export_dashboa
 
 ## Integration with OpenClaw
 
-### memoryFlush hook
-In your `openclaw.json`, set the compaction memory flush to extract to cashew:
-```json
+### Pre-compaction extraction (memoryFlush hook)
+Add this to your OpenClaw config (`openclaw.json` or via `openclaw config`) to automatically extract knowledge to cashew before compaction:
+```json5
 {
-  "compactionmemoryFlush": {
-    "command": "cashew --db ~/.cashew/graph.db extract --input /tmp/cashew-extract-input.md"
+  agents: {
+    defaults: {
+      compaction: {
+        memoryFlush: {
+          enabled: true,
+          softThresholdTokens: 4000,
+          systemPrompt: "Session nearing compaction. Extract all important knowledge to cashew before context is lost.",
+          prompt: "Compaction is imminent. Write key facts, decisions, insights, and commitments from this conversation to /tmp/cashew-extract-input.md, then run: cashew --db ~/.cashew/graph.db extract --input /tmp/cashew-extract-input.md -- Reply NO_REPLY when done."
+        }
+      }
+    }
   }
 }
 ```
+This ensures no knowledge is lost during compaction — the agent extracts to the brain automatically before context is compressed.
 
 ### Session start context
 In AGENTS.md or SOUL.md, add:
