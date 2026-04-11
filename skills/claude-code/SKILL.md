@@ -57,9 +57,13 @@ EOF
 KMP_DUPLICATE_LIB_OK=TRUE cashew extract --input /tmp/cashew-extract.md
 ```
 
-**Extract:** Pattern-level insights, decisions with reasoning, corrections, cross-domain connections, commitments/TODOs.
+**Extract:** Pattern-level insights, decisions with reasoning, corrections, cross-domain connections, commitments/TODOs, operating principles and lessons learned.
 
-**Skip:** Transient chat ("ok thanks"), info already in the graph, raw data without interpretation, code (it belongs in files).
+**Skip:** Transient chat ("ok thanks"), info already in the graph, raw data without interpretation, ephemeral activity logs ("deployed X", "ran a command"), transient status ("204 tests passing"), code (it belongs in files).
+
+**Domain assignment:** Each node gets a domain. The user's knowledge, beliefs, preferences, decisions, creative work → user domain. Your operational knowledge, lessons learned, workflow patterns, tool quirks → AI domain. Project decisions the user makes → user domain. Operational lessons you learn → AI domain.
+
+**Privacy tagging:** Use `--tags vault:private` for personal finances, health, relationships, credentials, pre-launch IP, unpublished drafts. Don't tag as private: general engineering principles, anything already public. When in doubt, tag private.
 
 ### 3. Think Cycles — Autonomous Consolidation
 
@@ -115,7 +119,9 @@ done
 | Command | Purpose |
 |---------|---------|
 | `cashew context --hints "..."` | Retrieve relevant context from brain |
+| `cashew context --hints "..." --exclude-tags "vault:private"` | Exclude private nodes (use in shared contexts) |
 | `cashew extract --input file.md` | Extract knowledge from text |
+| `cashew extract --input file.md --tags vault:private` | Extract with privacy tags |
 | `cashew think` | Run think cycle (cross-domain connections) |
 | `cashew sleep` | Full sleep cycle (clustering + hierarchy) |
 | `cashew stats` | Graph statistics (node/edge counts) |
@@ -143,4 +149,5 @@ done
 |----------|---------|---------|
 | `CASHEW_DB` | Path to graph database | `./data/graph.db` |
 | `KMP_DUPLICATE_LIB_OK` | Set to `TRUE` for MKL/OpenMP errors | unset |
+| `CASHEW_METRICS` | Set to `1` to enable metrics recording | `0` |
 | `ANTHROPIC_API_KEY` | For extraction/think (uses Claude) | required for extract/think |
