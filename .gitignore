@@ -93,3 +93,4 @@ vault/
 cashew-crons.yamlPHILOSOPHY-private.md
 migration_report.json
 .wrangler/
+scripts/archive/

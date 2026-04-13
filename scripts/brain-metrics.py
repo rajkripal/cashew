@@ -52,7 +52,7 @@ def run_retrieval_queries(db_path):
         "family member names personal",
         "cashew Dagger blog series projects",
         "silence pattern perfectionism streak mentality",
-        "Nag Friend-S Cristian Vinny pastor people",
+        "friends community people social group",
         "Electrons in a Box guitar Slash music",
         "Vienna anchor emotional patterns happiness",
         "untyped edges ablation graph architecture",
