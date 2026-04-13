@@ -59,6 +59,22 @@ Or if you cloned the repo, just open it in Claude Code — the `.claude/skills/c
 
 Install as an OpenClaw skill for full automation — cron jobs handle extraction, think cycles, and dashboard deployment without manual intervention. See `skills/openclaw/SKILL.md` for setup instructions.
 
+### Obsidian
+
+Point cashew at your Obsidian vault to extract your notes into the thought graph:
+
+```bash
+cashew extract --input /path/to/obsidian/vault/note.md
+```
+
+Or bulk extract an entire vault:
+
+```bash
+find /path/to/vault -name "*.md" | while read f; do cashew extract --input "$f"; done
+```
+
+Your second brain becomes your AI's brain. Connections you made manually in Obsidian get discovered automatically by think cycles, alongside new cross-domain links you never saw.
+
 ### Python API
 
 ```python
