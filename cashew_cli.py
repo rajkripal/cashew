@@ -19,6 +19,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from core.config import config, reload_config, get_db_path
 from core.embeddings import embed_text
+from core.extractors import ExtractorRegistry
+from extractors import ObsidianExtractor, SessionExtractor, MarkdownDirExtractor
 
 logger = logging.getLogger("cashew")
 
@@ -139,6 +141,79 @@ def cmd_init(args):
         print(f"⚠️  Warning: Could not load embedding model: {e}")
         print("   The model will be downloaded on first use")
     
+    # Ask about backup preferences
+    print()
+    enable_backups = False  # Default fallback
+    backup_interval = "6h"   # Default fallback
+    retention_period = "24h" # Default fallback
+    
+    try:
+        while True:
+            backup_choice = input("Would you like to enable automatic database backups? (y/n): ").lower().strip()
+            if backup_choice in ['y', 'yes']:
+                enable_backups = True
+                break
+            elif backup_choice in ['n', 'no']:
+                enable_backups = False
+                break
+            else:
+                print("Please enter 'y' or 'n'")
+        
+        if enable_backups:
+            # Ask for backup interval
+            while True:
+                interval_input = input("Backup interval (default: 6h, options: 3h, 6h, 12h, 1d): ").strip()
+                if not interval_input:
+                    backup_interval = "6h"
+                    break
+                elif interval_input in ['3h', '6h', '12h', '1d']:
+                    backup_interval = interval_input
+                    break
+                else:
+                    print("Please enter a valid interval (3h, 6h, 12h, 1d)")
+            
+            # Ask for retention period  
+            while True:
+                retention_input = input("Backup retention period (default: 24h, options: 12h, 24h, 3d, 1w): ").strip()
+                if not retention_input:
+                    retention_period = "24h"
+                    break
+                elif retention_input in ['12h', '24h', '3d', '1w']:
+                    retention_period = retention_input
+                    break
+                else:
+                    print("Please enter a valid retention period (12h, 24h, 3d, 1w)")
+            
+            # Update config with backup settings
+            print(f"✅ Configured automatic backups: every {backup_interval}, retain for {retention_period}")
+            
+            # Update config.yaml with backup settings
+            reload_config(str(config_path))
+            backup_config = {
+                'enabled': True,
+                'interval': backup_interval,
+                'retention_period': retention_period,
+                'auto_backup_enabled': True,
+                'schedule': _interval_to_cron(backup_interval)
+            }
+            
+            # Read existing config and update backup section
+            with open(config_path, 'r') as f:
+                config_data = yaml.safe_load(f) or {}
+            
+            config_data['backup'] = backup_config
+            
+            with open(config_path, 'w') as f:
+                yaml.dump(config_data, f, default_flow_style=False, sort_keys=True)
+            
+            print(f"📝 Updated {config_path} with backup settings")
+        
+        else:
+            print("⚠️ Automatic backups disabled - you can enable them later by editing config.yaml")
+    
+    except KeyboardInterrupt:
+        print("\n⚠️ Setup interrupted - using default backup settings")
+    
     print()
     print("🎉 Cashew initialization complete!")
     print()
@@ -146,8 +221,24 @@ def cmd_init(args):
     print("1. Edit config.yaml to customize settings")
     print("2. Run 'cashew context --hints \"test\"' to verify")
     print("3. Use 'cashew install-crons' to set up automated maintenance")
+    if enable_backups:
+        print("4. Test backup with 'cashew backup'")
     
     return 0
+
+
+def _interval_to_cron(interval: str) -> str:
+    """Convert backup interval to cron schedule."""
+    if interval == "3h":
+        return "0 */3 * * *"
+    elif interval == "6h":
+        return "0 */6 * * *" 
+    elif interval == "12h":
+        return "0 */12 * * *"
+    elif interval == "1d":
+        return "0 4 * * *"  # Daily at 4 AM
+    else:
+        return "0 */6 * * *"  # Default to 6h
 
 
 def cmd_install_crons(args):
@@ -183,8 +274,8 @@ def cmd_install_crons(args):
         },
         'backup': {
             'description': 'Backup graph database',
-            'schedule': cron_config.get('backup_schedule', '0 4 * * *'),
-            'command': 'cashew backup',
+            'schedule': cron_config.get('backup_schedule', '0 */6 * * *'),
+            'command': 'cashew backup --retention 24h',
             'model': None,  # No model needed for backup
             'timeout': 120
         },
@@ -319,6 +410,142 @@ def cmd_permanent(args):
         return 0
 
 
+def cmd_backup(args):
+    """Create database backup and manage retention"""
+    from core.backup import create_backup, cleanup_old_backups, get_backup_stats, parse_retention_period
+    
+    db_path = args.db if args.db else get_db_path()
+    
+    if args.stats:
+        # Show backup statistics
+        stats = get_backup_stats()
+        
+        print("💾 Backup Statistics:")
+        print(f"  Total backups: {stats['count']}")
+        if stats['count'] > 0:
+            print(f"  Total size: {_human_readable_size_from_bytes(stats['total_size'])}")
+            print(f"  Oldest backup: {stats['oldest'].strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"  Newest backup: {stats['newest'].strftime('%Y-%m-%d %H:%M:%S')}")
+            print()
+            print("Recent backups:")
+            for backup in stats['files'][-10:]:  # Show last 10
+                backup_path = Path(backup['path'])
+                size_str = _human_readable_size_from_bytes(backup['size'])
+                created_str = backup['created'].strftime('%Y-%m-%d %H:%M')
+                print(f"  📄 {backup_path.name} ({size_str}, {created_str})")
+        else:
+            print("  No backups found")
+        
+        return 0
+    
+    elif args.cleanup:
+        # Clean up old backups
+        retention_hours = parse_retention_period(args.retention or "24h")
+        deleted = cleanup_old_backups(retention_hours=retention_hours)
+        
+        if deleted:
+            print(f"🗑️ Cleaned up {len(deleted)} old backups (retention: {args.retention or '24h'})")
+            for deleted_file in deleted:
+                print(f"  • {Path(deleted_file).name}")
+        else:
+            print("✅ No old backups to clean up")
+        
+        return 0
+    
+    else:
+        # Create backup
+        print(f"💾 Creating database backup...")
+        
+        backup_path = create_backup(db_path)
+        if backup_path:
+            print(f"✅ Backup created: {Path(backup_path).name}")
+            
+            # Auto-cleanup if retention specified
+            if args.retention:
+                retention_hours = parse_retention_period(args.retention)
+                deleted = cleanup_old_backups(retention_hours=retention_hours)
+                if deleted:
+                    print(f"🗑️ Cleaned up {len(deleted)} old backups")
+            
+            return 0
+        else:
+            print("❌ Backup failed")
+            return 1
+
+
+def cmd_ingest(args):
+    """Ingest knowledge using extractor plugins"""
+    db_path = args.db if args.db else get_db_path()
+    
+    # Initialize registry and register extractors
+    data_dir = str(Path(db_path).parent)
+    registry = ExtractorRegistry(data_dir=data_dir)
+    registry.register(ObsidianExtractor())
+    registry.register(SessionExtractor())
+    registry.register(MarkdownDirExtractor())
+    
+    if args.list:
+        # List available extractors
+        extractors = registry.list_extractors()
+        print("📦 Available Extractors:")
+        for name in extractors:
+            print(f"  • {name}")
+        return 0
+    
+    if not args.extractor:
+        print("❌ Error: extractor type required")
+        print("Use --list to see available extractors")
+        return 1
+    
+    if not args.path:
+        print("❌ Error: source path required")
+        return 1
+    
+    # Get model function if configured
+    model_fn = None
+    if not args.no_llm:
+        try:
+            from scripts.cashew_context import _build_model_fn
+            model_fn = _build_model_fn()
+            if model_fn is None:
+                logger.warning("No LLM gateway found, using fallback extraction")
+        except ImportError:
+            logger.warning("No LLM integration available, using fallback extraction")
+    
+    # Run the extractor
+    print(f"🧠 Running {args.extractor} extractor on {args.path}...")
+    
+    try:
+        result = registry.run(args.extractor, args.path, model_fn, db_path)
+        
+        if result["errors"]:
+            print("❌ Extraction completed with errors:")
+            for error in result["errors"]:
+                print(f"  • {error}")
+            return 1
+        else:
+            nodes_created = result["nodes_created"]
+            print(f"✅ Extraction complete: {nodes_created} nodes created")
+            return 0
+            
+    except KeyError as e:
+        print(f"❌ Error: Unknown extractor '{args.extractor}'")
+        print("Use --list to see available extractors")
+        return 1
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return 1
+
+
+def _human_readable_size_from_bytes(size_bytes: int) -> str:
+    """Convert bytes to human readable size."""
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size_bytes < 1024:
+            return f"{size_bytes:.1f}{unit}"
+        size_bytes /= 1024
+    return f"{size_bytes:.1f}TB"
+
+
 def main():
     """Main CLI entry point"""
     parser = argparse.ArgumentParser(
@@ -329,8 +556,15 @@ Examples:
   cashew init                           # Initialize new brain
   cashew context --hints "work tasks"   # Query for context
   cashew extract --input notes.txt     # Extract knowledge from text
+  cashew ingest obsidian /path/to/vault # Extract from Obsidian vault
+  cashew ingest sessions /path/to/logs  # Extract from session logs
+  cashew ingest markdown /path/to/notes # Extract from markdown directory
+  cashew ingest --list                  # Show available extractors
   cashew think                          # Run think cycle
   cashew sleep                          # Run sleep cycle
+  cashew backup                         # Create database backup
+  cashew backup --stats                 # Show backup statistics
+  cashew backup --cleanup --retention 3d # Clean old backups
   cashew stats                          # Show graph statistics
   cashew pin node123                    # Pin node as permanent
   cashew unpin node123                  # Remove permanent pin
@@ -367,6 +601,22 @@ Examples:
     permanent_parser = subparsers.add_parser('permanent', help='Show permanence statistics and permanent nodes')
     permanent_parser.add_argument('--stats', action='store_true', help='Show statistics instead of listing nodes')
     permanent_parser.set_defaults(func=cmd_permanent)
+    
+    # backup command
+    backup_parser = subparsers.add_parser('backup', help='Create database backup and manage retention')
+    backup_parser.add_argument('--stats', action='store_true', help='Show backup statistics instead of creating backup')
+    backup_parser.add_argument('--cleanup', action='store_true', help='Clean up old backups instead of creating backup')
+    backup_parser.add_argument('--retention', help='Retention period for cleanup (e.g., "24h", "3d", "1w")')
+    backup_parser.set_defaults(func=cmd_backup)
+    
+    # ingest command
+    ingest_parser = subparsers.add_parser('ingest', help='Ingest knowledge using extractor plugins')
+    ingest_parser.add_argument('extractor', nargs='?', choices=['obsidian', 'sessions', 'markdown'], 
+                               help='Extractor type to use')
+    ingest_parser.add_argument('path', nargs='?', help='Source path to extract from')
+    ingest_parser.add_argument('--list', action='store_true', help='List available extractors')
+    ingest_parser.add_argument('--no-llm', action='store_true', help='Disable LLM extraction, use fallback only')
+    ingest_parser.set_defaults(func=cmd_ingest)
     
     # Core workflow commands (delegated to cashew_context.py functions)
     from scripts.cashew_context import (

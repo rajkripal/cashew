@@ -59,21 +59,42 @@ Or if you cloned the repo, just open it in Claude Code — the `.claude/skills/c
 
 Install as an OpenClaw skill for full automation — cron jobs handle extraction, think cycles, and dashboard deployment without manual intervention. See `skills/openclaw/SKILL.md` for setup instructions.
 
-### Obsidian
+### Ingest Sources
 
-Point cashew at your Obsidian vault to extract your notes into the thought graph:
+Cashew ships with built-in extractors for common knowledge sources. Each one handles checkpointing, incremental updates, and deduplication automatically.
 
-```bash
-cashew extract --input /path/to/obsidian/vault/note.md
-```
-
-Or bulk extract an entire vault:
+**Obsidian vault:**
 
 ```bash
-find /path/to/vault -name "*.md" | while read f; do cashew extract --input "$f"; done
+cashew ingest obsidian /path/to/vault
 ```
 
-Your second brain becomes your AI's brain. Connections you made manually in Obsidian get discovered automatically by think cycles, alongside new cross-domain links you never saw.
+Parses YAML frontmatter (tags, aliases, dates), follows `[[wikilinks]]` to create edges between related notes, respects `.obsidianignore`, and auto-detects domains from your folder structure. Your second brain becomes your AI's brain.
+
+**OpenClaw session logs:**
+
+```bash
+cashew ingest sessions /path/to/sessions/
+```
+
+Extracts knowledge from conversation history. Tracks how far into each session file it's read, so growing sessions get incrementally processed. Filters out tool calls and system messages.
+
+**Markdown directory:**
+
+```bash
+cashew ingest markdown /path/to/notes/
+```
+
+General purpose extractor for any directory of `.md` files. Respects `.cashewignore` for excluding files.
+
+**Options:**
+
+```bash
+cashew ingest --list          # Show available extractors
+cashew ingest obsidian /path --no-llm  # Skip LLM, use paragraph splitting fallback
+```
+
+All extractors use LLM-based extraction by default for richer, typed knowledge (decisions, insights, facts). Use `--no-llm` for offline or token-free ingestion.
 
 ### Python API
 
@@ -102,6 +123,9 @@ context = retriever.generate_context(hints=["work", "projects"])
 | `cashew init` | Initialize a new brain |
 | `cashew context --hints "..."` | Retrieve relevant context |
 | `cashew extract --input file.md` | Extract knowledge from text |
+| `cashew ingest obsidian /path` | Ingest an Obsidian vault |
+| `cashew ingest sessions /path` | Ingest OpenClaw session logs |
+| `cashew ingest markdown /path` | Ingest a directory of markdown files |
 | `cashew think` | Run a think cycle |
 | `cashew sleep` | Full sleep cycle (consolidation) |
 | `cashew stats` | Graph statistics |

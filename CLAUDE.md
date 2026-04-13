@@ -8,8 +8,11 @@ Cashew is a thought-graph memory engine for AI agents. It stores knowledge as no
 
 ```
 scripts/cashew_context.py  — Main CLI entry point (context, extract, think, sleep, stats)
-cashew_cli.py              — Secondary CLI (init, install-crons)
+cashew_cli.py              — Secondary CLI (init, install-crons, ingest)
 core/                      — Engine modules
+core/extractors.py         — Extractor plugin interface (BaseExtractor, ExtractorRegistry)
+extractors/                — Built-in source extractors (obsidian, sessions, markdown)
+extractors/utils.py        — Shared extractor utilities (frontmatter, wikilinks, ignore patterns)
 integration/               — OpenClaw bridges
 ```
 
@@ -27,7 +30,21 @@ integration/               — OpenClaw bridges
 | `traversal.py` | Graph walk utilities (DFS, BFS, path finding). |
 | `stats.py` | Graph statistics and health metrics. |
 | `export.py` | Export graph data to JSON for dashboard visualization. |
+| `extractors.py` | Plugin interface: `BaseExtractor` (ABC), `ExtractorRegistry` (register, run, state persistence, dedup). |
 | `graph_utils.py` | Shared utilities: `load_embeddings()`, `cosine_similarity()`. |
+
+### Extractors
+
+Built-in source extractors in `extractors/`:
+
+| Module | Purpose |
+|--------|---------|
+| `obsidian.py` | Obsidian vault extraction. Frontmatter, `[[wikilink]]` edges, `.obsidianignore`, domain from folder structure. |
+| `sessions.py` | OpenClaw session JSONL extraction. Incremental line tracking, filters tool calls/system messages. |
+| `markdown_dir.py` | General markdown directory extraction. `.cashewignore` support. |
+| `utils.py` | Shared: `parse_frontmatter()`, `extract_wikilinks()`, `load_ignore_patterns()`, `should_ignore()`, `split_into_paragraphs()`, `detect_domain_from_path()`. |
+
+All extractors: use `model_fn` for LLM extraction when available, fall back to paragraph splitting when not. Checkpointing via `get_state()`/`set_state()` persisted automatically by the registry.
 
 ### Integration
 
@@ -202,6 +219,7 @@ cashew_context.py context --hints "bunny engineering principles best practices t
 - **3-exchange rule.** If bot-to-bot hits 3 rounds without an artifact, stop.
 - **Pipeline awareness.** Code is 1 month, review is 2 more. Factor this into commitments.
 - **Inject principles into CLAUDE.md** so every worker inherits them. Don't hand-hold individual workers with detailed prompts.
+- **Shipping means ALL artifacts are consistent.** When a feature lands, scan and update every file that references the affected surface: README, CLAUDE.md, SKILL.md, CLI help text, inline docstrings, config templates. Feedback is about a class of issues, not point fixes. If the README is stale, assume every doc is stale and audit all of them.
 
 ## Testing
 
@@ -222,3 +240,11 @@ python scripts/test_e2e.py       # Quick end-to-end test
 1. Add migration script in `scripts/migrate_*.py`
 2. Update the init schema in `cashew_cli.py` `cmd_init()`
 3. Update this doc's schema section
+
+**Add a new extractor:**
+1. Create `extractors/your_source.py` subclassing `BaseExtractor`
+2. Implement `name`, `extract()`, `get_state()`, `set_state()`
+3. Put shared utilities in `extractors/utils.py`
+4. Register in `cmd_ingest()` in `cashew_cli.py`
+5. Add tests in `tests/test_extractors.py`
+6. Update README (Ingest Sources section + CLI Reference table), this file (Extractors table), and skill files

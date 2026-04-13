@@ -60,6 +60,12 @@ class BaseExtractor(ABC):
         """
         pass
 
+    def post_ingest_hook(self, source_path: str, db_path: str, nodes_created: int):
+        """Called after nodes have been successfully ingested into the database.
+        Override to perform additional processing like edge creation.
+        """
+        pass
+
 
 class ExtractorRegistry:
     """Registry for extractor plugins.
@@ -123,6 +129,10 @@ class ExtractorRegistry:
             if nodes:
                 created = self._ingest_nodes(nodes, db_path, extractor.name)
                 result["nodes_created"] = created
+                
+                # Call post-ingest hook for additional processing (e.g. edge creation)
+                extractor.post_ingest_hook(source_path, db_path, created)
+            
             # Persist state after successful run
             self._save_state(name, extractor.get_state())
         except Exception as e:
@@ -175,8 +185,8 @@ class ExtractorRegistry:
                 cursor.execute("""
                     INSERT INTO thought_nodes 
                     (id, content, node_type, confidence, domain, source_file, 
-                     timestamp, last_accessed, decayed, permanent)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
+                     timestamp, last_accessed, decayed)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
                 """, (node_id, content, node_type, confidence, domain,
                       source_file, now, now))
                 created += 1

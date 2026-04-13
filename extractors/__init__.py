@@ -1,8 +1,15 @@
+#!/usr/bin/env python3
 """
 Cashew Extractors Package
-Domain-specific knowledge extractors register as plugins.
+
+Available extractors:
+- ObsidianExtractor: Extract knowledge from Obsidian vault markdown files
+- SessionExtractor: Extract knowledge from OpenClaw session JSONL files  
+- MarkdownDirExtractor: Extract knowledge from markdown directory structures
 """
 
-from ..core.extractors import BaseExtractor, ExtractorRegistry
+from .obsidian import ObsidianExtractor
+from .sessions import SessionExtractor
+from .markdown_dir import MarkdownDirExtractor
 
-__all__ = ['BaseExtractor', 'ExtractorRegistry']
+__all__ = ['ObsidianExtractor', 'SessionExtractor', 'MarkdownDirExtractor']

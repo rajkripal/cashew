@@ -104,11 +104,20 @@ cashew --db <path> sleep         # full consolidation: cross-linking, decay, ded
 cashew --db <path> sleep --debug # with diagnostics
 ```
 
+### Ingest from sources
+```bash
+cashew --db <path> ingest obsidian /path/to/vault     # Obsidian vault (frontmatter, wikilink edges, .obsidianignore)
+cashew --db <path> ingest sessions /path/to/sessions/  # OpenClaw session JSONL (incremental)
+cashew --db <path> ingest markdown /path/to/notes/     # Markdown directory (.cashewignore)
+cashew --db <path> ingest --list                       # Show available extractors
+cashew --db <path> ingest obsidian /path --no-llm      # Skip LLM, use paragraph splitting fallback
+```
+All extractors checkpoint automatically — re-running only processes new/modified files.
+
 ### Other commands
 ```bash
 cashew --db <path> stats         # graph statistics
 cashew --db <path> init          # initialize new database
-cashew --db <path> migrate-files --dir path/  # import markdown files
 ```
 
 ## Extraction Quality Rules

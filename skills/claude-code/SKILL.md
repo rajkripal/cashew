@@ -124,6 +124,10 @@ done
 | `cashew context --hints "..." --exclude-tags "vault:private"` | Exclude private nodes (use in shared contexts) |
 | `cashew extract --input file.md` | Extract knowledge from text |
 | `cashew extract --input file.md --tags vault:private` | Extract with privacy tags |
+| `cashew ingest obsidian /path/to/vault` | Ingest Obsidian vault (frontmatter, wikilinks, .obsidianignore) |
+| `cashew ingest sessions /path/to/sessions/` | Ingest OpenClaw session logs (incremental) |
+| `cashew ingest markdown /path/to/notes/` | Ingest markdown directory (.cashewignore) |
+| `cashew ingest --list` | Show available extractors |
 | `cashew think` | Run think cycle (cross-domain connections) |
 | `cashew sleep` | Full sleep cycle (clustering + hierarchy) |
 | `cashew stats` | Graph statistics (node/edge counts) |
