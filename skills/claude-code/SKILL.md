@@ -132,6 +132,19 @@ done
 | `cashew sleep` | Full sleep cycle (clustering + hierarchy) |
 | `cashew stats` | Graph statistics (node/edge counts) |
 | `cashew [--db path] init` | Initialize new database |
+| `cashew serve` | Run the warm daemon (keeps model + sqlite-vec loaded) |
+
+## Warm Daemon (optional, recommended)
+
+By default, every `cashew context` call loads the ~500MB MiniLM model from scratch — ~3s of overhead per query. If you query often (e.g. once per substantive message), run the daemon:
+
+```bash
+cashew serve  # foreground; run via launchd/systemd for persistence
+```
+
+The daemon listens on a unix socket (`$CASHEW_SOCKET`, default `~/.cashew/daemon.sock` or `$XDG_RUNTIME_DIR/daemon.sock`) and holds the model warm. `cashew context` automatically tries the daemon first and falls back to in-process if unreachable — so the daemon is safe to enable/disable at any time. Measured speedup: **~4.0s → ~0.10s** per query (40×).
+
+Set `CASHEW_NO_DAEMON=1` to force the in-process path (useful when debugging).
 
 ## Key Principles
 

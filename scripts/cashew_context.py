@@ -111,10 +111,31 @@ def cmd_context(args):
     tags = args.tags.split(",") if getattr(args, 'tags', None) else None
     print(f"🔍 Generating context with hints: {hints}" + (f" | tags: {tags}" if tags else ""))
     print()
-    
+
     t0 = time.time()
     exclude = args.exclude_tags.split(",") if getattr(args, 'exclude_tags', None) else None
-    context = generate_session_context(args.db, hints, tags=tags, exclude_tags=exclude)
+
+    # Fast path: try the warm daemon. Falls through to in-process if unreachable.
+    context = None
+    if os.environ.get("CASHEW_NO_DAEMON") != "1":
+        try:
+            from core.daemon import client_request
+            resp = client_request({
+                "op": "context",
+                "db": args.db,
+                "hints": hints,
+                "tags": tags,
+                "exclude_tags": exclude,
+            })
+            if resp and resp.get("ok"):
+                context = resp.get("result")
+            elif resp and not resp.get("ok"):
+                logger.warning(f"daemon error, falling back: {resp.get('error')}")
+        except Exception as e:
+            logger.debug(f"daemon unavailable, falling back: {e}")
+
+    if context is None:
+        context = generate_session_context(args.db, hints, tags=tags, exclude_tags=exclude)
     elapsed = time.time() - t0
     
     if context:

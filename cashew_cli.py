@@ -537,6 +537,15 @@ def cmd_ingest(args):
         return 1
 
 
+def cmd_serve(args):
+    """Run the warm daemon that keeps the embedding model loaded."""
+    import logging as _logging
+    _logging.basicConfig(level=_logging.INFO, format="%(asctime)s %(name)s: %(message)s")
+    from core.daemon import serve
+    serve(socket_path=args.socket, warm=not args.no_warm)
+    return 0
+
+
 def _human_readable_size_from_bytes(size_bytes: int) -> str:
     """Convert bytes to human readable size."""
     for unit in ['B', 'KB', 'MB', 'GB']:
@@ -674,7 +683,12 @@ Examples:
     cs_parser = subparsers.add_parser('complete-sleep', help='Full sleep with hierarchy evolution')
     cs_parser.add_argument('--no-evolution', action='store_true', help='Skip hierarchy evolution')
     cs_parser.set_defaults(func=cmd_complete_sleep)
-    
+
+    serve_parser = subparsers.add_parser('serve', help='Run the warm daemon (keeps model + sqlite-vec loaded)')
+    serve_parser.add_argument('--socket', help='Unix socket path (default: $CASHEW_SOCKET or ~/.cashew/daemon.sock)')
+    serve_parser.add_argument('--no-warm', action='store_true', help='Skip loading the embedding model at startup')
+    serve_parser.set_defaults(func=cmd_serve)
+
     args = parser.parse_args()
     
     if not args.command:
