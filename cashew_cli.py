@@ -21,8 +21,6 @@ from core.config import config, reload_config, get_db_path
 from core.embeddings import embed_text
 from core.extractors import ExtractorRegistry
 from extractors import ObsidianExtractor, SessionExtractor, MarkdownDirExtractor
-from extractors.codebase import CodebaseExtractor
-from extractors.decay_audit import DecayAuditor, format_decay_report, format_cluster_report
 
 logger = logging.getLogger("cashew")
 
@@ -412,22 +410,6 @@ def cmd_permanent(args):
         return 0
 
 
-def cmd_decay_audit(args):
-    """Show decay audit information"""
-    db_path = args.db if args.db else get_db_path()
-    
-    auditor = DecayAuditor(db_path)
-    
-    if args.cluster:
-        report = format_cluster_report(auditor, min_cluster_size=3)
-    else:
-        days = getattr(args, 'days', 7)
-        report = format_decay_report(auditor, days=days)
-    
-    print(report)
-    return 0
-
-
 def cmd_backup(args):
     """Create database backup and manage retention"""
     from core.backup import create_backup, cleanup_old_backups, get_backup_stats, parse_retention_period
@@ -501,7 +483,6 @@ def cmd_ingest(args):
     registry.register(ObsidianExtractor())
     registry.register(SessionExtractor())
     registry.register(MarkdownDirExtractor())
-    registry.register(CodebaseExtractor())
     
     if args.list:
         # List available extractors
@@ -537,14 +518,9 @@ def cmd_ingest(args):
     try:
         # Prepare kwargs for extractor-specific options
         extractor_kwargs = {}
-        if args.extractor == 'codebase':
-            if args.principles:
-                extractor_kwargs['principles_file'] = args.principles
-            if args.language:
-                extractor_kwargs['language_filter'] = args.language
-            if args.no_llm:
-                extractor_kwargs['skip_llm'] = True
-        
+        if args.no_llm:
+            extractor_kwargs['skip_llm'] = True
+
         result = registry.run(args.extractor, args.path, model_fn, db_path, **extractor_kwargs)
         
         if result["errors"]:
@@ -640,11 +616,6 @@ Examples:
     permanent_parser.add_argument('--stats', action='store_true', help='Show statistics instead of listing nodes')
     permanent_parser.set_defaults(func=cmd_permanent)
     
-    # decay-audit command
-    decay_audit_parser = subparsers.add_parser('decay-audit', help='Analyze node decay patterns and reasons')
-    decay_audit_parser.add_argument('--days', type=int, default=7, help='Number of days to analyze (default: 7)')
-    decay_audit_parser.add_argument('--cluster', action='store_true', help='Show clustered decay analysis instead of timeline')
-    decay_audit_parser.set_defaults(func=cmd_decay_audit)
     
     # backup command
     backup_parser = subparsers.add_parser('backup', help='Create database backup and manage retention')
@@ -655,13 +626,11 @@ Examples:
     
     # ingest command
     ingest_parser = subparsers.add_parser('ingest', help='Ingest knowledge using extractor plugins')
-    ingest_parser.add_argument('extractor', nargs='?', choices=['obsidian', 'sessions', 'markdown', 'codebase'], 
+    ingest_parser.add_argument('extractor', nargs='?', choices=['obsidian', 'sessions', 'markdown'],
                                help='Extractor type to use')
     ingest_parser.add_argument('path', nargs='?', help='Source path to extract from')
     ingest_parser.add_argument('--list', action='store_true', help='List available extractors')
     ingest_parser.add_argument('--no-llm', action='store_true', help='Disable LLM extraction, use fallback only')
-    ingest_parser.add_argument('--principles', help='Path to principles file (e.g., CLAUDE.md) for codebase extractor')
-    ingest_parser.add_argument('--language', help='Filter to specific language for codebase extractor')
     ingest_parser.set_defaults(func=cmd_ingest)
     
     # Core workflow commands (delegated to cashew_context.py functions)
