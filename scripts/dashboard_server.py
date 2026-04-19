@@ -44,14 +44,13 @@ def load_graph_json(db_path: str) -> dict:
         f"mood_state, domain, tags FROM {cdb.NODES_TABLE} "
         f"WHERE decayed = 0 OR decayed IS NULL"
     )
-    DOMAIN_MAP = {"raj": "raj", "bunny": "bunny", "user": "raj", "ai": "bunny", "default": "raj"}
     nodes = []
     for row in c.fetchall():
         nodes.append({
             "id": row[0], "content": row[1], "node_type": row[2],
             "confidence": row[3], "source_file": row[4] or "",
             "timestamp": row[5] or "", "mood_state": row[6] or "",
-            "domain": DOMAIN_MAP.get(row[7] or "default", "raj"),
+            "domain": row[7] or "",
             "tags": (row[8] or "").split(",") if row[8] else [],
         })
     node_ids = {n["id"] for n in nodes}

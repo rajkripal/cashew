@@ -129,6 +129,16 @@ context = retriever.generate_context(hints=["work", "projects"])
 | `cashew think` | Run a think cycle |
 | `cashew sleep` | Full sleep cycle (consolidation) |
 | `cashew stats` | Graph statistics |
+| `cashew dashboard` | Launch the live dashboard (graph + BFS search visualization) |
+
+### Dashboard
+
+```bash
+cashew dashboard --db data/graph.db --port 8765
+# then open http://127.0.0.1:8765
+```
+
+A minimalist browser UI over the brain. The full graph renders as a canvas force layout colored by node type. The search box traces a live recursive-BFS walk: seeds arrive first, then each hop lights up in order with hop-colored edges and rings. Works on mobile (bottom sheet, drag-to-resize). Pass `--host 0.0.0.0` to expose on the LAN. Auto-trigger a search via `?q=...` in the URL.
 
 ## Requirements
 
