@@ -109,6 +109,8 @@
   .node-card .meta .score { color: var(--fact); font-family: ui-monospace, monospace; }
   .node-card .hop { display: inline-block; padding: 1px 6px; border-radius: 8px;
                     background: #222; font-size: 10px; color: #aaa; margin-right: 6px; }
+  .node-card .src { margin-top: 6px; font: 10.5px ui-monospace, SFMono-Regular, monospace;
+                    color: var(--dim); word-break: break-all; opacity: 0.85; }
 
   #progress {
     position: fixed; top: 52px; left: 0; right: 0; height: 2px;
@@ -150,7 +152,7 @@
 </head>
 <body>
 <div id="topbar">
-  <div id="logo">🥜 cashew</div>
+  <div id="logo">🥜 <span id="logo-title">cashew</span></div>
   <input id="search" placeholder="Search your brain — Enter to trace BFS…" autocomplete="off" />
   <div id="stats"><b id="s-nodes">0</b> nodes · <b id="s-edges">0</b> edges</div>
 </div>
@@ -393,6 +395,12 @@ function cardFor(n, { hop, score, asDetail } = {}) {
   if (n.domain) bits.push(`<span>${n.domain}</span>`);
   meta.innerHTML = bits.join('');
   div.appendChild(meta);
+  if (n.source_file) {
+    const src = document.createElement('div');
+    src.className = 'src';
+    src.textContent = n.source_file;
+    div.appendChild(src);
+  }
   div.addEventListener('click', () => focusNode(n));
   return div;
 }
@@ -422,6 +430,10 @@ async function loadGraph() {
   }
   document.getElementById('s-nodes').textContent = nodes.length;
   document.getElementById('s-edges').textContent = edges.length;
+  if (g.metadata && g.metadata.title) {
+    document.getElementById('logo-title').textContent = g.metadata.title;
+    document.title = g.metadata.title + ' · cashew';
+  }
   simulation.nodes(nodes);
   simulation.force('link').links(edges);
   simulation.alpha(1).restart();

@@ -461,7 +461,7 @@ def cmd_dashboard(args):
     )
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    mod.run(args.db, host=args.host, port=args.port)
+    mod.run(args.db, host=args.host, port=args.port, title=args.title)
     return 0
 
 
@@ -621,6 +621,7 @@ Examples:
     dash_parser = subparsers.add_parser('dashboard', help='Launch the brain dashboard (HTTP + live BFS SSE)')
     dash_parser.add_argument('--host', default='127.0.0.1')
     dash_parser.add_argument('--port', type=int, default=8765)
+    dash_parser.add_argument('--title', default='cashew', help='Title shown in the dashboard header')
     dash_parser.set_defaults(func=cmd_dashboard)
 
     args = parser.parse_args()

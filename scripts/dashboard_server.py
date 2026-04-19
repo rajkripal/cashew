@@ -61,7 +61,11 @@ def load_graph_json(db_path: str) -> dict:
             edges.append({"source": p, "target": ch, "weight": w, "reasoning": reason or ""})
     conn.close()
     return {
-        "metadata": {"db_path": db_path, "exported": datetime.utcnow().isoformat()},
+        "metadata": {
+            "db_path": db_path,
+            "exported": datetime.utcnow().isoformat(),
+            "title": Handler.title,
+        },
         "statistics": {"total_nodes": len(nodes), "total_edges": len(edges)},
         "nodes": nodes, "edges": edges,
     }
@@ -69,6 +73,7 @@ def load_graph_json(db_path: str) -> dict:
 
 class Handler(BaseHTTPRequestHandler):
     db_path: str = ""
+    title: str = "cashew"
 
     def log_message(self, fmt, *args):  # quiet default logging
         sys.stderr.write(f"[dashboard] {fmt % args}\n")
@@ -141,10 +146,11 @@ class Handler(BaseHTTPRequestHandler):
         return self._send_json({"error": "not found", "path": path}, 404)
 
 
-def run(db_path: str, host: str = "127.0.0.1", port: int = 8765) -> None:
+def run(db_path: str, host: str = "127.0.0.1", port: int = 8765, title: str = "cashew") -> None:
     Handler.db_path = db_path
+    Handler.title = title
     srv = ThreadingHTTPServer((host, port), Handler)
-    print(f"🥜 cashew dashboard: http://{host}:{port}  (db: {db_path})", file=sys.stderr)
+    print(f"🥜 {title} dashboard: http://{host}:{port}  (db: {db_path})", file=sys.stderr)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
@@ -158,8 +164,9 @@ def main():
     p.add_argument("--db", required=True, help="Path to cashew SQLite DB")
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--title", default="cashew", help="Dashboard title shown in header")
     args = p.parse_args()
-    run(args.db, args.host, args.port)
+    run(args.db, args.host, args.port, args.title)
 
 
 if __name__ == "__main__":
