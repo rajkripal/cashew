@@ -66,22 +66,31 @@
   #focus-toggle.on { border-color: var(--accent); color: var(--accent); }
   #drag-handle { display: none; }
   @media (max-width: 640px) {
-    #side { top: auto; left: 0; right: 0; bottom: 0; width: 100%;
-            height: 55vh; max-height: 90vh; min-height: 80px;
-            border-left: none; border-top: 1px solid var(--border);
-            border-radius: 14px 14px 0 0; transform: translateY(100%);
-            padding-top: 52px; }
+    #side {
+      top: auto; left: 0; right: 0; bottom: 0; width: 100%;
+      height: 55vh; max-height: 90vh; min-height: 80px;
+      border-left: none; border-top: 1px solid var(--border);
+      border-radius: 14px 14px 0 0; transform: translateY(100%);
+      padding: 0; display: flex; flex-direction: column; overflow: hidden;
+    }
     #side.open { transform: translateY(0); }
     #drag-handle {
-      display: block; position: absolute; top: 0; left: 0; right: 0; height: 20px;
-      cursor: ns-resize; touch-action: none; z-index: 3;
+      display: block; flex: 0 0 20px; position: relative;
+      cursor: ns-resize; touch-action: none;
     }
     #drag-handle::before {
       content: ''; position: absolute; top: 7px; left: 50%;
       transform: translateX(-50%); width: 40px; height: 4px;
       background: #444; border-radius: 2px;
     }
-    #side-header { top: 20px; margin-top: -32px; }
+    #side-header {
+      position: static; margin: 0; flex: 0 0 auto;
+      padding: 8px 14px 10px; border-bottom: 1px solid var(--border);
+    }
+    #side-body {
+      flex: 1 1 auto; overflow-y: auto;
+      -webkit-overflow-scrolling: touch; padding: 12px 14px 20px;
+    }
     #stats { font-size: 10px; }
     #search { font-size: 16px; }
     #hint { display: none; }
