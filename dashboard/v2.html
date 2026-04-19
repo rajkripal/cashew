@@ -40,14 +40,40 @@
 
   #side {
     position: fixed; top: 52px; bottom: 0; right: 0; width: 360px;
-    background: rgba(10,10,10,0.85); backdrop-filter: blur(14px);
+    background: rgba(10,10,10,0.92); backdrop-filter: blur(14px);
     border-left: 1px solid var(--border);
     transform: translateX(100%); transition: transform 0.25s ease; z-index: 9;
-    overflow-y: auto; padding: 16px;
+    overflow-y: auto; padding: 44px 16px 16px;
   }
   #side.open { transform: translateX(0); }
-  #side h3 { font-size: 11px; color: var(--dim); text-transform: uppercase;
-             letter-spacing: 1px; margin-bottom: 8px; font-weight: 500; }
+  #side-header {
+    position: sticky; top: -44px; margin: -44px -16px 8px; padding: 10px 14px;
+    background: rgba(10,10,10,0.92); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; z-index: 2;
+  }
+  #side-title { font-size: 11px; color: var(--dim); text-transform: uppercase;
+                letter-spacing: 1px; font-weight: 500; flex: 1; }
+  #side-close {
+    width: 28px; height: 28px; border-radius: 14px; border: 1px solid var(--border);
+    background: var(--panel); color: var(--fg); font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  #side-close:hover { border-color: var(--accent); color: var(--accent); }
+  #focus-toggle {
+    font-size: 10px; color: var(--dim); border: 1px solid var(--border);
+    background: var(--panel); padding: 3px 8px; border-radius: 10px; cursor: pointer;
+  }
+  #focus-toggle.on { border-color: var(--accent); color: var(--accent); }
+  @media (max-width: 640px) {
+    #side { top: auto; left: 0; right: 0; bottom: 0; width: 100%;
+            max-height: 55vh; border-left: none; border-top: 1px solid var(--border);
+            border-radius: 14px 14px 0 0; transform: translateY(100%); }
+    #side.open { transform: translateY(0); }
+    #stats { font-size: 10px; }
+    #search { font-size: 16px; }
+    #hint { display: none; }
+    #legend { font-size: 9.5px; gap: 6px; padding: 4px 7px; }
+  }
   .node-card {
     padding: 10px 12px; margin-bottom: 8px; background: var(--panel);
     border: 1px solid var(--border); border-left: 3px solid var(--dim);
@@ -99,7 +125,11 @@
 <div id="progress"><div class="bar" id="progress-bar"></div></div>
 <canvas id="c"></canvas>
 <aside id="side">
-  <h3 id="side-title">Search results</h3>
+  <div id="side-header">
+    <div id="side-title">Search results</div>
+    <button id="focus-toggle" title="Hide non-matching nodes">focus</button>
+    <button id="side-close" aria-label="Close">×</button>
+  </div>
   <div id="side-body"></div>
 </aside>
 <div id="hint"><kbd>/</kbd> search · <kbd>Esc</kbd> clear · drag to pan · scroll to zoom</div>
@@ -119,6 +149,15 @@ const side = document.getElementById('side');
 const sideBody = document.getElementById('side-body');
 const sideTitle = document.getElementById('side-title');
 const progressBar = document.getElementById('progress-bar');
+const sideClose = document.getElementById('side-close');
+const focusToggle = document.getElementById('focus-toggle');
+let focusMode = false;
+sideClose.addEventListener('click', () => side.classList.remove('open'));
+focusToggle.addEventListener('click', () => {
+  focusMode = !focusMode;
+  focusToggle.classList.toggle('on', focusMode);
+  render();
+});
 
 const TYPE_COLOR = {
   fact: '#8ad18a', insight: '#c48aff', observation: '#ffb347',
@@ -126,6 +165,13 @@ const TYPE_COLOR = {
   derived: '#a0a0a0',
 };
 const typeColor = t => TYPE_COLOR[t] || '#888';
+const HOP_EDGE_COLOR = [
+  'rgba(245,197,66,0.0)',  // unused (hop 0 = seeds, no edges)
+  'rgba(124,196,255,0.85)', // hop 1 — blue
+  'rgba(245,197,66,0.85)',  // hop 2 — amber
+  'rgba(255,122,194,0.85)', // hop 3 — pink
+  'rgba(138,209,138,0.85)', // hop 4 — green
+];
 
 let W = 0, H = 0, dpr = window.devicePixelRatio || 1;
 function resize() {
@@ -139,7 +185,7 @@ window.addEventListener('resize', resize); resize();
 let nodes = [], edges = [], nodeIndex = new Map();
 let transform = d3.zoomIdentity;
 const highlight = new Map(); // id -> { hop, score, born }
-let activeEdges = new Set();  // key "src|tgt"
+let activeEdges = new Map();  // key "src|tgt" -> hop level
 let activeES = null;
 
 const simulation = d3.forceSimulation()
@@ -171,11 +217,14 @@ function render() {
     if (!s.x || !t.x) continue;
     const key = s.id + '|' + t.id;
     const isActive = activeEdges.has(key);
-    if (hasHighlight && !isActive) {
+    if (hasHighlight && focusMode && !isActive) {
+      continue;
+    } else if (hasHighlight && !isActive) {
       ctx.strokeStyle = 'rgba(60,60,60,0.15)';
     } else if (isActive) {
-      ctx.strokeStyle = 'rgba(245,197,66,0.75)';
-      ctx.lineWidth = 1.2 / transform.k;
+      const hop = activeEdges.get(key) || 1;
+      ctx.strokeStyle = HOP_EDGE_COLOR[Math.min(hop, HOP_EDGE_COLOR.length - 1)];
+      ctx.lineWidth = 1.4 / transform.k;
     } else {
       ctx.strokeStyle = 'rgba(100,100,100,0.25)';
     }
@@ -189,6 +238,7 @@ function render() {
   for (const n of nodes) {
     if (n.x == null) continue;
     const h = highlight.get(n.id);
+    if (hasHighlight && focusMode && !h) continue;
     const r = nodeRadius(n) * (h ? 1.5 : 1);
     let alpha = 1;
     if (hasHighlight && !h) alpha = 0.18;
@@ -347,12 +397,12 @@ function addHighlight(id, hop, score) {
   return n;
 }
 
-function markEdgesInto(id) {
+function markEdgesInto(id, hop) {
   for (const e of edges) {
     if (e.source.id === id || e.target.id === id) {
       const other = e.source.id === id ? e.target.id : e.source.id;
       if (highlight.has(other)) {
-        activeEdges.add(e.source.id + '|' + e.target.id);
+        activeEdges.set(e.source.id + '|' + e.target.id, hop);
       }
     }
   }
@@ -389,7 +439,7 @@ function runSearch(q) {
       for (const h of msg.nodes) {
         const n = addHighlight(h.id, msg.level, h.score);
         if (n) {
-          markEdgesInto(h.id);
+          markEdgesInto(h.id, msg.level);
           results.push({ n, hop: msg.level, score: h.score });
           sideBody.appendChild(cardFor(n, { hop: msg.level, score: h.score }));
         }
