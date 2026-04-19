@@ -64,11 +64,24 @@
     background: var(--panel); padding: 3px 8px; border-radius: 10px; cursor: pointer;
   }
   #focus-toggle.on { border-color: var(--accent); color: var(--accent); }
+  #drag-handle { display: none; }
   @media (max-width: 640px) {
     #side { top: auto; left: 0; right: 0; bottom: 0; width: 100%;
-            max-height: 55vh; border-left: none; border-top: 1px solid var(--border);
-            border-radius: 14px 14px 0 0; transform: translateY(100%); }
+            height: 55vh; max-height: 90vh; min-height: 80px;
+            border-left: none; border-top: 1px solid var(--border);
+            border-radius: 14px 14px 0 0; transform: translateY(100%);
+            padding-top: 52px; }
     #side.open { transform: translateY(0); }
+    #drag-handle {
+      display: block; position: absolute; top: 0; left: 0; right: 0; height: 20px;
+      cursor: ns-resize; touch-action: none; z-index: 3;
+    }
+    #drag-handle::before {
+      content: ''; position: absolute; top: 7px; left: 50%;
+      transform: translateX(-50%); width: 40px; height: 4px;
+      background: #444; border-radius: 2px;
+    }
+    #side-header { top: 20px; margin-top: -32px; }
     #stats { font-size: 10px; }
     #search { font-size: 16px; }
     #hint { display: none; }
@@ -142,6 +155,7 @@
 </div>
 <canvas id="c"></canvas>
 <aside id="side">
+  <div id="drag-handle"></div>
   <div id="side-header">
     <div id="side-title">Search results</div>
     <button id="focus-toggle" title="Hide non-matching nodes">focus</button>
@@ -170,6 +184,34 @@ const sideClose = document.getElementById('side-close');
 const focusToggle = document.getElementById('focus-toggle');
 let focusMode = false;
 sideClose.addEventListener('click', () => side.classList.remove('open'));
+
+const dragHandle = document.getElementById('drag-handle');
+let dragStartY = 0, dragStartH = 0;
+function onDragMove(e) {
+  const y = e.touches ? e.touches[0].clientY : e.clientY;
+  const newH = Math.min(window.innerHeight * 0.9,
+                        Math.max(80, dragStartH + (dragStartY - y)));
+  side.style.height = newH + 'px';
+}
+function onDragEnd() {
+  window.removeEventListener('pointermove', onDragMove);
+  window.removeEventListener('pointerup', onDragEnd);
+  window.removeEventListener('touchmove', onDragMove);
+  window.removeEventListener('touchend', onDragEnd);
+}
+dragHandle.addEventListener('pointerdown', (e) => {
+  dragStartY = e.clientY;
+  dragStartH = side.getBoundingClientRect().height;
+  window.addEventListener('pointermove', onDragMove);
+  window.addEventListener('pointerup', onDragEnd);
+  e.preventDefault();
+});
+dragHandle.addEventListener('touchstart', (e) => {
+  dragStartY = e.touches[0].clientY;
+  dragStartH = side.getBoundingClientRect().height;
+  window.addEventListener('touchmove', onDragMove, { passive: false });
+  window.addEventListener('touchend', onDragEnd);
+}, { passive: true });
 focusToggle.addEventListener('click', () => {
   focusMode = !focusMode;
   focusToggle.classList.toggle('on', focusMode);
