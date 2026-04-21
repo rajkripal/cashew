@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - TBD
+## [1.0.0] - 2026-04-21
 
 First public release on PyPI. `pip install cashew-brain` now works.
 
@@ -19,9 +19,6 @@ First public release on PyPI. `pip install cashew-brain` now works.
 - Autonomous think cycles with organic decay.
 - CLI entry point (`cashew`).
 - PyPI trusted-publishing release workflow (OIDC, no API tokens).
-
-### Notes
-- Release date will be filled in when the v1.0.0 tag is cut and the workflow publishes.
 
 [Unreleased]: https://github.com/rajkripal/cashew/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/rajkripal/cashew/releases/tag/v1.0.0
