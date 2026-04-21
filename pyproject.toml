@@ -41,6 +41,7 @@ dev = [
 Homepage = "https://github.com/rajkripal/cashew"
 Repository = "https://github.com/rajkripal/cashew"
 Issues = "https://github.com/rajkripal/cashew/issues"
+Changelog = "https://github.com/rajkripal/cashew/blob/main/CHANGELOG.md"
 
 [project.scripts]
 cashew = "cashew_cli:main"
