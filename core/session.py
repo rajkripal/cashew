@@ -66,38 +66,152 @@ def _get_connection(db_path: str) -> sqlite3.Connection:
     """Get database connection"""
     return sqlite3.connect(db_path)
 
-def _ensure_schema(db_path: str):
-    """Ensure required tables and columns exist"""
-    conn = _get_connection(db_path)
-    cursor = conn.cursor()
-    
-    # Check if last_accessed column exists, add if missing
-    cursor.execute("PRAGMA table_info(thought_nodes)")
-    columns = [row[1] for row in cursor.fetchall()]
-    
-    if 'last_accessed' not in columns:
-        cursor.execute("ALTER TABLE thought_nodes ADD COLUMN last_accessed TEXT")
-    
-    if 'access_count' not in columns:
-        cursor.execute("ALTER TABLE thought_nodes ADD COLUMN access_count INTEGER DEFAULT 0")
+# ----- Schema contract ----------------------------------------------------
+# Cashew owns these tables and the columns listed below. See DESIGN.md
+# ("Schema ownership contract") for the full policy. Downstream consumers
+# (e.g. hermes-cashew) may add their own tables and columns — the contract
+# is that cashew will never rename or drop its own columns within a major
+# version, and will only add columns in minor versions.
+#
+# SCHEMA_VERSION is stored in `PRAGMA user_version`. Bump it whenever a new
+# migration is appended to _MIGRATIONS.
+SCHEMA_VERSION = 1
 
-    # referent_time: event clock (when the fact/event actually happened),
-    # distinct from `timestamp` which is the ingestion clock. Nullable.
-    # See DESIGN notes: operational readers (decay/GC/declassify/embeddings/
-    # recent-activity) stay on `timestamp`. User-facing/biographical readers
-    # use COALESCE(referent_time, timestamp).
-    if 'referent_time' not in columns:
-        cursor.execute("ALTER TABLE thought_nodes ADD COLUMN referent_time TEXT")
+
+def _apply_v1(cursor: sqlite3.Cursor) -> None:
+    """Canonical from-scratch schema. Idempotent."""
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS thought_nodes (
+            id TEXT PRIMARY KEY,
+            content TEXT NOT NULL,
+            node_type TEXT NOT NULL,
+            domain TEXT,
+            timestamp TEXT,
+            access_count INTEGER DEFAULT 0,
+            last_accessed TEXT,
+            confidence REAL,
+            source_file TEXT,
+            decayed INTEGER DEFAULT 0,
+            metadata TEXT DEFAULT '{}',
+            last_updated TEXT,
+            mood_state TEXT,
+            permanent INTEGER DEFAULT 0,
+            tags TEXT,
+            referent_time TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS derivation_edges (
+            parent_id TEXT,
+            child_id TEXT,
+            weight REAL,
+            reasoning TEXT,
+            confidence REAL,
+            timestamp TEXT,
+            PRIMARY KEY (parent_id, child_id),
+            FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
+            FOREIGN KEY (child_id) REFERENCES thought_nodes(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS embeddings (
+            node_id TEXT PRIMARY KEY,
+            vector BLOB NOT NULL,
+            model TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (node_id) REFERENCES thought_nodes(id)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS hotspots (
+            id TEXT PRIMARY KEY,
+            content TEXT NOT NULL,
+            status TEXT,
+            domain TEXT,
+            file_pointers TEXT,
+            cluster_node_ids TEXT,
+            tags TEXT,
+            created TEXT,
+            last_updated TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS metrics (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            metric_name TEXT NOT NULL,
+            metric_value REAL NOT NULL,
+            tags TEXT
+        )
+    """)
+    for stmt in (
+        "CREATE INDEX IF NOT EXISTS idx_nodes_domain ON thought_nodes(domain)",
+        "CREATE INDEX IF NOT EXISTS idx_nodes_timestamp ON thought_nodes(timestamp)",
+        "CREATE INDEX IF NOT EXISTS idx_nodes_confidence ON thought_nodes(confidence)",
+        "CREATE INDEX IF NOT EXISTS idx_nodes_referent_time ON thought_nodes(referent_time)",
+        "CREATE INDEX IF NOT EXISTS idx_edges_parent ON derivation_edges(parent_id)",
+        "CREATE INDEX IF NOT EXISTS idx_edges_child ON derivation_edges(child_id)",
+    ):
         try:
-            cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_nodes_referent_time "
-                "ON thought_nodes(referent_time)"
-            )
+            cursor.execute(stmt)
         except sqlite3.OperationalError:
             pass
 
-    conn.commit()
-    conn.close()
+
+# Legacy column patch-ups for databases created before the canonical schema
+# was centralised. Additive only; cashew will not drop or rename columns
+# within a major version.
+_LEGACY_NODE_COLUMNS = (
+    ("domain",        "ALTER TABLE thought_nodes ADD COLUMN domain TEXT"),
+    ("access_count",  "ALTER TABLE thought_nodes ADD COLUMN access_count INTEGER DEFAULT 0"),
+    ("last_accessed", "ALTER TABLE thought_nodes ADD COLUMN last_accessed TEXT"),
+    ("confidence",    "ALTER TABLE thought_nodes ADD COLUMN confidence REAL"),
+    ("source_file",   "ALTER TABLE thought_nodes ADD COLUMN source_file TEXT"),
+    ("decayed",       "ALTER TABLE thought_nodes ADD COLUMN decayed INTEGER DEFAULT 0"),
+    ("metadata",      "ALTER TABLE thought_nodes ADD COLUMN metadata TEXT DEFAULT '{}'"),
+    ("last_updated",  "ALTER TABLE thought_nodes ADD COLUMN last_updated TEXT"),
+    ("mood_state",    "ALTER TABLE thought_nodes ADD COLUMN mood_state TEXT"),
+    ("permanent",     "ALTER TABLE thought_nodes ADD COLUMN permanent INTEGER DEFAULT 0"),
+    ("tags",          "ALTER TABLE thought_nodes ADD COLUMN tags TEXT"),
+    ("referent_time", "ALTER TABLE thought_nodes ADD COLUMN referent_time TEXT"),
+)
+
+
+def _ensure_schema(db_path: str):
+    """Create or upgrade the cashew schema in place.
+
+    Idempotent. Safe to call on an empty file, a legacy database missing
+    some columns, or an already-current database. This is the blessed
+    entry point for both CLI init and library consumers.
+    """
+    conn = _get_connection(db_path)
+    cursor = conn.cursor()
+    try:
+        _apply_v1(cursor)
+
+        cursor.execute("PRAGMA table_info(thought_nodes)")
+        existing = {row[1] for row in cursor.fetchall()}
+        for col, sql in _LEGACY_NODE_COLUMNS:
+            if col not in existing:
+                try:
+                    cursor.execute(sql)
+                except sqlite3.OperationalError:
+                    pass
+
+        cursor.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_schema_version(db_path: str) -> int:
+    """Return the applied schema version (PRAGMA user_version). 0 means unmanaged."""
+    conn = _get_connection(db_path)
+    try:
+        row = conn.execute("PRAGMA user_version").fetchone()
+        return int(row[0]) if row else 0
+    finally:
+        conn.close()
 
 def _normalize_referent_time(value: Optional[str]) -> Optional[str]:
     """Normalize a caller-supplied event time to UTC ISO8601.

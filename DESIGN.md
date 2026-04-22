@@ -109,6 +109,45 @@ CREATE VIRTUAL TABLE vec_embeddings USING vec0(
 );
 ```
 
+### Schema Ownership Contract
+
+Cashew is embeddable as a library: downstream consumers (e.g. `hermes-cashew`) layer their own tables on top of cashew's database. This section defines what cashew owns and what extension points consumers can rely on.
+
+**Cashew-owned tables** — schema is managed by `core.db.ensure_schema()`, may change across cashew versions under the rules below:
+
+- `thought_nodes`
+- `derivation_edges`
+- `embeddings`
+- `hotspots`
+- `metrics`
+- `vec_embeddings` (virtual, when sqlite-vec is available)
+
+**Cashew-owned columns** on `thought_nodes`: `id`, `content`, `node_type`, `domain`, `timestamp`, `access_count`, `last_accessed`, `confidence`, `source_file`, `decayed`, `metadata`, `last_updated`, `mood_state`, `permanent`, `tags`, `referent_time`.
+
+**Cashew-owned columns** on `derivation_edges`: `parent_id`, `child_id`, `weight`, `reasoning`, `confidence`, `timestamp`.
+
+**Migration policy**
+
+- Additive-only within a major version. Cashew will add columns or tables in minor releases; it will never drop or rename an owned column or table without a major version bump.
+- `ensure_schema()` is idempotent and safe to call on empty databases, legacy databases missing columns, and fully-current databases.
+- `PRAGMA user_version` carries the applied schema version. `core.db.get_schema_version(db)` reads it; `core.db.schema_version()` returns the version this build produces.
+
+**Extension points for downstream consumers**
+
+- Consumers may create their own tables (use a clear prefix, e.g. `hermes_*`) — cashew will not touch them.
+- Consumers may add columns prefixed `ext_` to cashew-owned tables. Cashew will never introduce an `ext_`-prefixed column.
+- Consumers should call `ensure_schema(db)` before running their own migrations, then branch on `get_schema_version(db)` to decide whether their own migration ladder needs to run.
+
+Example downstream pattern:
+
+```python
+from core.db import ensure_schema, get_schema_version
+
+ensure_schema(db_path)                  # cashew applies its migrations
+if get_schema_version(db_path) >= 1:
+    apply_my_layer(db_path)             # downstream layers on top
+```
+
 ### Node Types (Current Implementation)
 - **fact** — Data points and factual observations
 - **observation** — Personal experiences and direct observations

@@ -144,10 +144,34 @@ def list_tables(conn: sqlite3.Connection) -> list[str]:
 
 
 def ensure_schema(db_path: Optional[str] = None) -> None:
-    """Delegate to core.session._ensure_schema — kept here so callers never
-    have to import the private name themselves."""
+    """Public, idempotent schema init / migration entrypoint.
+
+    Creates cashew's canonical tables from scratch if they don't exist,
+    applies additive column migrations to legacy databases, and stamps
+    `PRAGMA user_version` with the current schema version.
+
+    Safe for downstream library consumers to call before layering their
+    own schema additions. See DESIGN.md for the ownership contract.
+    """
     from core.session import _ensure_schema  # noqa: WPS433
     _ensure_schema(resolve_db_path(db_path))
+
+
+def get_schema_version(db_path: Optional[str] = None) -> int:
+    """Return the cashew schema version applied to this database.
+
+    Reads `PRAGMA user_version`. Returns 0 for databases that have never
+    been through `ensure_schema`. Downstream consumers can branch on this
+    to decide whether to apply their own layered migrations.
+    """
+    from core.session import get_schema_version as _get  # noqa: WPS433
+    return _get(resolve_db_path(db_path))
+
+
+def schema_version() -> int:
+    """The schema version this build of cashew knows how to produce."""
+    from core.session import SCHEMA_VERSION  # noqa: WPS433
+    return SCHEMA_VERSION
 
 
 def execute_migration(sql: str, db_path: Optional[str] = None) -> None:
