@@ -47,7 +47,7 @@ Changelog = "https://github.com/rajkripal/cashew/blob/main/CHANGELOG.md"
 cashew = "cashew_cli:main"
 
 [tool.setuptools]
-packages = ["core", "integration", "scripts"]
+packages = ["core", "extractors", "integration", "scripts"]
 py-modules = ["cashew_cli"]
 
 [tool.setuptools.package-data]
