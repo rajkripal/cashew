@@ -128,6 +128,7 @@ Extract only meaningful information, skip formatting, navigation, or boilerplate
 
         try:
             response = model_fn(prompt)
+            logger.debug(f"LLM raw ({source_tag}):\n{response}\n---")
             statements = parse_extraction_lines(response)
             
             return [{

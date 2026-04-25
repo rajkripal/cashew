@@ -173,6 +173,7 @@ Focus on substantive content and skip pleasantries or routine interactions."""
 
         try:
             response = model_fn(prompt)
+            logger.debug(f"LLM raw ({session_id}):\n{response}\n---")
             statements = parse_extraction_lines(response)
             
             # Event clock: use the latest message timestamp in this batch as the
