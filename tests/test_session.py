@@ -466,6 +466,24 @@ class TestCashewConfig:
             del os.environ['CASHEW_ACCESS_WEIGHT']
             del os.environ['CASHEW_TEMPORAL_WEIGHT']
 
+    def test_extractor_types_match_config(self):
+        """All extractor _VALID_TYPES must be present in default config node types."""
+        from extractors.sessions import SessionExtractor
+        from extractors.markdown_dir import MarkdownDirExtractor
+        from extractors.obsidian import ObsidianExtractor
+
+        config = CashewConfig()
+        configured = config.node_type_names
+
+        for extractor_cls in (SessionExtractor, MarkdownDirExtractor, ObsidianExtractor):
+            if hasattr(extractor_cls, '_VALID_TYPES'):
+                for t in extractor_cls._VALID_TYPES:
+                    assert t in configured, (
+                        f"{extractor_cls.__name__}._VALID_TYPES contains '{t}' "
+                        f"which is not in CashewConfig default node types"
+                    )
+
+
 class TestSessionDataClasses:
     """Test the dataclass structures"""
     

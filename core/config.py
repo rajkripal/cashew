@@ -132,7 +132,8 @@ class CashewConfig:
                 'core': {
                     'belief': 'a held opinion or conviction',
                     'insight': 'a non-obvious connection or pattern discovered',
-                    'decision': 'a commitment or choice made',
+                    'decision': 'a choice made between alternatives',
+                    'commitment': 'a stated intention or planned action',
                     'observation': 'a factual pattern noticed',
                     'fact': 'a concrete verifiable fact',
                 },
@@ -161,7 +162,8 @@ class CashewConfig:
                 'core': [
                     {'belief': 'a held opinion or conviction'},
                     {'insight': 'a non-obvious connection or pattern discovered'},
-                    {'decision': 'a commitment or choice made'},
+                    {'decision': 'a choice made between alternatives'},
+                    {'commitment': 'a stated intention or planned action'},
                     {'observation': 'a factual pattern noticed'},
                     {'fact': 'a concrete verifiable fact'},
                 ],
