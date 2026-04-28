@@ -62,24 +62,12 @@ class ClaudeCodeBackend(LLMBackend):
             raise RuntimeError("`claude` CLI not found on PATH")
 
     def _generate(self, prompt: str) -> tuple[str, int, int]:
-        # Suppress plugin loading in headless subprocesses. When the parent
-        # Claude session has the telegram plugin loaded, a child `claude -p`
-        # also loading it spawns a second bun MCP, which races for the
-        # Telegram long-poll lock and shuts the parent's bun down. Watchdog
-        # then kills the parent session. See bunny-claude-bridge for the
-        # symptom — diagnosed via telegram-mcp-deaths.log.
-        empty_mcp = os.environ.get(
-            "CASHEW_EMPTY_MCP_CONFIG",
-            "/Users/bunny/bunny-claude-bridge/scripts/empty-mcp.json",
-        )
-        cmd = [self._bin, "-p", prompt,
-               "--model", self.model,
-               "--output-format", "json",
-               "--permission-mode", "bypassPermissions"]
-        if os.path.exists(empty_mcp):
-            cmd += ["--strict-mcp-config", "--mcp-config", empty_mcp]
         proc = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=300,
+            [self._bin, "-p", prompt,
+             "--model", self.model,
+             "--output-format", "json",
+             "--permission-mode", "bypassPermissions"],
+            capture_output=True, text=True, timeout=300,
         )
         if proc.returncode != 0:
             raise RuntimeError(f"claude -p failed (rc={proc.returncode}): {proc.stderr[:500]}")
