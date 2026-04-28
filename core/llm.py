@@ -15,8 +15,34 @@ import json
 import os
 import shutil
 import subprocess
+import tempfile
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Callable, Optional
+
+
+_EMPTY_MCP_CONFIG = '{"mcpServers":{}}'
+
+
+def _ensure_empty_mcp_config() -> Optional[str]:
+    """Write a one-time empty MCP config to tempdir.
+
+    Headless `claude -p` invocations launched from inside a parent Claude
+    Code session inherit the parent's plugin set. Plugins that own a
+    long-lived external resource (telegram bot poller, etc.) cannot tolerate
+    a second instance running concurrently. Passing `--strict-mcp-config`
+    plus this empty config suppresses plugin-supplied MCP servers in the
+    headless child without disturbing the parent.
+
+    Returns the absolute path, or None if the file cannot be created.
+    """
+    try:
+        path = Path(tempfile.gettempdir()) / "cashew-empty-mcp.json"
+        if not path.exists():
+            path.write_text(_EMPTY_MCP_CONFIG, encoding="utf-8")
+        return str(path)
+    except OSError:
+        return None
 
 
 class LLMBackend(ABC):
@@ -62,12 +88,15 @@ class ClaudeCodeBackend(LLMBackend):
             raise RuntimeError("`claude` CLI not found on PATH")
 
     def _generate(self, prompt: str) -> tuple[str, int, int]:
+        cmd = [self._bin, "-p", prompt,
+               "--model", self.model,
+               "--output-format", "json",
+               "--permission-mode", "bypassPermissions"]
+        empty_mcp = _ensure_empty_mcp_config()
+        if empty_mcp:
+            cmd += ["--strict-mcp-config", "--mcp-config", empty_mcp]
         proc = subprocess.run(
-            [self._bin, "-p", prompt,
-             "--model", self.model,
-             "--output-format", "json",
-             "--permission-mode", "bypassPermissions"],
-            capture_output=True, text=True, timeout=300,
+            cmd, capture_output=True, text=True, timeout=300,
         )
         if proc.returncode != 0:
             raise RuntimeError(f"claude -p failed (rc={proc.returncode}): {proc.stderr[:500]}")

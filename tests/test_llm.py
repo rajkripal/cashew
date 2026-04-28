@@ -69,6 +69,43 @@ class TestClaudeCodeBackend:
         b = ClaudeCodeBackend(model="explicit")
         assert b.model == "explicit"
 
+    def test_generate_passes_strict_mcp_config(self, monkeypatch):
+        """Headless `claude -p` must isolate MCP config so plugins from a
+        surrounding Claude Code session do not double-spawn in the child."""
+        import json as _json
+        import subprocess as _subprocess
+
+        monkeypatch.setattr("shutil.which", lambda _: "/fake/claude")
+
+        captured: dict = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+            class R:
+                returncode = 0
+                stdout = _json.dumps({"result": "ok",
+                                      "usage": {"input_tokens": 1,
+                                                "output_tokens": 1}})
+                stderr = ""
+            return R()
+
+        monkeypatch.setattr(_subprocess, "run", fake_run)
+
+        b = ClaudeCodeBackend()
+        b("hi")
+
+        cmd = captured["cmd"]
+        assert "--strict-mcp-config" in cmd, (
+            "ClaudeCodeBackend must pass --strict-mcp-config to suppress "
+            "plugin-supplied MCP servers in the headless subprocess"
+        )
+        idx = cmd.index("--mcp-config")
+        cfg_path = cmd[idx + 1]
+        # The config file must exist and be a valid empty MCP config.
+        with open(cfg_path) as fh:
+            data = _json.load(fh)
+        assert data == {"mcpServers": {}}
+
 
 class TestBuildBackend:
     def test_unknown_backend_returns_none(self):
