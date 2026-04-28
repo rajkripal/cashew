@@ -4,12 +4,11 @@ Tests for cashew extractor plugins.
 """
 
 import json
-import os
 import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -277,6 +276,19 @@ Another paragraph with useful information.""")
         self.assertEqual(nodes[0]['content'], "Extracted insight 1 with sufficient length")
         self.assertEqual(nodes[1]['content'], "Extracted insight 2 with also enough content")
 
+    def test_llm_debug_logging(self):
+        """Raw LLM response is logged at debug level after extraction."""
+        note_file = self.vault_path / "note.md"
+        note_file.write_text("Content long enough to trigger LLM extraction path.")
+
+        def mock_model_fn(prompt):
+            return "raw obsidian response with enough length here"
+
+        with patch("extractors.obsidian.logger") as mock_logger:
+            ObsidianExtractor().extract(str(self.vault_path), mock_model_fn, str(self.db_path))
+            debug_calls = " ".join(str(c) for c in mock_logger.debug.call_args_list)
+            self.assertIn("raw obsidian response", debug_calls)
+
 
 class TestSessionExtractor(unittest.TestCase):
     """Test SessionExtractor."""
@@ -412,6 +424,25 @@ class TestSessionExtractor(unittest.TestCase):
         self.assertEqual(len(nodes), 3)
         self.assertTrue(any("React and Vue" in node['content'] for node in nodes))
 
+    def test_llm_debug_logging(self):
+        """Raw LLM response is logged at debug level after extraction."""
+        session_file = self.session_dir / "session.jsonl"
+        messages = [
+            {"role": "user", "content": "A" * 60},
+            {"role": "assistant", "content": "B" * 60},
+        ]
+        with open(session_file, "w") as f:
+            for m in messages:
+                f.write(json.dumps(m) + "\n")
+
+        def mock_model_fn(prompt):
+            return "raw session response with enough length here"
+
+        with patch("extractors.sessions.logger") as mock_logger:
+            SessionExtractor().extract(str(self.session_dir), mock_model_fn, str(self.db_path))
+            debug_calls = " ".join(str(c) for c in mock_logger.debug.call_args_list)
+            self.assertIn("raw session response", debug_calls)
+
 
 class TestMarkdownDirExtractor(unittest.TestCase):
     """Test MarkdownDirExtractor."""
@@ -498,6 +529,19 @@ class TestMarkdownDirExtractor(unittest.TestCase):
 
         self.assertGreater(len(nodes), 0)
         self.assertTrue(all('single.md' in node['source_file'] for node in nodes))
+
+    def test_llm_debug_logging(self):
+        """Raw LLM response is logged at debug level after extraction."""
+        md_file = self.notes_dir / "note.md"
+        md_file.write_text("Content long enough to trigger LLM extraction path.")
+
+        def mock_model_fn(prompt):
+            return "raw markdown response with enough length here"
+
+        with patch("extractors.markdown_dir.logger") as mock_logger:
+            MarkdownDirExtractor().extract(str(self.notes_dir), mock_model_fn, str(self.db_path))
+            debug_calls = " ".join(str(c) for c in mock_logger.debug.call_args_list)
+            self.assertIn("raw markdown response", debug_calls)
 
 
 class TestExtractorRegistry(unittest.TestCase):
