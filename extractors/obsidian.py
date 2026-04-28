@@ -25,7 +25,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from core.extractors import BaseExtractor
 from extractors.utils import (
     parse_frontmatter, extract_wikilinks, load_ignore_patterns,
-    should_ignore, split_into_paragraphs, detect_domain_from_path
+    should_ignore, split_into_paragraphs, detect_domain_from_path,
+    parse_extraction_lines
 )
 
 logger = logging.getLogger("cashew.extractors.obsidian")
@@ -141,7 +142,7 @@ Focus on substantive content, not formatting or structure."""
 
         try:
             response = model_fn(prompt)
-            statements = [s.strip() for s in response.split('\n') if s.strip()]
+            statements = parse_extraction_lines(response)
             
             return [{
                 "content": stmt,
