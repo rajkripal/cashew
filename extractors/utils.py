@@ -159,6 +159,24 @@ def split_into_paragraphs(content: str, min_length: int = 20) -> List[str]:
     return result
 
 
+def parse_extraction_lines(response: str) -> List[str]:
+    """Split an LLM extraction response into clean statement lines.
+
+    Drops blank lines and markdown header/preamble lines (`#`, `##`, `---`).
+    See issue #13: models intermittently prepend headers like "# Extracted
+    Insights" despite prompt instructions to return statements only.
+    """
+    out: List[str] = []
+    for raw in response.split("\n"):
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith("#") or line.startswith("---"):
+            continue
+        out.append(line)
+    return out
+
+
 def detect_domain_from_path(file_path: Path, base_path: Path) -> str:
     """Detect domain from file path structure.
     

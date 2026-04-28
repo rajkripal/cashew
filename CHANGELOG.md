@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Extractor parser stored markdown headers (`# Extracted Insights`, `## Decisions`) as no-value nodes when LLMs prepended them to extraction output. `extractors/utils.parse_extraction_lines` now drops `#`/`---` lines; sessions, markdown_dir, and obsidian extractors all route through it (#13).
+- Think cycle's diversity-sampling source_file filter only matched `%system_generated%`, so `extractor:*`-ingested nodes never populated the random-walk pool on freshly ingested graphs (#15).
+- Think cycle's high-activation pool sorted by `last_accessed` even when every node had `access_count=0`, deterministically returning the same oldest-ingested nodes across runs. Now applies a random tiebreaker when access_count is zero, transitioning to recency-based ordering as access history accumulates (#16).
+
 ## [1.0.1] - 2026-04-23
 
 ### Fixed

@@ -20,8 +20,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.extractors import BaseExtractor
 from extractors.utils import (
-    load_ignore_patterns, should_ignore, split_into_paragraphs, 
-    detect_domain_from_path
+    load_ignore_patterns, should_ignore, split_into_paragraphs,
+    detect_domain_from_path, parse_extraction_lines
 )
 
 logger = logging.getLogger("cashew.extractors.markdown_dir")
@@ -128,7 +128,7 @@ Extract only meaningful information, skip formatting, navigation, or boilerplate
 
         try:
             response = model_fn(prompt)
-            statements = [s.strip() for s in response.split('\n') if s.strip()]
+            statements = parse_extraction_lines(response)
             
             return [{
                 "content": stmt,

@@ -20,6 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.extractors import BaseExtractor
+from extractors.utils import parse_extraction_lines
 
 logger = logging.getLogger("cashew.extractors.sessions")
 
@@ -172,7 +173,7 @@ Focus on substantive content and skip pleasantries or routine interactions."""
 
         try:
             response = model_fn(prompt)
-            statements = [s.strip() for s in response.split('\n') if s.strip()]
+            statements = parse_extraction_lines(response)
             
             # Event clock: use the latest message timestamp in this batch as the
             # referent_time for extracted nodes. Session extractors already parse
