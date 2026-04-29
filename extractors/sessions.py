@@ -8,7 +8,7 @@ Features:
 - Focus on assistant + user content
 - Skip tool calls and system messages
 - Extract knowledge using model_fn
-- .cashewignore support (consistent with other extractors)
+- .cashewignore support
 """
 
 import json
