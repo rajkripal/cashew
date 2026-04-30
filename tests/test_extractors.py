@@ -443,6 +443,30 @@ class TestSessionExtractor(unittest.TestCase):
             debug_calls = " ".join(str(c) for c in mock_logger.debug.call_args_list)
             self.assertIn("raw session response", debug_calls)
 
+    def test_cashewignore(self):
+        """Test .cashewignore skips matched session files."""
+        def _write(name, text="x"):
+            p = self.session_dir / name
+            msg = {"role": "assistant", "content": text * 60}
+            p.write_text(json.dumps(msg) + "\n", encoding="utf-8")
+
+        _write("keep.jsonl")
+        _write("skip.jsonl")
+        _write("internal-a.jsonl")
+        _write("internal-b.jsonl")
+        (self.session_dir / ".cashewignore").write_text(
+            "skip.jsonl\ninternal-*.jsonl\n", encoding="utf-8"
+        )
+
+        extractor = SessionExtractor()
+        extractor.extract(str(self.session_dir), None, str(self.db_path))
+
+        processed = {Path(k).name for k in extractor._processed}
+        self.assertIn("keep.jsonl", processed)
+        self.assertNotIn("skip.jsonl", processed)
+        self.assertNotIn("internal-a.jsonl", processed)
+        self.assertNotIn("internal-b.jsonl", processed)
+
 
 class TestMarkdownDirExtractor(unittest.TestCase):
     """Test MarkdownDirExtractor."""

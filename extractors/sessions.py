@@ -8,6 +8,7 @@ Features:
 - Focus on assistant + user content
 - Skip tool calls and system messages
 - Extract knowledge using model_fn
+- .cashewignore support
 """
 
 import json
@@ -20,7 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.extractors import BaseExtractor
-from extractors.utils import parse_extraction_lines
+from extractors.utils import load_ignore_patterns, parse_extraction_lines, should_ignore
 
 logger = logging.getLogger("cashew.extractors.sessions")
 
@@ -49,7 +50,11 @@ class SessionExtractor(BaseExtractor):
         if source_dir.is_file() and source_dir.suffix == '.jsonl':
             session_files = [source_dir]
         elif source_dir.is_dir():
-            session_files = list(source_dir.glob("*.jsonl"))
+            ignore_patterns = load_ignore_patterns(source_dir / ".cashewignore")
+            session_files = [
+                f for f in source_dir.glob("*.jsonl")
+                if not should_ignore(f, source_dir, ignore_patterns)
+            ]
         else:
             logger.error(f"Invalid source path: {source_path}")
             return []
