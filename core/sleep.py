@@ -298,9 +298,12 @@ class SleepProtocol:
             WHERE parent_id = ? AND child_id = ?
         """, (keep_id, keep_id))
         
-        # Mark the duplicate as decayed instead of deleting
+        # Mark the duplicate as decayed instead of deleting.
+        # Skip if the loser was promoted to permanent — permanent nodes must
+        # never end up with decayed=1 (violates integrity check).
         cursor.execute("""
-            UPDATE thought_nodes SET decayed = 1 WHERE id = ?
+            UPDATE thought_nodes SET decayed = 1
+            WHERE id = ? AND (permanent IS NULL OR permanent = 0)
         """, (remove_id,))
         
         conn.commit()
@@ -511,13 +514,19 @@ class SleepProtocol:
             metric = metrics[node_id]
 
             cursor.execute(
-                "SELECT node_type, source_file, last_accessed FROM thought_nodes WHERE id = ?",
+                "SELECT node_type, source_file, last_accessed, permanent FROM thought_nodes WHERE id = ?",
                 (node_id,),
             )
             row = cursor.fetchone()
             if not row:
                 continue
-            node_type, source_file, last_accessed = row
+            node_type, source_file, last_accessed, is_permanent = row
+
+            # Permanent nodes are protected regardless of node_type.
+            # gc_protect_types only covers a hardcoded subset (seed, core_memory)
+            # and misses derived/fact/insight/etc. that sleep promoted to permanent.
+            if is_permanent:
+                continue
 
             # Protect configured types
             if node_type in gc_protect_types:

@@ -627,6 +627,42 @@ class TestGCConfigModes:
             assert row[0] == 1, f"Node {nid} should be decayed=1"
         conn.close()
 
+    def test_gc_protects_permanent_nodes_regardless_of_type(self, gc_db):
+        """Permanent nodes must never be GC'd, even when their node_type is
+        not in gc_protect_types. Regression test for the integrity_ok=False
+        bug where 127 derived/decision/fact/insight/observation/belief nodes
+        ended up with permanent=1 AND decayed=1 because gc_protect_types
+        only covered ['seed', 'core_memory']."""
+        # Promote one of the 'derived' GC candidates to permanent.
+        conn = sqlite3.connect(gc_db)
+        c = conn.cursor()
+        c.execute("UPDATE thought_nodes SET permanent = 1 WHERE id = 'gc05'")
+        conn.commit()
+        conn.close()
+
+        protocol = SleepProtocol(gc_db, tempfile.mktemp(suffix=".json"))
+        metrics = self._make_metrics(gc_db, fitness=0.0)
+
+        with patch("core.sleep.config") as mock_cfg:
+            mock_cfg.gc_mode = "soft"
+            mock_cfg.gc_threshold = 10.0  # everything below threshold
+            mock_cfg.gc_grace_days = 0    # no grace
+            mock_cfg.gc_protect_types = ["seed", "core_memory"]  # NOT 'derived'
+            mock_cfg.gc_protect_hotspots = False
+            mock_cfg.gc_think_cycle_penalty = 1.0
+
+            with patch("random.sample", return_value=["gc05"]):
+                result = protocol.garbage_collect(metrics, k_nodes=1)
+
+        assert "gc05" not in result, "Permanent node was GC'd despite permanent=1"
+
+        # Integrity check: no row should ever have permanent=1 AND decayed=1.
+        conn = sqlite3.connect(gc_db)
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM thought_nodes WHERE permanent>0 AND decayed>0")
+        assert c.fetchone()[0] == 0, "permanent_but_decayed integrity violation"
+        conn.close()
+
     def test_gc_hard_deletes_nodes(self, gc_db):
         """GC mode=hard should DELETE nodes and their edges/embeddings."""
         protocol = SleepProtocol(gc_db, tempfile.mktemp(suffix=".json"))
