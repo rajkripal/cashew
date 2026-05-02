@@ -362,6 +362,87 @@ class TestSleepProtocol:
             dream_events = [e for e in sleep_protocol.events if e.event_type == "dream"]
             assert len(dream_events) == 1
     
+    def test_generate_dream_node_uses_llm_when_model_fn_provided(self, sleep_protocol):
+        """When model_fn is passed, dream content should come from the LLM
+        synthesis, not from the templated 'Connection discovered' fallback."""
+        candidates = [
+            CrossLinkCandidate("isolated1", "seed1", 0.8, "cross_link"),
+            CrossLinkCandidate("isolated2", "different1", 0.75, "cross_link"),
+        ]
+
+        captured_prompts = []
+
+        def fake_model(prompt):
+            captured_prompts.append(prompt)
+            return "Both snippets share an unstated assumption that scheduling is synchronous."
+
+        dream_id = sleep_protocol.generate_dream_node(candidates, model_fn=fake_model)
+        assert dream_id is not None, "dream should be generated when bridge exists"
+
+        conn = sleep_protocol._get_connection()
+        c = conn.cursor()
+        c.execute("SELECT content FROM thought_nodes WHERE id = ?", (dream_id,))
+        content = c.fetchone()[0]
+        conn.close()
+
+        # LLM output landed, not the template fallback
+        assert "Connection discovered:" not in content
+        assert "unstated assumption" in content
+        # The prompt should have been built and sent
+        assert len(captured_prompts) == 1
+        assert "SNIPPET A" in captured_prompts[0]
+        assert "SNIPPET B" in captured_prompts[0]
+
+    def test_generate_dream_node_falls_back_to_template_on_llm_failure(self, sleep_protocol):
+        """If model_fn raises, the dream should still be created using the
+        templated fallback so the graph isn't left without a dream node."""
+        candidates = [
+            CrossLinkCandidate("isolated1", "seed1", 0.8, "cross_link"),
+            CrossLinkCandidate("isolated2", "different1", 0.75, "cross_link"),
+        ]
+
+        def broken_model(prompt):
+            raise RuntimeError("LLM unavailable")
+
+        dream_id = sleep_protocol.generate_dream_node(candidates, model_fn=broken_model)
+        assert dream_id is not None
+
+        conn = sleep_protocol._get_connection()
+        c = conn.cursor()
+        c.execute("SELECT content FROM thought_nodes WHERE id = ?", (dream_id,))
+        content = c.fetchone()[0]
+        conn.close()
+
+        assert content.startswith("Connection discovered:"), (
+            "LLM failure must fall back to templated dream, not drop the dream"
+        )
+
+    def test_run_sleep_cycle_threads_model_fn_into_dream_generation(self, sleep_protocol):
+        """run_sleep_cycle(model_fn=...) must thread the model into dream synthesis.
+        Regression for the bug where main's run_sleep_cycle accepted model_fn but
+        called generate_dream_node without passing it through, leaving dreams
+        permanently templated even when the LLM was wired up."""
+        called_with = []
+
+        def fake_model(prompt):
+            called_with.append(prompt)
+            return "Synthesized: both anchor on the same hidden invariant about ordering."
+
+        sleep_protocol.run_sleep_cycle(model_fn=fake_model)
+
+        # If a dream was generated this cycle, the model must have been invoked.
+        # If no dream, the test still passes (no cross-link bridge available);
+        # what we're guarding against is "dream generated but model bypassed".
+        conn = sleep_protocol._get_connection()
+        c = conn.cursor()
+        c.execute("SELECT content FROM thought_nodes WHERE node_type='dream'")
+        dreams = [r[0] for r in c.fetchall()]
+        conn.close()
+        if dreams:
+            assert any("Synthesized:" in d for d in dreams), (
+                "run_sleep_cycle generated a dream but bypassed the supplied model_fn"
+            )
+
     @patch('random.sample')
     def test_garbage_collect_uses_random_sampling(self, mock_sample, sleep_protocol):
         """Test that GC uses random sampling"""

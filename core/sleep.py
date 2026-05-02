@@ -315,8 +315,15 @@ class SleepProtocol:
             "similarity": similarity
         })
     
-    def generate_dream_node(self, cross_links: List[CrossLinkCandidate]) -> Optional[str]:
-        """Generate dream nodes connecting separate thought chains"""
+    def generate_dream_node(self, cross_links: List[CrossLinkCandidate],
+                            model_fn=None) -> Optional[str]:
+        """Generate a dream node by synthesizing the strongest cross-source bridge.
+
+        With model_fn, the LLM is asked to surface the underlying pattern,
+        assumption, or risk that the two snippets jointly point at — the dream
+        is a synthesis, not a templated restatement. Without model_fn, falls
+        back to a stub template so the node still exists in the graph.
+        """
         if not cross_links:
             return None
         
@@ -357,8 +364,37 @@ class SleepProtocol:
         # Generate dream content
         content1, type1 = nodes[0]
         content2, type2 = nodes[1]
-        
-        dream_content = f"Connection discovered: '{content1[:50]}...' relates to '{content2[:50]}...'"
+
+        dream_content = None
+        if model_fn is not None:
+            prompt = (
+                "Two thought-snippets surfaced from the same body of work. They were "
+                "embedded close in vector space, suggesting they share something. Read "
+                "them and find what they JOINTLY point at: a shared assumption, a hidden "
+                "invariant, a recurring failure mode, a deeper principle, or a contradiction. "
+                "Output ONE statement, in plain prose, that captures the synthesis. "
+                "Be specific. Name the concrete thing they share. If they don't share "
+                "anything meaningful, output a one-line note about WHY the embedding "
+                "linked them anyway (lexical overlap, structural similarity, etc.).\n\n"
+                "Rules: no preamble, no headers, no markdown. Output only the synthesis "
+                "statement, on a single line.\n\n"
+                f"SNIPPET A ({type1}):\n{content1}\n\n"
+                f"SNIPPET B ({type2}):\n{content2}\n"
+            )
+            try:
+                response = model_fn(prompt)
+                if response:
+                    candidate = response.strip().splitlines()[0].strip()
+                    if len(candidate) > 20:
+                        dream_content = candidate
+            except Exception as e:
+                logging.warning(f"Dream LLM synthesis failed, falling back: {e}")
+
+        if not dream_content:
+            dream_content = (
+                f"Connection discovered: '{content1[:50]}...' relates to "
+                f"'{content2[:50]}...'"
+            )
         
         # Create dream node
         import hashlib
@@ -672,7 +708,7 @@ class SleepProtocol:
         # 2. Dream generation
         print("💭 Generating dream nodes...")
         cross_link_candidates = [c for c in candidates if c.action == "cross_link"]
-        dream_id = self.generate_dream_node(cross_link_candidates)
+        dream_id = self.generate_dream_node(cross_link_candidates, model_fn=model_fn)
         
         # 3. Calculate metrics
         print("📊 Calculating node metrics...")
