@@ -315,6 +315,331 @@ class SleepProtocol:
             "similarity": similarity
         })
     
+    def find_merge_clusters(self, candidates: List[CrossLinkCandidate]) -> List[List[str]]:
+        """
+        Find maximal cliques among dedup candidates. A cluster is a set of node ids
+        where every pair is in the candidate set above dedup_threshold.
+
+        Uses Bron-Kerbosch (without pivoting). Cluster sizes are tiny (2-5) in
+        practice so the simple recursion is fine. Connected-component clustering
+        is deliberately avoided to prevent chaining unrelated nodes.
+        """
+        # Build adjacency from dedup candidates only
+        adj: Dict[str, Set[str]] = defaultdict(set)
+        for c in candidates:
+            if c.action != "dedup":
+                continue
+            adj[c.node1_id].add(c.node2_id)
+            adj[c.node2_id].add(c.node1_id)
+
+        if not adj:
+            return []
+
+        cliques: List[Set[str]] = []
+
+        def bron_kerbosch(R: Set[str], P: Set[str], X: Set[str]):
+            if not P and not X:
+                if len(R) >= 2:
+                    cliques.append(set(R))
+                return
+            for v in list(P):
+                neighbors = adj[v]
+                bron_kerbosch(R | {v}, P & neighbors, X & neighbors)
+                P = P - {v}
+                X = X | {v}
+
+        bron_kerbosch(set(), set(adj.keys()), set())
+
+        # Greedy maximal-clique cover: sort cliques by size desc, take any clique
+        # that introduces at least one un-covered node. Each node ends up in
+        # exactly one cluster, biased toward the largest clique it belongs to.
+        cliques.sort(key=len, reverse=True)
+        used: Set[str] = set()
+        result: List[List[str]] = []
+        for cl in cliques:
+            # Take only the unused portion; require size >= 2 after subtraction.
+            remaining = [n for n in cl if n not in used]
+            if len(remaining) < 2:
+                continue
+            # All pairs in `remaining` are still a clique (subset of a clique).
+            result.append(sorted(remaining))
+            used.update(remaining)
+        return result
+
+    def _synthesize_cluster_content(
+        self,
+        cluster_contents: List[str],
+        cluster_types: List[str],
+        model_fn=None,
+    ) -> str:
+        """Produce one representative statement for a cluster of near-duplicates.
+
+        With model_fn, asks the LLM for a single-line synthesis. Falls back to
+        the longest member's content on None or failure (degraded but not blank).
+        """
+        longest = max(cluster_contents, key=lambda s: len(s or "")) if cluster_contents else ""
+        if model_fn is None:
+            return longest
+
+        snippet_block = "\n\n".join(
+            f"SNIPPET {i+1} ({t}):\n{c}"
+            for i, (c, t) in enumerate(zip(cluster_contents, cluster_types))
+        )
+        prompt = (
+            "The following thought-snippets are near-duplicates from the same "
+            "thought-graph: they say substantially the same thing. Produce ONE "
+            "consolidated statement, in plain prose, that captures what they all "
+            "express. Preserve the strongest, most specific phrasing. Do not "
+            "average or hedge. If they disagree on detail, keep the version that "
+            "is most concrete.\n\n"
+            "Rules: no preamble, no headers, no markdown. Output only the "
+            "consolidated statement, on a single line.\n\n"
+            f"{snippet_block}\n"
+        )
+        try:
+            response = model_fn(prompt)
+            if response:
+                candidate = response.strip().splitlines()[0].strip()
+                if len(candidate) >= 10:
+                    return candidate
+        except Exception as e:
+            logger.warning(f"Cluster LLM synthesis failed, falling back: {e}")
+        return longest
+
+    def merge_cluster(self, node_ids: List[str], model_fn=None) -> Optional[str]:
+        """
+        Merge a cluster of near-duplicate nodes into a single representative node.
+
+        - Synthesizes content via model_fn (fallback: longest member).
+        - permanent = OR across cluster, confidence = max, access_count = sum,
+          timestamp = earliest, last_accessed = most recent (NULL-safe),
+          source_file/tags = unioned, metadata = merged (keeper wins on shared keys),
+          node_type = mode (fallback "derived"), mood_state = mode (fallback NULL).
+        - Rewires every edge touching any cluster member to the new merged id;
+          drops self-loops; INSERT OR IGNORE semantics avoid PK violations.
+        - Deletes the original rows from thought_nodes and their embeddings.
+        - Logs a `merge_cluster` event with full audit trail.
+
+        Returns the new merged node id, or None if invalid (size < 2, missing nodes).
+        """
+        if not node_ids or len(node_ids) < 2:
+            return None
+
+        node_ids = list(dict.fromkeys(node_ids))  # de-dup, preserve order
+        if len(node_ids) < 2:
+            return None
+
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        # Fetch all cluster rows generically (column list varies across schemas).
+        cursor.execute("PRAGMA table_info(thought_nodes)")
+        columns = [row[1] for row in cursor.fetchall()]
+
+        placeholders = ",".join("?" for _ in node_ids)
+        cursor.execute(
+            f"SELECT {', '.join(columns)} FROM thought_nodes WHERE id IN ({placeholders})",
+            node_ids,
+        )
+        rows = cursor.fetchall()
+        if len(rows) != len(node_ids):
+            conn.close()
+            return None  # missing node(s) — bail
+
+        members = [dict(zip(columns, r)) for r in rows]
+
+        def col(m, name, default=None):
+            return m.get(name, default) if name in m else default
+
+        # --- merged properties ---
+        contents = [m["content"] or "" for m in members]
+        types = [m.get("node_type") or "derived" for m in members]
+
+        synthesized = self._synthesize_cluster_content(contents, types, model_fn=model_fn)
+
+        had_permanent = any(bool(col(m, "permanent")) for m in members)
+        merged_permanent = 1 if had_permanent else 0
+
+        merged_confidence = max(float(col(m, "confidence") or 0.0) for m in members)
+
+        merged_access_count = sum(int(col(m, "access_count") or 0) for m in members)
+
+        timestamps = [col(m, "timestamp") for m in members if col(m, "timestamp")]
+        merged_timestamp = min(timestamps) if timestamps else datetime.now().isoformat()
+
+        last_accesses = [col(m, "last_accessed") for m in members if col(m, "last_accessed")]
+        merged_last_accessed = max(last_accesses) if last_accesses else None
+
+        # source_file: union, semicolon-joined, drop dup/NULL
+        sources: List[str] = []
+        for m in members:
+            sf = col(m, "source_file")
+            if sf:
+                for piece in str(sf).split(";"):
+                    piece = piece.strip()
+                    if piece and piece not in sources:
+                        sources.append(piece)
+        merged_source = ";".join(sources) if sources else None
+
+        # tags: union, comma-joined
+        tag_set: List[str] = []
+        for m in members:
+            t = col(m, "tags")
+            if t:
+                for piece in str(t).split(","):
+                    piece = piece.strip()
+                    if piece and piece not in tag_set:
+                        tag_set.append(piece)
+        merged_tags = ",".join(tag_set) if tag_set else None
+
+        # metadata: dict-merge; keeper (highest confidence) wins on shared keys
+        keeper_idx = max(range(len(members)),
+                         key=lambda i: float(col(members[i], "confidence") or 0.0))
+        merged_metadata: dict = {}
+        # First, fold in non-keeper entries; keeper goes last so it overrides.
+        order = [i for i in range(len(members)) if i != keeper_idx] + [keeper_idx]
+        for i in order:
+            raw = col(members[i], "metadata")
+            if not raw:
+                continue
+            try:
+                d = json.loads(raw) if isinstance(raw, str) else dict(raw)
+                if isinstance(d, dict):
+                    merged_metadata.update(d)
+            except (ValueError, TypeError):
+                continue
+        merged_metadata_json = json.dumps(merged_metadata) if merged_metadata else "{}"
+
+        # node_type: mode, fallback "derived"
+        def mode_or(vals: List, fallback):
+            counts: Dict = defaultdict(int)
+            for v in vals:
+                if v is None:
+                    continue
+                counts[v] += 1
+            if not counts:
+                return fallback
+            top = max(counts.values())
+            top_vals = [k for k, v in counts.items() if v == top]
+            if len(top_vals) == 1:
+                return top_vals[0]
+            return fallback
+
+        merged_node_type = mode_or([col(m, "node_type") for m in members], "derived")
+        merged_mood = mode_or([col(m, "mood_state") for m in members], None)
+
+        # domain: prefer keeper's domain (not in spec; pick deterministic default)
+        merged_domain = col(members[keeper_idx], "domain")
+
+        # --- new id ---
+        import hashlib
+        merged_id = hashlib.sha256(synthesized.encode("utf-8")).hexdigest()[:12]
+
+        # If merged_id collides with one of the cluster members, we'll do an
+        # in-place upsert via INSERT OR REPLACE rather than insert+delete.
+        cluster_set = set(node_ids)
+
+        # --- write merged node ---
+        # Build column list dynamically based on what the schema actually has.
+        write_cols = ["id", "content", "node_type", "timestamp", "confidence"]
+        write_vals = [merged_id, synthesized, merged_node_type, merged_timestamp, merged_confidence]
+        if "mood_state" in columns:
+            write_cols.append("mood_state"); write_vals.append(merged_mood)
+        if "metadata" in columns:
+            write_cols.append("metadata"); write_vals.append(merged_metadata_json)
+        if "source_file" in columns:
+            write_cols.append("source_file"); write_vals.append(merged_source)
+        if "decayed" in columns:
+            write_cols.append("decayed"); write_vals.append(0)
+        if "permanent" in columns:
+            write_cols.append("permanent"); write_vals.append(merged_permanent)
+        if "domain" in columns:
+            write_cols.append("domain"); write_vals.append(merged_domain)
+        if "access_count" in columns:
+            write_cols.append("access_count"); write_vals.append(merged_access_count)
+        if "last_accessed" in columns:
+            write_cols.append("last_accessed"); write_vals.append(merged_last_accessed)
+        if "tags" in columns:
+            write_cols.append("tags"); write_vals.append(merged_tags)
+        if "last_updated" in columns:
+            write_cols.append("last_updated"); write_vals.append(datetime.now().isoformat())
+
+        cursor.execute(
+            f"INSERT OR REPLACE INTO thought_nodes ({', '.join(write_cols)}) "
+            f"VALUES ({', '.join('?' for _ in write_cols)})",
+            write_vals,
+        )
+
+        # --- rewire edges ---
+        # parent_id sweep
+        cursor.execute(
+            f"SELECT parent_id, child_id, weight, reasoning FROM derivation_edges "
+            f"WHERE parent_id IN ({placeholders}) OR child_id IN ({placeholders})",
+            node_ids + node_ids,
+        )
+        edges = cursor.fetchall()
+
+        # Delete all existing edges touching cluster members; we'll re-insert rewired versions.
+        cursor.execute(
+            f"DELETE FROM derivation_edges "
+            f"WHERE parent_id IN ({placeholders}) OR child_id IN ({placeholders})",
+            node_ids + node_ids,
+        )
+
+        for parent_id, child_id, weight, reasoning in edges:
+            new_parent = merged_id if parent_id in cluster_set else parent_id
+            new_child = merged_id if child_id in cluster_set else child_id
+            if new_parent == new_child:
+                continue  # drop self-loop
+            cursor.execute(
+                "INSERT OR IGNORE INTO derivation_edges (parent_id, child_id, weight, reasoning) "
+                "VALUES (?, ?, ?, ?)",
+                (new_parent, new_child, weight, reasoning),
+            )
+
+        # --- delete embeddings for old ids (merged node will be re-embedded downstream) ---
+        # Some test schemas don't have embeddings/vec_embeddings; guard with try.
+        for old_id in node_ids:
+            if old_id == merged_id:
+                continue
+            try:
+                cursor.execute("DELETE FROM embeddings WHERE node_id = ?", (old_id,))
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("DELETE FROM vec_embeddings WHERE node_id = ?", (old_id,))
+            except sqlite3.OperationalError:
+                pass
+
+        # --- delete old rows ---
+        ids_to_delete = [nid for nid in node_ids if nid != merged_id]
+        if ids_to_delete:
+            del_placeholders = ",".join("?" for _ in ids_to_delete)
+            cursor.execute(
+                f"DELETE FROM thought_nodes WHERE id IN ({del_placeholders})",
+                ids_to_delete,
+            )
+
+        conn.commit()
+        conn.close()
+
+        # Invalidate cached embeddings since rows changed.
+        if hasattr(self, "_embed_id_to_idx"):
+            for attr in ("_embed_ids", "_embed_vectors", "_embed_id_to_idx", "_cosine_similarity"):
+                if hasattr(self, attr):
+                    delattr(self, attr)
+
+        self._log_event("merge_cluster", {
+            "cluster_node_ids": list(node_ids),
+            "cluster_contents": contents,
+            "merged_node_id": merged_id,
+            "merged_content": synthesized,
+            "had_permanent": had_permanent,
+            "size": len(node_ids),
+        })
+
+        return merged_id
+
     def generate_dream_node(self, cross_links: List[CrossLinkCandidate],
                             model_fn=None) -> Optional[str]:
         """Generate a dream node by synthesizing the strongest cross-source bridge.
@@ -696,14 +1021,20 @@ class SleepProtocol:
         
         cross_links_created = 0
         dedups_performed = 0
-        
+
+        # Cross-links first (these don't mutate node identity)
         for candidate in candidates:
-            if candidate.action == "dedup":
-                self.deduplicate_nodes(candidate.node1_id, candidate.node2_id, candidate.similarity)
-                dedups_performed += 1
-            elif candidate.action == "cross_link":
+            if candidate.action == "cross_link":
                 self.cross_link_nodes(candidate.node1_id, candidate.node2_id, candidate.similarity)
                 cross_links_created += 1
+
+        # N-plicate cluster merge: clique-detect over dedup candidates and
+        # consolidate each clique into a single LLM-synthesized node.
+        dedup_candidates = [c for c in candidates if c.action == "dedup"]
+        clusters = self.find_merge_clusters(dedup_candidates)
+        for cluster in clusters:
+            if self.merge_cluster(cluster, model_fn=model_fn):
+                dedups_performed += 1
         
         # 2. Dream generation
         print("💭 Generating dream nodes...")

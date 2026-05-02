@@ -1113,3 +1113,347 @@ class TestGCConfigModes:
         integrity = validate_permanence_integrity(permanence_db)
         assert integrity["permanent_but_decayed"] == 0  # No permanent nodes should be decayed
         assert integrity["integrity_ok"] == True
+
+
+class TestMergeCluster:
+    """Tests for n-plicate cluster merge (replaces pair-wise dedup)."""
+
+    def _make_db(self, with_embeddings=False):
+        fd, db_path = tempfile.mkstemp(suffix='.db')
+        os.close(fd)
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute("""
+            CREATE TABLE thought_nodes (
+                id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                node_type TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                confidence REAL NOT NULL,
+                mood_state TEXT,
+                metadata TEXT,
+                source_file TEXT,
+                decayed INTEGER DEFAULT 0,
+                permanent INTEGER DEFAULT 0,
+                domain TEXT,
+                access_count INTEGER DEFAULT 0,
+                last_accessed TEXT,
+                tags TEXT,
+                last_updated TEXT
+            )
+        """)
+        c.execute("""
+            CREATE TABLE derivation_edges (
+                parent_id TEXT NOT NULL,
+                child_id TEXT NOT NULL,
+                weight REAL NOT NULL,
+                reasoning TEXT,
+                PRIMARY KEY (parent_id, child_id)
+            )
+        """)
+        if with_embeddings:
+            c.execute("""
+                CREATE TABLE embeddings (
+                    node_id TEXT PRIMARY KEY,
+                    vector BLOB,
+                    model TEXT,
+                    updated_at TEXT
+                )
+            """)
+        conn.commit()
+        conn.close()
+        return db_path
+
+    def _insert(self, db, **kw):
+        defaults = dict(
+            mood_state=None, metadata="{}", source_file=None, decayed=0,
+            permanent=0, domain="default", access_count=0, last_accessed=None,
+            tags=None, last_updated=None,
+        )
+        defaults.update(kw)
+        cols = ["id", "content", "node_type", "timestamp", "confidence",
+                "mood_state", "metadata", "source_file", "decayed", "permanent",
+                "domain", "access_count", "last_accessed", "tags", "last_updated"]
+        conn = sqlite3.connect(db)
+        conn.execute(
+            f"INSERT INTO thought_nodes ({','.join(cols)}) VALUES ({','.join('?' for _ in cols)})",
+            [defaults[k] for k in cols],
+        )
+        conn.commit()
+        conn.close()
+
+    def _edge(self, db, parent, child, weight=0.5, reasoning=""):
+        conn = sqlite3.connect(db)
+        conn.execute(
+            "INSERT OR IGNORE INTO derivation_edges (parent_id, child_id, weight, reasoning) VALUES (?, ?, ?, ?)",
+            (parent, child, weight, reasoning),
+        )
+        conn.commit()
+        conn.close()
+
+    def test_merge_cluster_combines_properties_correctly(self):
+        """Merged node carries permanent=1 if any member was, max confidence,
+        sum access_count, earliest timestamp, latest last_accessed, unioned
+        sources/tags, and most-common node_type."""
+        db = self._make_db()
+        try:
+            self._insert(db, id="a", content="The build is broken on main",
+                         node_type="observation", timestamp="2024-01-03T00:00:00",
+                         confidence=0.6, permanent=0, access_count=2,
+                         last_accessed="2024-02-10T00:00:00",
+                         source_file="src1.md", tags="bug,build",
+                         metadata=json.dumps({"x": 1}))
+            self._insert(db, id="b", content="Build broken on main branch since Tuesday",
+                         node_type="observation", timestamp="2024-01-02T00:00:00",
+                         confidence=0.9, permanent=1, access_count=5,
+                         last_accessed="2024-02-15T00:00:00",
+                         source_file="src2.md", tags="build,ci",
+                         metadata=json.dumps({"y": 2, "x": 99}))
+            self._insert(db, id="c", content="main is busted",
+                         node_type="belief", timestamp="2024-01-01T00:00:00",
+                         confidence=0.7, permanent=0, access_count=3,
+                         last_accessed=None,
+                         source_file="src1.md", tags="bug",
+                         metadata=json.dumps({"z": 3}))
+
+            proto = SleepProtocol(db, tempfile.mktemp(suffix=".json"))
+            new_id = proto.merge_cluster(["a", "b", "c"], model_fn=None)
+            assert new_id is not None
+
+            conn = sqlite3.connect(db)
+            row = conn.execute(
+                "SELECT id, content, node_type, timestamp, confidence, permanent, "
+                "access_count, last_accessed, source_file, tags, metadata "
+                "FROM thought_nodes WHERE id = ?",
+                (new_id,),
+            ).fetchone()
+            assert row is not None
+            (_, content, node_type, ts, conf, perm, acc, last_acc, src, tags, md) = row
+
+            # Fallback (model_fn=None) returns the longest member content
+            assert content == "Build broken on main branch since Tuesday"
+            assert perm == 1, "any-member-permanent => merged permanent"
+            assert conf == 0.9, "max confidence"
+            assert acc == 10, "sum access_count"
+            assert ts == "2024-01-01T00:00:00", "earliest timestamp"
+            assert last_acc == "2024-02-15T00:00:00", "latest last_accessed"
+            # node_type mode: observation appears twice → wins
+            assert node_type == "observation"
+            # source_file union
+            src_set = set((src or "").split(";"))
+            assert src_set == {"src1.md", "src2.md"}
+            # tags union
+            tag_set = set((tags or "").split(","))
+            assert tag_set == {"bug", "build", "ci"}
+            # metadata merge: keeper (b, highest conf) wins on shared key x
+            md_obj = json.loads(md)
+            assert md_obj.get("x") == 99
+            assert md_obj.get("y") == 2
+            assert md_obj.get("z") == 3
+
+            # Originals deleted
+            n_old = conn.execute(
+                "SELECT COUNT(*) FROM thought_nodes WHERE id IN ('a','b','c') AND id != ?",
+                (new_id,),
+            ).fetchone()[0]
+            assert n_old == 0
+            conn.close()
+        finally:
+            os.unlink(db)
+
+    def test_merge_cluster_rewires_all_edges_and_deletes_originals(self):
+        """Edges to/from cluster members get rewired to merged node; self-loops
+        among cluster members are dropped; originals are deleted."""
+        db = self._make_db()
+        try:
+            for i, nid in enumerate(["a", "b", "c"]):
+                self._insert(db, id=nid, content=f"near-dup {nid} " * 5,
+                             node_type="derived", timestamp=f"2024-01-0{i+1}T00:00:00",
+                             confidence=0.5 + i * 0.1)
+            self._insert(db, id="outside_parent", content="outside parent node",
+                         node_type="seed", timestamp="2023-12-01T00:00:00", confidence=0.9)
+            self._insert(db, id="outside_child", content="outside child node",
+                         node_type="derived", timestamp="2024-03-01T00:00:00", confidence=0.5)
+
+            # Edges among cluster (will become self-loops, must be dropped)
+            self._edge(db, "a", "b")
+            self._edge(db, "b", "c")
+            # Edge from outside into cluster
+            self._edge(db, "outside_parent", "a", weight=0.7, reasoning="supports")
+            # Edge from cluster to outside
+            self._edge(db, "c", "outside_child", weight=0.6, reasoning="derived_from")
+
+            proto = SleepProtocol(db, tempfile.mktemp(suffix=".json"))
+            new_id = proto.merge_cluster(["a", "b", "c"], model_fn=None)
+            assert new_id is not None
+
+            conn = sqlite3.connect(db)
+            # Originals deleted
+            n_old = conn.execute(
+                "SELECT COUNT(*) FROM thought_nodes WHERE id IN ('a','b','c')"
+            ).fetchone()[0]
+            assert n_old == 0
+
+            # outside_parent -> new_id present, with original weight/reasoning
+            row = conn.execute(
+                "SELECT weight, reasoning FROM derivation_edges WHERE parent_id=? AND child_id=?",
+                ("outside_parent", new_id),
+            ).fetchone()
+            assert row is not None
+            assert row[0] == 0.7
+            assert row[1] == "supports"
+
+            # new_id -> outside_child present
+            row = conn.execute(
+                "SELECT weight FROM derivation_edges WHERE parent_id=? AND child_id=?",
+                (new_id, "outside_child"),
+            ).fetchone()
+            assert row is not None
+
+            # No self-loops on merged node
+            n_self = conn.execute(
+                "SELECT COUNT(*) FROM derivation_edges WHERE parent_id=? AND child_id=?",
+                (new_id, new_id),
+            ).fetchone()[0]
+            assert n_self == 0
+
+            # No edges still reference any of a/b/c
+            n_dangling = conn.execute(
+                "SELECT COUNT(*) FROM derivation_edges "
+                "WHERE parent_id IN ('a','b','c') OR child_id IN ('a','b','c')"
+            ).fetchone()[0]
+            assert n_dangling == 0
+            conn.close()
+        finally:
+            os.unlink(db)
+
+    def test_merge_cluster_uses_llm_for_content_synthesis(self):
+        """When model_fn is provided, the prompt includes all cluster contents
+        and the merged node's content is the LLM's output."""
+        db = self._make_db()
+        try:
+            contents = [
+                "Sleep cycle dedup currently rewires only one pair at a time",
+                "Sleep cycle pair-wise dedup leaves orphan rows for permanent nodes",
+                "Pair-wise sleep dedup produces drift across n duplicates",
+            ]
+            for i, ct in enumerate(contents):
+                self._insert(db, id=f"n{i}", content=ct, node_type="observation",
+                             timestamp=f"2024-0{i+1}-01T00:00:00", confidence=0.5)
+
+            captured = {}
+            def fake_llm(prompt: str) -> str:
+                captured["prompt"] = prompt
+                return "Pair-wise sleep dedup is structurally inadequate for n-plicate clusters."
+
+            proto = SleepProtocol(db, tempfile.mktemp(suffix=".json"))
+            new_id = proto.merge_cluster(["n0", "n1", "n2"], model_fn=fake_llm)
+            assert new_id is not None
+
+            assert "prompt" in captured
+            for ct in contents:
+                assert ct in captured["prompt"], f"Prompt missing snippet: {ct}"
+
+            conn = sqlite3.connect(db)
+            content = conn.execute(
+                "SELECT content FROM thought_nodes WHERE id = ?", (new_id,)
+            ).fetchone()[0]
+            conn.close()
+            assert content == "Pair-wise sleep dedup is structurally inadequate for n-plicate clusters."
+        finally:
+            os.unlink(db)
+
+    def test_merge_cluster_falls_back_to_longest_content_when_model_fn_none(self):
+        """No model_fn => merged content is the longest member's content."""
+        db = self._make_db()
+        try:
+            self._insert(db, id="s", content="short",
+                         node_type="derived", timestamp="2024-01-01T00:00:00", confidence=0.5)
+            longest = "this is by far the longest near-duplicate content here, x" * 3
+            self._insert(db, id="l", content=longest,
+                         node_type="derived", timestamp="2024-01-02T00:00:00", confidence=0.5)
+            self._insert(db, id="m", content="medium length content right here please",
+                         node_type="derived", timestamp="2024-01-03T00:00:00", confidence=0.5)
+
+            proto = SleepProtocol(db, tempfile.mktemp(suffix=".json"))
+            new_id = proto.merge_cluster(["s", "l", "m"], model_fn=None)
+            assert new_id is not None
+
+            conn = sqlite3.connect(db)
+            content = conn.execute(
+                "SELECT content FROM thought_nodes WHERE id = ?", (new_id,)
+            ).fetchone()[0]
+            conn.close()
+            assert content == longest
+        finally:
+            os.unlink(db)
+
+    def test_find_merge_clusters_uses_clique_not_connected_component(self):
+        """Chain A-B-C-D where sim(A,D) is below threshold must NOT yield the
+        full set as one cluster. D must never group with A."""
+        db = self._make_db()
+        try:
+            for nid in ["A", "B", "C", "D"]:
+                self._insert(db, id=nid, content=nid * 10,
+                             node_type="derived", timestamp="2024-01-01T00:00:00", confidence=0.5)
+
+            # Above-threshold dedup edges form a chain (NOT a 4-clique).
+            candidates = [
+                CrossLinkCandidate("A", "B", 0.85, "dedup"),
+                CrossLinkCandidate("B", "C", 0.84, "dedup"),
+                CrossLinkCandidate("C", "D", 0.83, "dedup"),
+                # sim(A,D)=0.40 is below threshold → NOT in candidates
+            ]
+
+            proto = SleepProtocol(db, tempfile.mktemp(suffix=".json"))
+            clusters = proto.find_merge_clusters(candidates)
+
+            for cl in clusters:
+                assert not ("A" in cl and "D" in cl), \
+                    f"Clique algorithm chained unrelated A-D via transitivity: {cl}"
+                # And no cluster should contain all four (would be conn-component)
+                assert len(cl) < 4
+        finally:
+            os.unlink(db)
+
+    def test_run_sleep_cycle_uses_cluster_merge_path(self):
+        """Integration: orchestrator routes dedup candidates through merge_cluster.
+        After the cycle, no orphan permanent-but-decayed rows should exist, and
+        the original near-dup rows should be deleted (not soft-decayed)."""
+        db = self._make_db(with_embeddings=False)
+        try:
+            self._insert(db, id="dup1", content="alpha beta gamma",
+                         node_type="derived", timestamp="2024-01-01T00:00:00", confidence=0.6)
+            self._insert(db, id="dup2", content="alpha beta gamma delta",
+                         node_type="derived", timestamp="2024-01-02T00:00:00", confidence=0.7)
+
+            proto = SleepProtocol(db, tempfile.mktemp(suffix=".json"))
+
+            # Force find_cross_link_candidates to return our dedup pair
+            from unittest.mock import patch as _patch
+            fake_candidates = [CrossLinkCandidate("dup1", "dup2", 0.95, "dedup")]
+            with _patch.object(proto, "find_cross_link_candidates", return_value=fake_candidates), \
+                 _patch.object(proto, "calculate_node_metrics", return_value={}), \
+                 _patch.object(proto, "garbage_collect", return_value=[]), \
+                 _patch.object(proto, "evaluate_permanence", return_value={}), \
+                 _patch.object(proto, "promote_core_memories", return_value=([], [])), \
+                 _patch.object(proto, "generate_dream_node", return_value=None):
+                summary = proto.run_sleep_cycle(model_fn=None)
+
+            assert summary["deduplications"] == 1, \
+                "merged_count should be 1 (one cluster merged)"
+
+            conn = sqlite3.connect(db)
+            # Originals are deleted, not soft-decayed
+            n_orig = conn.execute(
+                "SELECT COUNT(*) FROM thought_nodes WHERE id IN ('dup1','dup2')"
+            ).fetchone()[0]
+            assert n_orig == 0
+            # No permanent-but-decayed orphans
+            n_bad = conn.execute(
+                "SELECT COUNT(*) FROM thought_nodes WHERE permanent=1 AND decayed=1"
+            ).fetchone()[0]
+            assert n_bad == 0
+            conn.close()
+        finally:
+            os.unlink(db)
