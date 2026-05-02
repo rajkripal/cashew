@@ -166,6 +166,102 @@ def calculate_recommended_threshold(db_path: str) -> int:
     return recommended
 
 
+EXPECTED_EMBEDDING_DIM = 384  # all-MiniLM-L6-v2 produces 384-dim float32 vectors
+
+
+def validate_embeddings_integrity(db_path: str) -> Dict:
+    """
+    Validate that the embeddings table is healthy.
+
+    Checks for the kinds of corruption that would silently degrade retrieval
+    and similarity-driven sleep operations: zero-norm vectors, NaN/inf,
+    wrong dimensions, embeddings pointing at deleted nodes, and live nodes
+    with no embedding row at all.
+
+    Args:
+        db_path: Path to the SQLite database
+
+    Returns:
+        Dict with validation results. ``integrity_ok`` is True iff every
+        kind of corruption count is zero AND no live node is missing an
+        embedding (orphan_nodes).
+    """
+    import numpy as np
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Defensive: an embeddings table is optional in some DB layouts (older
+    # graphs predate it, test fixtures sometimes skip it). Treat absence
+    # as "no embeddings to check" rather than an integrity violation.
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='embeddings'")
+    if not cursor.fetchone():
+        conn.close()
+        return {
+            "total_embeddings": 0,
+            "zero_norm": 0,
+            "nan_or_inf": 0,
+            "wrong_dim": 0,
+            "bad_embedding_ids": [],
+            "orphan_embeddings": 0,
+            "orphan_nodes": 0,
+            "integrity_ok": True,
+            "embeddings_table_present": False,
+        }
+
+    # All embeddings, decoded
+    cursor.execute("SELECT node_id, vector FROM embeddings")
+    zero_norm = 0
+    nan_or_inf = 0
+    wrong_dim = 0
+    bad_ids = []
+    total_embeddings = 0
+    for nid, blob in cursor.fetchall():
+        total_embeddings += 1
+        arr = np.frombuffer(blob, dtype=np.float32)
+        if len(arr) != EXPECTED_EMBEDDING_DIM:
+            wrong_dim += 1
+            bad_ids.append(nid)
+            continue
+        if not np.all(np.isfinite(arr)):
+            nan_or_inf += 1
+            bad_ids.append(nid)
+            continue
+        norm = float(np.linalg.norm(arr))
+        if norm < 1e-6:
+            zero_norm += 1
+            bad_ids.append(nid)
+
+    # Embeddings pointing at deleted/missing nodes
+    cursor.execute("""
+        SELECT COUNT(*) FROM embeddings e
+        WHERE NOT EXISTS (SELECT 1 FROM thought_nodes t WHERE t.id = e.node_id)
+    """)
+    orphan_embeddings = cursor.fetchone()[0]
+
+    # Live (non-decayed) nodes with no embedding row
+    cursor.execute("""
+        SELECT COUNT(*) FROM thought_nodes t
+        WHERE (t.decayed IS NULL OR t.decayed = 0)
+        AND NOT EXISTS (SELECT 1 FROM embeddings e WHERE e.node_id = t.id)
+    """)
+    orphan_nodes = cursor.fetchone()[0]
+
+    conn.close()
+
+    bad_total = zero_norm + nan_or_inf + wrong_dim
+    return {
+        "total_embeddings": total_embeddings,
+        "zero_norm": zero_norm,
+        "nan_or_inf": nan_or_inf,
+        "wrong_dim": wrong_dim,
+        "bad_embedding_ids": bad_ids,
+        "orphan_embeddings": orphan_embeddings,  # embedding for nonexistent node
+        "orphan_nodes": orphan_nodes,            # live node with no embedding
+        "integrity_ok": bad_total == 0 and orphan_embeddings == 0 and orphan_nodes == 0,
+    }
+
+
 def validate_permanence_integrity(db_path: str) -> Dict:
     """
     Validate that permanent nodes are properly protected from decay.

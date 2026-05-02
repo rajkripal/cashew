@@ -16,7 +16,9 @@ from core.permanence import (
     promote_permanent_nodes,
     get_permanence_stats,
     calculate_recommended_threshold,
-    validate_permanence_integrity
+    validate_permanence_integrity,
+    validate_embeddings_integrity,
+    EXPECTED_EMBEDDING_DIM,
 )
 
 
@@ -297,5 +299,155 @@ class TestPermanence:
         
         # This ensures permanent nodes are properly excluded from decay
         assert permanent_that_would_be_candidates == 0, "Permanent nodes should never be decay candidates"
-        
+
+
+class TestEmbeddingsIntegrity:
+    """Test the validate_embeddings_integrity health check."""
+
+    @pytest.fixture
+    def emb_db(self):
+        """DB with thought_nodes + embeddings tables and a few rows."""
+        import numpy as np
+        fd, path = tempfile.mkstemp(suffix=".db")
+        os.close(fd)
+        conn = sqlite3.connect(path)
+        c = conn.cursor()
+        c.execute("""
+            CREATE TABLE thought_nodes (
+                id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                node_type TEXT NOT NULL,
+                timestamp TEXT,
+                confidence REAL,
+                decayed INTEGER DEFAULT 0,
+                permanent INTEGER DEFAULT 0,
+                access_count INTEGER DEFAULT 0
+            )
+        """)
+        c.execute("""
+            CREATE TABLE embeddings (
+                node_id TEXT PRIMARY KEY,
+                vector BLOB NOT NULL,
+                model TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        """)
+        # Healthy embedding helper
+        def vec_blob(arr):
+            return np.asarray(arr, dtype=np.float32).tobytes()
+
+        good = vec_blob(np.ones(EXPECTED_EMBEDDING_DIM, dtype=np.float32) * 0.1)
+        nodes = [
+            ("good1",  "ok content 1", "derived", "2026-01-01", 0.5, 0, 0, 0),
+            ("good2",  "ok content 2", "derived", "2026-01-02", 0.5, 0, 0, 0),
+            ("decay1", "decayed node",  "derived", "2026-01-03", 0.5, 1, 0, 0),  # decayed, not required to have emb
+        ]
+        c.executemany("""
+            INSERT INTO thought_nodes (id, content, node_type, timestamp, confidence, decayed, permanent, access_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, nodes)
+        c.execute("INSERT INTO embeddings VALUES (?, ?, ?, ?)", ("good1", good, "all-MiniLM-L6-v2", "2026-01-01"))
+        c.execute("INSERT INTO embeddings VALUES (?, ?, ?, ?)", ("good2", good, "all-MiniLM-L6-v2", "2026-01-02"))
+        conn.commit()
         conn.close()
+        yield path
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+
+    def _add_embedding(self, db_path, node_id, vector_bytes):
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute(
+            "INSERT OR REPLACE INTO embeddings VALUES (?, ?, ?, ?)",
+            (node_id, vector_bytes, "all-MiniLM-L6-v2", "2026-01-01"),
+        )
+        conn.commit()
+        conn.close()
+
+    def test_healthy_db_passes_integrity(self, emb_db):
+        result = validate_embeddings_integrity(emb_db)
+        assert result["integrity_ok"] is True
+        assert result["zero_norm"] == 0
+        assert result["nan_or_inf"] == 0
+        assert result["wrong_dim"] == 0
+        assert result["orphan_embeddings"] == 0
+        assert result["orphan_nodes"] == 0
+        assert result["total_embeddings"] == 2
+
+    def test_zero_norm_vector_flagged(self, emb_db):
+        import numpy as np
+        # Add a node + a zero-vector embedding for it
+        conn = sqlite3.connect(emb_db)
+        c = conn.cursor()
+        c.execute("INSERT INTO thought_nodes (id, content, node_type) VALUES ('zeronorm', 'x', 'derived')")
+        conn.commit()
+        conn.close()
+        zeros = np.zeros(EXPECTED_EMBEDDING_DIM, dtype=np.float32).tobytes()
+        self._add_embedding(emb_db, "zeronorm", zeros)
+
+        result = validate_embeddings_integrity(emb_db)
+        assert result["integrity_ok"] is False
+        assert result["zero_norm"] == 1
+        assert "zeronorm" in result["bad_embedding_ids"]
+
+    def test_nan_vector_flagged(self, emb_db):
+        import numpy as np
+        conn = sqlite3.connect(emb_db)
+        c = conn.cursor()
+        c.execute("INSERT INTO thought_nodes (id, content, node_type) VALUES ('nann', 'x', 'derived')")
+        conn.commit()
+        conn.close()
+        arr = np.ones(EXPECTED_EMBEDDING_DIM, dtype=np.float32) * 0.1
+        arr[0] = np.nan
+        self._add_embedding(emb_db, "nann", arr.tobytes())
+
+        result = validate_embeddings_integrity(emb_db)
+        assert result["integrity_ok"] is False
+        assert result["nan_or_inf"] == 1
+
+    def test_wrong_dim_flagged(self, emb_db):
+        import numpy as np
+        conn = sqlite3.connect(emb_db)
+        c = conn.cursor()
+        c.execute("INSERT INTO thought_nodes (id, content, node_type) VALUES ('shortvec', 'x', 'derived')")
+        conn.commit()
+        conn.close()
+        # 128-dim, wrong for MiniLM
+        bad_blob = np.ones(128, dtype=np.float32).tobytes()
+        self._add_embedding(emb_db, "shortvec", bad_blob)
+
+        result = validate_embeddings_integrity(emb_db)
+        assert result["integrity_ok"] is False
+        assert result["wrong_dim"] == 1
+
+    def test_orphan_embedding_flagged(self, emb_db):
+        # Embedding for a node that doesn't exist in thought_nodes
+        import numpy as np
+        good = np.ones(EXPECTED_EMBEDDING_DIM, dtype=np.float32).tobytes()
+        self._add_embedding(emb_db, "ghost_node_id", good)
+
+        result = validate_embeddings_integrity(emb_db)
+        assert result["integrity_ok"] is False
+        assert result["orphan_embeddings"] == 1
+
+    def test_orphan_node_flagged_only_for_live_nodes(self, emb_db):
+        # Add a live node with no embedding -> should flag.
+        # The decayed node from the fixture also has no embedding -> should NOT flag.
+        conn = sqlite3.connect(emb_db)
+        c = conn.cursor()
+        c.execute("INSERT INTO thought_nodes (id, content, node_type, decayed) VALUES ('liveorphan', 'x', 'derived', 0)")
+        conn.commit()
+        conn.close()
+
+        result = validate_embeddings_integrity(emb_db)
+        assert result["integrity_ok"] is False
+        assert result["orphan_nodes"] == 1  # only liveorphan, not decay1
+
+    def test_decayed_nodes_dont_need_embeddings(self, emb_db):
+        # The fixture's 'decay1' node is decayed and has no embedding.
+        # Health check should NOT flag this.
+        result = validate_embeddings_integrity(emb_db)
+        assert result["orphan_nodes"] == 0
+        assert result["integrity_ok"] is True

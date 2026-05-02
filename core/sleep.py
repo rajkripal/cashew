@@ -1088,30 +1088,51 @@ class SleepProtocol:
         Evaluate node permanence based on access_count threshold.
         Implements simple, data-driven permanence promotion.
         """
-        from .permanence import promote_permanent_nodes, calculate_recommended_threshold, validate_permanence_integrity
-        
+        from .permanence import (
+            promote_permanent_nodes,
+            calculate_recommended_threshold,
+            validate_permanence_integrity,
+            validate_embeddings_integrity,
+        )
+
         # Calculate recommended threshold based on current data
         recommended_threshold = calculate_recommended_threshold(self.db_path)
-        
+
         # Promote nodes that meet the threshold
         promotion_stats = promote_permanent_nodes(self.db_path, recommended_threshold)
-        
-        # Validate integrity
+
+        # Validate integrity (permanence + embeddings)
         integrity_stats = validate_permanence_integrity(self.db_path)
-        
+        embedding_stats = validate_embeddings_integrity(self.db_path)
+
         # Log promotion events
         if promotion_stats["nodes_promoted"] > 0:
             self._log_event("permanence_promotion", {
                 "nodes_promoted": promotion_stats["nodes_promoted"],
                 "access_threshold": promotion_stats["access_threshold"],
-                "integrity_check": integrity_stats
+                "integrity_check": integrity_stats,
+                "embedding_check": embedding_stats,
             })
-        
+
+        # Surface embedding-integrity violations as their own log event so
+        # corruption doesn't get buried inside a no-promotions cycle.
+        if not embedding_stats["integrity_ok"]:
+            self._log_event("embedding_integrity_violation", {
+                "zero_norm": embedding_stats["zero_norm"],
+                "nan_or_inf": embedding_stats["nan_or_inf"],
+                "wrong_dim": embedding_stats["wrong_dim"],
+                "orphan_embeddings": embedding_stats["orphan_embeddings"],
+                "orphan_nodes": embedding_stats["orphan_nodes"],
+                "bad_embedding_ids": embedding_stats["bad_embedding_ids"][:50],
+            })
+
         return {
             'nodes_evaluated': promotion_stats["nodes_evaluated"],
             'nodes_made_permanent': promotion_stats["nodes_promoted"],
             'access_threshold': promotion_stats["access_threshold"],
-            'integrity_ok': integrity_stats["integrity_ok"]
+            'integrity_ok': integrity_stats["integrity_ok"] and embedding_stats["integrity_ok"],
+            'permanence_integrity': integrity_stats,
+            'embedding_integrity': embedding_stats,
         }
 
     def save_sleep_log(self):
