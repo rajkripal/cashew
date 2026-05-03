@@ -17,7 +17,7 @@ from core.extractors import ExtractorRegistry
 from extractors import ObsidianExtractor, SessionExtractor, MarkdownDirExtractor
 from extractors.utils import (
     parse_frontmatter, extract_wikilinks, load_ignore_patterns,
-    should_ignore, split_into_paragraphs
+    should_ignore, split_into_paragraphs, parse_typed_statement,
 )
 
 
@@ -107,6 +107,70 @@ This is a longer paragraph that should be included."""
         self.assertTrue(any("paragraph two" in p for p in paragraphs))
         self.assertTrue(any("longer paragraph" in p for p in paragraphs))
         self.assertFalse(any("Short." in p for p in paragraphs))
+
+
+class TestParseTypedStatement(unittest.TestCase):
+    """Issue #12 — LLM-side type tagging on extracted statements."""
+
+    def test_tagged_basic(self):
+        t, c = parse_typed_statement("[insight] connection between X and Y")
+        self.assertEqual(t, "insight")
+        self.assertEqual(c, "connection between X and Y")
+
+    def test_tagged_all_six_types(self):
+        for tag in ["fact", "observation", "insight",
+                    "decision", "commitment", "belief"]:
+            t, c = parse_typed_statement(f"[{tag}] body text here")
+            self.assertEqual(t, tag)
+            self.assertEqual(c, "body text here")
+
+    def test_tagged_case_insensitive(self):
+        t, c = parse_typed_statement("[INSIGHT] uppercase tag")
+        self.assertEqual(t, "insight")
+        self.assertEqual(c, "uppercase tag")
+
+        t, c = parse_typed_statement("[Decision] mixed case")
+        self.assertEqual(t, "decision")
+        self.assertEqual(c, "mixed case")
+
+    def test_untagged_fallback_callable(self):
+        fallback = lambda line: "decision"
+        t, c = parse_typed_statement("we will ship this", fallback=fallback)
+        self.assertEqual(t, "decision")
+        self.assertEqual(c, "we will ship this")
+
+    def test_untagged_default_type(self):
+        t, c = parse_typed_statement("naked statement")
+        self.assertEqual(t, "observation")
+        self.assertEqual(c, "naked statement")
+
+    def test_untagged_custom_default(self):
+        t, c = parse_typed_statement("naked", default_type="insight")
+        self.assertEqual(t, "insight")
+        self.assertEqual(c, "naked")
+
+    def test_unknown_type_falls_back(self):
+        # Unknown bracketed prefix is not a recognized type — must fall back.
+        t, c = parse_typed_statement("[random] some text",
+                                     fallback=lambda _: "fact")
+        self.assertEqual(t, "fact")
+        self.assertEqual(c, "[random] some text")
+
+    def test_no_space_after_bracket_falls_back(self):
+        # Prefix without separating whitespace does not match.
+        t, c = parse_typed_statement("[insight]nospace")
+        self.assertEqual(t, "observation")
+        self.assertEqual(c, "[insight]nospace")
+
+    def test_malformed_unclosed_bracket(self):
+        t, c = parse_typed_statement("[insight some text")
+        self.assertEqual(t, "observation")
+        self.assertEqual(c, "[insight some text")
+
+    def test_tagged_strips_inner_whitespace(self):
+        t, c = parse_typed_statement("[fact]   padded body   ")
+        self.assertEqual(t, "fact")
+        self.assertEqual(c, "padded body")
 
 
 class TestObsidianExtractor(unittest.TestCase):
