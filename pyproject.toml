@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cashew-brain"
-version = "1.0.1"
+version = "1.1.0"
 description = "Persistent thought-graph memory for AI agents. Provides context generation, knowledge extraction, and autonomous think cycles."
 authors = [{name = "rajkripal"}]
 license = {text = "MIT"}
