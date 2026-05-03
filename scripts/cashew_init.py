@@ -349,7 +349,6 @@ def build_config(interactive: bool = True, config_path: str = None, global_confi
             'mode': 'soft',
             'threshold': 0.05,
             'grace_days': 7,
-            'protect_types': ['seed', 'core_memory'],
             'think_cycle_penalty': 1.5
         },
         'features': {

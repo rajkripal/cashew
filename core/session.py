@@ -75,7 +75,7 @@ def _get_connection(db_path: str) -> sqlite3.Connection:
 #
 # SCHEMA_VERSION is stored in `PRAGMA user_version`. Bump it whenever a new
 # migration is appended to _MIGRATIONS.
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def _apply_v1(cursor: sqlite3.Cursor) -> None:
@@ -194,6 +194,23 @@ def _migrate_v1_to_v2(cursor: sqlite3.Cursor) -> None:
         cursor.execute("ALTER TABLE derivation_edges DROP COLUMN confidence")
 
 
+def _migrate_v2_to_v3(cursor: sqlite3.Cursor) -> None:
+    """Backfill permanent=1 on legacy seed and core_memory rows.
+
+    Replaces the gc.protect_types config knob (also removed in this version).
+    Going forward, the only GC protection signal is the `permanent` flag —
+    seed and core_memory nodes are created with permanent=1, and this
+    migration repairs any legacy rows that predate that guarantee.
+
+    Idempotent: rows already at permanent=1 are unaffected.
+    """
+    cursor.execute(
+        "UPDATE thought_nodes SET permanent = 1 "
+        "WHERE node_type IN ('seed', 'core_memory') "
+        "AND (permanent IS NULL OR permanent = 0)"
+    )
+
+
 def _ensure_schema(db_path: str):
     """Create or upgrade the cashew schema in place.
 
@@ -217,6 +234,10 @@ def _ensure_schema(db_path: str):
 
         # v2: drop confidence (uncalibrated noise, replaced by deterministic signals).
         _migrate_v1_to_v2(cursor)
+
+        # v3: backfill permanent=1 on legacy seed/core_memory rows
+        # (replaces the dropped gc.protect_types escape hatch).
+        _migrate_v2_to_v3(cursor)
 
         cursor.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
         conn.commit()
