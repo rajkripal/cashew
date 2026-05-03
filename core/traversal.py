@@ -166,8 +166,9 @@ class TraversalEngine:
             parents = self._get_parents(current_id)
             
             if not parents:
-                # This is a root node (check if it's actually a seed)
-                is_actual_seed = current_node.node_type == "seed"
+                # This is a root node — no incoming derivation edges.
+                # "Root" is a deterministic graph fact; node_type is
+                # display-only and never consulted here.
                 return [{
                     "node": {
                         "id": current_node.id,
@@ -176,7 +177,7 @@ class TraversalEngine:
                         "source": current_node.source_file
                     },
                     "depth": depth,
-                    "is_seed": is_actual_seed
+                    "is_root": True,
                 }]
             
             # Traverse parents
@@ -188,7 +189,7 @@ class TraversalEngine:
                     "source": current_node.source_file
                 },
                 "depth": depth,
-                "is_seed": False,
+                "is_root": False,
                 "derived_from": []
             }]
             
@@ -293,9 +294,10 @@ class TraversalEngine:
         conn = self._get_connection()
         cursor = conn.cursor()
         
-        # Get all nodes and edges
-        cursor.execute("SELECT id, node_type FROM thought_nodes")
-        nodes = {row[0]: row[1] for row in cursor.fetchall()}
+        # Get all nodes and edges. We only need node ids — node_type is
+        # display-only and not consulted by audit logic.
+        cursor.execute("SELECT id FROM thought_nodes")
+        nodes = {row[0]: None for row in cursor.fetchall()}
         
         cursor.execute("SELECT parent_id, child_id, weight, reasoning FROM derivation_edges")
         edges = [(row[0], row[1], row[2], row[3]) for row in cursor.fetchall()]
@@ -348,25 +350,28 @@ class TraversalEngine:
                     f"Contradiction detected: {reasoning} (weight: {weight})"
                 ))
         
-        # 3. Find orphan nodes (no parents, not seeds)
+        # 3. Find orphan nodes — no edges in either direction.
+        # A node with downstream children is a legitimate root (was: "seed");
+        # a node with parents is reachable. Only fully isolated nodes are
+        # orphans. node_type is display-only and never consulted here.
         orphan_nodes = []
-        for node_id, node_type in nodes.items():
-            if node_id not in reverse_graph and node_type != "seed":
+        for node_id in nodes:
+            if node_id not in reverse_graph and node_id not in graph:
                 orphan_nodes.append(node_id)
         
-        # 4. Find weak chains (low average weight to roots)
+        # 4. Find weak chains (low average weight to roots).
+        # Root nodes naturally produce no weights and are skipped by the
+        # `if weights:` gate; we don't need to read node_type to filter them.
         weak_chains = []
         for node_id in nodes:
-            if nodes[node_id] != "seed":  # Skip seeds
-                # Calculate average weight to all seed nodes
-                chain = self.why(node_id)
-                if chain and not any("error" in step or "cycle_detected" in step for step in chain):
-                    weights = []
-                    self._collect_weights(chain[0], weights)
-                    if weights:
-                        avg_weight = sum(weights) / len(weights)
-                        if avg_weight < 0.5:  # Threshold for "weak"
-                            weak_chains.append((node_id, avg_weight))
+            chain = self.why(node_id)
+            if chain and not any("error" in step or "cycle_detected" in step for step in chain):
+                weights = []
+                self._collect_weights(chain[0], weights)
+                if weights:
+                    avg_weight = sum(weights) / len(weights)
+                    if avg_weight < 0.5:  # Threshold for "weak"
+                        weak_chains.append((node_id, avg_weight))
         
         # Sort weak chains by weight
         weak_chains.sort(key=lambda x: x[1])

@@ -848,13 +848,14 @@ def _find_cluster_for_thinking(db_path: str, focus_domain: Optional[str] = None)
         """, (focus_domain,))
         high_activation_candidates = cursor.fetchall()
         
-        # Also get some random walk candidates from other domains
+        # Also get some random walk candidates from other domains.
+        # node_type is display-only — think cycles run over whatever the
+        # graph happens to surface, including bootstrap-era nodes.
         cursor.execute("""
             SELECT id, last_accessed, access_count, node_type, COALESCE(domain, 'unknown') as domain
             FROM thought_nodes
             WHERE (decayed IS NULL OR decayed = 0)
             AND COALESCE(domain, 'unknown') != ?
-            AND node_type != 'seed'
             ORDER BY RANDOM()
             LIMIT 10
         """, (focus_domain,))
@@ -865,7 +866,6 @@ def _find_cluster_for_thinking(db_path: str, focus_domain: Optional[str] = None)
             SELECT id, last_accessed, access_count, node_type, COALESCE(domain, 'unknown') as domain
             FROM thought_nodes
             WHERE (decayed IS NULL OR decayed = 0)
-            AND node_type != 'seed'
             ORDER BY COALESCE(access_count, 0) ASC,
                      CASE WHEN COALESCE(access_count, 0) = 0
                           THEN RANDOM() ELSE last_accessed END ASC
@@ -873,31 +873,33 @@ def _find_cluster_for_thinking(db_path: str, focus_domain: Optional[str] = None)
         """)
         high_activation_candidates = cursor.fetchall()
         
-        # Find underrepresented domains/types for random walk
+        # Find underrepresented domains for random walk.
+        # node_type is display-only and not a partition signal — domain is
+        # the real semantic bucket cashew uses for organizing knowledge.
         cursor.execute("""
-            SELECT node_type, COALESCE(domain, 'unknown') as domain, COUNT(*) as cnt
-            FROM thought_nodes 
+            SELECT COALESCE(domain, 'unknown') as domain, COUNT(*) as cnt
+            FROM thought_nodes
             WHERE (decayed IS NULL OR decayed = 0)
             AND timestamp > datetime('now', '-30 days')
             AND (source_file LIKE '%system_generated%'
                  OR source_file LIKE 'extractor:%')
-            GROUP BY node_type, domain
+            GROUP BY domain
             ORDER BY cnt ASC
         """)
         underrep_stats = cursor.fetchall()
-        
-        # Get random walk candidates from underrepresented areas
+
+        # Get random walk candidates from underrepresented domains
         random_walk_candidates = []
-        for node_type, domain, _ in underrep_stats[:3]:  # Top 3 underrepresented
+        for domain, _ in underrep_stats[:3]:  # Top 3 underrepresented domains
             cursor.execute("""
                 SELECT id, last_accessed, access_count, node_type, COALESCE(domain, 'unknown') as domain
                 FROM thought_nodes
                 WHERE (decayed IS NULL OR decayed = 0)
-                AND node_type = ? AND COALESCE(domain, 'unknown') = ?
+                AND COALESCE(domain, 'unknown') = ?
                 AND source_file NOT LIKE '%system_generated%'  -- Prefer human-authored content (extractor:* counts as human-authored)
                 ORDER BY RANDOM()
                 LIMIT 2
-            """, (node_type, domain))
+            """, (domain,))
             random_walk_candidates.extend(cursor.fetchall())
     
     conn.close()

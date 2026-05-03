@@ -65,7 +65,11 @@ class TestContextRetrieval(unittest.TestCase):
             ("christian_belief", "Christianity provides salvation through faith", "belief", "philosophy", 0.8),
             ("system_thinking", "Systems thinking reveals interconnected patterns", "insight", "meta", 0.7),
             ("religion_general", "Religion offers meaning and community", "observation", "philosophy", 0.6),
-            ("programming_fact", "Python is used for data analysis", "fact", "tech", 0.8)
+            ("programming_fact", "Python is used for data analysis", "fact", "tech", 0.8),
+            # node_type='question' nodes used to be filtered out of retrieval.
+            # Post node_type-strip, retrieval is type-blind and questions surface
+            # like any other content node.
+            ("python_question", "Why does Python prefer composition over inheritance?", "question", "tech", 0.5),
         ]
         
         for node_id, content, node_type, domain, confidence in test_nodes:
@@ -144,11 +148,23 @@ class TestContextRetrieval(unittest.TestCase):
         """Test searching for specific content fragments"""
         # Look for nodes containing "system"
         results = self.retriever.search_by_content("system", max_nodes=3)
-        
+
         if results:
             # All results should contain the search term
             for result in results:
                 self.assertIn("system", result.content.lower())
+
+    def test_retrieval_is_node_type_blind(self):
+        """Retrieval no longer filters by node_type. Questions surface like
+        any other content node — node_type is display-only metadata."""
+        # Keyword-based retrieve()
+        nodes = self.retriever.retrieve("Python composition inheritance", max_nodes=10)
+        ids = {n.id for n in nodes}
+        self.assertIn("python_question", ids)
+
+        # Substring search
+        results = self.retriever.search_by_content("composition over inheritance", max_nodes=5)
+        self.assertTrue(any(r.id == "python_question" for r in results))
 
 
 if __name__ == "__main__":

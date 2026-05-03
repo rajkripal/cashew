@@ -772,17 +772,20 @@ class SleepProtocol:
         conn = self._get_connection()
         cursor = conn.cursor()
         
-        # Get all non-decayed nodes
+        # Get all non-decayed nodes. node_type is display-only and never
+        # consulted in fitness scoring — fitness is a pure graph signal
+        # (branching, cross-links, depth). Seeds/core_memories that deserve
+        # protection get it via the `permanent` flag, not their label.
         cursor.execute("""
-            SELECT id, node_type FROM thought_nodes
+            SELECT id FROM thought_nodes
             WHERE decayed = 0 OR decayed IS NULL
         """)
         rows = cursor.fetchall()
-        nodes = {row[0]: row[1] for row in rows}
-        
+        nodes = {row[0]: None for row in rows}
+
         metrics = {}
-        
-        for node_id, node_type in nodes.items():
+
+        for node_id in nodes:
             # Branching factor (outgoing edges)
             cursor.execute("""
                 SELECT COUNT(*) FROM derivation_edges WHERE parent_id = ?
@@ -805,16 +808,12 @@ class SleepProtocol:
             # Derivation depth (max depth from seeds)
             derivation_depth = self._calculate_depth_from_seeds(node_id)
             
-            # Composite fitness score
-            # Seeds get bonus, core memories get bonus, depth adds value
-            base_score = branching_factor + cross_links * 0.5 + derivation_depth * 0.1
-            
-            if node_type == "seed":
-                base_score *= 2.0  # Seeds are important
-            elif node_type == "core_memory":
-                base_score *= 1.5  # Core memories are valuable
-            
-            composite_fitness = base_score
+            # Composite fitness score: pure graph signal.
+            # Important nodes (seeds, core memories) earn protection via the
+            # `permanent` flag (checked by GC), not by node_type bonuses here.
+            composite_fitness = (
+                branching_factor + cross_links * 0.5 + derivation_depth * 0.1
+            )
             
             metrics[node_id] = NodeMetrics(
                 node_id=node_id,
