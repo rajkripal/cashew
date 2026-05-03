@@ -46,7 +46,6 @@ NODE_COLUMNS = (
     "timestamp",
     "access_count",
     "last_accessed",
-    "confidence",
     "source_file",
     "decayed",
     "metadata",

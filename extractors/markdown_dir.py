@@ -124,7 +124,7 @@ Return distinct knowledge statements that would be valuable to remember. Each sh
 - Free of markdown formatting
 - Focused on substantive content
 
-Extract only meaningful information, skip formatting, navigation, or boilerplate text."""
+Before emitting each statement, ask yourself: should this node exist in the graph forever? If you would not want future-you to read it, drop it. There is no hedging and no padding — either it is worth a permanent node or it is not. Skip formatting, navigation, and boilerplate text."""
 
         try:
             response = model_fn(prompt)
@@ -134,7 +134,6 @@ Extract only meaningful information, skip formatting, navigation, or boilerplate
             return [{
                 "content": stmt,
                 "type": self._classify_content(stmt),
-                "confidence": 0.8,
                 "domain": domain,
                 "source_file": source_tag
             } for stmt in statements if len(stmt) > 15]
@@ -152,7 +151,6 @@ Extract only meaningful information, skip formatting, navigation, or boilerplate
         return [{
             "content": para,
             "type": "observation",
-            "confidence": 0.6,
             "domain": domain,
             "source_file": source_tag
         } for para in paragraphs]

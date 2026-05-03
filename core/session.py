@@ -75,7 +75,7 @@ def _get_connection(db_path: str) -> sqlite3.Connection:
 #
 # SCHEMA_VERSION is stored in `PRAGMA user_version`. Bump it whenever a new
 # migration is appended to _MIGRATIONS.
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def _apply_v1(cursor: sqlite3.Cursor) -> None:
@@ -89,7 +89,6 @@ def _apply_v1(cursor: sqlite3.Cursor) -> None:
             timestamp TEXT,
             access_count INTEGER DEFAULT 0,
             last_accessed TEXT,
-            confidence REAL,
             source_file TEXT,
             decayed INTEGER DEFAULT 0,
             metadata TEXT DEFAULT '{}',
@@ -106,7 +105,6 @@ def _apply_v1(cursor: sqlite3.Cursor) -> None:
             child_id TEXT,
             weight REAL,
             reasoning TEXT,
-            confidence REAL,
             timestamp TEXT,
             PRIMARY KEY (parent_id, child_id),
             FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
@@ -147,7 +145,6 @@ def _apply_v1(cursor: sqlite3.Cursor) -> None:
     for stmt in (
         "CREATE INDEX IF NOT EXISTS idx_nodes_domain ON thought_nodes(domain)",
         "CREATE INDEX IF NOT EXISTS idx_nodes_timestamp ON thought_nodes(timestamp)",
-        "CREATE INDEX IF NOT EXISTS idx_nodes_confidence ON thought_nodes(confidence)",
         "CREATE INDEX IF NOT EXISTS idx_nodes_referent_time ON thought_nodes(referent_time)",
         "CREATE INDEX IF NOT EXISTS idx_edges_parent ON derivation_edges(parent_id)",
         "CREATE INDEX IF NOT EXISTS idx_edges_child ON derivation_edges(child_id)",
@@ -165,7 +162,6 @@ _LEGACY_NODE_COLUMNS = (
     ("domain",        "ALTER TABLE thought_nodes ADD COLUMN domain TEXT"),
     ("access_count",  "ALTER TABLE thought_nodes ADD COLUMN access_count INTEGER DEFAULT 0"),
     ("last_accessed", "ALTER TABLE thought_nodes ADD COLUMN last_accessed TEXT"),
-    ("confidence",    "ALTER TABLE thought_nodes ADD COLUMN confidence REAL"),
     ("source_file",   "ALTER TABLE thought_nodes ADD COLUMN source_file TEXT"),
     ("decayed",       "ALTER TABLE thought_nodes ADD COLUMN decayed INTEGER DEFAULT 0"),
     ("metadata",      "ALTER TABLE thought_nodes ADD COLUMN metadata TEXT DEFAULT '{}'"),
@@ -175,6 +171,27 @@ _LEGACY_NODE_COLUMNS = (
     ("tags",          "ALTER TABLE thought_nodes ADD COLUMN tags TEXT"),
     ("referent_time", "ALTER TABLE thought_nodes ADD COLUMN referent_time TEXT"),
 )
+
+
+def _migrate_v1_to_v2(cursor: sqlite3.Cursor) -> None:
+    """Drop the confidence column from thought_nodes and derivation_edges.
+
+    Idempotent: skips work if the column is already gone. Uses SQLite's
+    ALTER TABLE ... DROP COLUMN (available since 3.35). All existing data
+    is preserved; only the column and its index are removed.
+    """
+    # thought_nodes.confidence
+    cursor.execute("PRAGMA table_info(thought_nodes)")
+    node_cols = {row[1] for row in cursor.fetchall()}
+    if "confidence" in node_cols:
+        cursor.execute("DROP INDEX IF EXISTS idx_nodes_confidence")
+        cursor.execute("ALTER TABLE thought_nodes DROP COLUMN confidence")
+
+    # derivation_edges.confidence (dead weight, no live readers)
+    cursor.execute("PRAGMA table_info(derivation_edges)")
+    edge_cols = {row[1] for row in cursor.fetchall()}
+    if "confidence" in edge_cols:
+        cursor.execute("ALTER TABLE derivation_edges DROP COLUMN confidence")
 
 
 def _ensure_schema(db_path: str):
@@ -197,6 +214,9 @@ def _ensure_schema(db_path: str):
                     cursor.execute(sql)
                 except sqlite3.OperationalError:
                     pass
+
+        # v2: drop confidence (uncalibrated noise, replaced by deterministic signals).
+        _migrate_v1_to_v2(cursor)
 
         cursor.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
         conn.commit()
@@ -493,7 +513,6 @@ def _extract_with_heuristics(conversation_text: str) -> List[Dict[str, str]]:
             extractions.append({
                 "content": f"Decision: {match.group(1).strip()}",
                 "node_type": "decision",
-                "confidence": 0.6
             })
     
     # Belief markers
@@ -511,7 +530,6 @@ def _extract_with_heuristics(conversation_text: str) -> List[Dict[str, str]]:
             extractions.append({
                 "content": f"Belief: {content.strip()}",
                 "node_type": "belief",
-                "confidence": 0.5
             })
     
     # Fact markers (simple heuristic)
@@ -524,11 +542,10 @@ def _extract_with_heuristics(conversation_text: str) -> List[Dict[str, str]]:
                 extractions.append({
                     "content": f"Observation: {sentence}",
                     "node_type": "observation",
-                    "confidence": 0.4
                 })
-    
-    # Limit to most promising extractions
-    return sorted(extractions, key=lambda x: x["confidence"], reverse=True)[:5]
+
+    # Limit to first 5 (no per-item ordering signal post-confidence-removal)
+    return extractions[:5]
 
 def _set_node_tags(db_path: str, node_id: str, tags: list):
     """Store tags as comma-separated string on a node."""
@@ -542,7 +559,7 @@ def _set_node_tags(db_path: str, node_id: str, tags: list):
 
 
 def _create_node(db_path: str, content: str, node_type: str,
-                session_id: str, confidence: float = 0.7,
+                session_id: str,
                 domain: str = 'default',
                 referent_time: Optional[str] = None) -> str:
     """Create a new thought node and return its ID.
@@ -569,10 +586,10 @@ def _create_node(db_path: str, content: str, node_type: str,
 
     cursor.execute("""
         INSERT INTO thought_nodes
-        (id, content, node_type, timestamp, confidence, source_file,
+        (id, content, node_type, timestamp, source_file,
          last_accessed, access_count, domain, referent_time)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
-    """, (node_id, content, node_type, now, confidence, session_id, now,
+        VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
+    """, (node_id, content, node_type, now, session_id, now,
           domain, referent_time))
     
     conn.commit()
@@ -700,6 +717,7 @@ Each content field must be a specific, standalone statement that makes sense wit
 For each item, assign:
 - "domain": who this thought belongs to. Use "{get_user_domain()}" for the human's knowledge, experiences, decisions, beliefs, facts about their life, work, relationships. Use "{get_ai_domain()}" for the AI assistant's operational knowledge, engineering decisions about the system, behavioral rules, or self-reflective observations about the AI's own processes.
 - "tags": short descriptive labels (e.g. "career", "family", "engineering", "philosophy", "health", "finance", "project:cashew"). Lowercase, specific, reusable. Multiple tags encouraged.
+- "keep": true or false. Before emitting each item, ask yourself: should this node exist in the graph forever? If you would not want future-you to read it, set keep=false. There is no hedging. Either it is worth a permanent node or it is not. Items with keep=false will be dropped — do not pad the array.
 
 BAD: "They discussed embeddings" (meta-comment)
 BAD: "The conversation covered several topics" (summary)
@@ -708,7 +726,7 @@ GOOD: "Extraction should be triggered by context fullness monitoring, not left t
 
 Respond with ONLY a JSON array. No markdown, no explanation, no code fences.
 
-[{{"content": "specific knowledge here", "type": "{config.node_type_pipe_list}", "confidence": 0.7, "domain": "{get_user_domain()}", "tags": ["engineering", "embeddings"]}}]
+[{{"content": "specific knowledge here", "type": "{config.node_type_pipe_list}", "domain": "{get_user_domain()}", "tags": ["engineering", "embeddings"], "keep": true}}]
 
 Conversation to extract from:
 {conversation_text}
@@ -751,11 +769,15 @@ Conversation to extract from:
     for extraction in extractions:
         if not extraction.get("content"):
             continue
-        
+        # Binary keep gate: LLM commits up-front whether each node is worth a
+        # permanent slot. Default true for backward-compat with heuristic
+        # extractions and any model that omits the field.
+        if extraction.get("keep", True) is False:
+            continue
+
         content = extraction["content"]
         node_type = extraction.get("type", "observation")
         node_type = config.validate_node_type(node_type)
-        confidence = extraction.get("confidence", 0.5)
         tags = extraction.get("tags", [])
         domain = extraction.get("domain", get_user_domain())
         # Validate domain — only allow configured domains
@@ -777,7 +799,7 @@ Conversation to extract from:
             node_referent_time = None
 
         # Create the new node
-        node_id = _create_node(db_path, content, node_type, session_id, confidence,
+        node_id = _create_node(db_path, content, node_type, session_id,
                               domain=domain, referent_time=node_referent_time)
         
         # Store tags if provided
@@ -943,11 +965,22 @@ def think_cycle(db_path: str, model_fn: Callable[[str], str],
     conn = _get_connection(db_path)
     cursor = conn.cursor()
     
+    # Degree+access gate: only think on nodes that have shown signal —
+    # either retrieved before (access_count > 0) or connected in the graph
+    # (edge_degree > 0). These are deterministic graph facts; node_type is
+    # display-only and does not participate in this gate.
     placeholders = ','.join(['?'] * len(cluster_nodes))
     cursor.execute(f"""
-        SELECT id, content, node_type, COALESCE(metadata, '{{}}') as metadata
-        FROM thought_nodes 
-        WHERE id IN ({placeholders})
+        SELECT tn.id, tn.content, tn.node_type, COALESCE(tn.metadata, '{{}}') as metadata
+        FROM thought_nodes tn
+        WHERE tn.id IN ({placeholders})
+        AND (
+            COALESCE(tn.access_count, 0) > 0
+            OR EXISTS (
+                SELECT 1 FROM derivation_edges de
+                WHERE de.parent_id = tn.id OR de.child_id = tn.id
+            )
+        )
     """, cluster_nodes)
     
     nodes_info = []
@@ -993,7 +1026,7 @@ BAD: "These thoughts share common themes about growth"
 GOOD: "The silence pattern at work and the silence during faith transition are the same defense mechanism — withdrawal when the gap between performance and identity becomes visible"
 
 JSON format:
-[{{"content": "your specific insight here", "type": "insight", "confidence": 0.7}}]
+[{{"content": "your specific insight here", "type": "insight"}}]
 """
     
     try:
@@ -1027,20 +1060,10 @@ JSON format:
                 cluster_topic=cluster_topic
             )
         
-        # Filter by confidence threshold — not all thoughts are insights
-        THINK_CONFIDENCE_THRESHOLD = 0.75
-        filtered = [t for t in new_thoughts if t.get("confidence", 0.5) >= THINK_CONFIDENCE_THRESHOLD]
-        skipped = len(new_thoughts) - len(filtered)
-        if skipped > 0:
-            logging.info(f"Think cycle: filtered out {skipped}/{len(new_thoughts)} thoughts below confidence {THINK_CONFIDENCE_THRESHOLD}")
-        
-        if not filtered:
-            logging.info("Think cycle: all thoughts below confidence threshold, nothing to insert")
-            return ThinkResult(
-                new_nodes=[],
-                new_edges=[],
-                cluster_topic=cluster_topic
-            )
+        # No node_type filter on LLM output — node_type is display-only.
+        # Source-side gating (degree+access) on the cluster nodes feeding
+        # the prompt is the deterministic signal we trust.
+        filtered = [t for t in new_thoughts if t.get("content")]
         
         # Diversity check: filter out thoughts too similar to existing nodes
         DIVERSITY_THRESHOLD = 0.85
@@ -1088,21 +1111,20 @@ JSON format:
         
         filtered = diversity_filtered
         
-        # Create new nodes (only high-confidence thoughts)
+        # Create new nodes
         new_nodes = []
         new_edges = []
-        
+
         for thought in filtered:
             if not thought.get("content"):
                 continue
-            
+
             # Create derived node
             derived_id = _create_node(
-                db_path, 
+                db_path,
                 thought["content"],
                 thought.get("type", "insight"),
                 "system_generated",  # Use consistent tag for dashboard styling
-                thought.get("confidence", 0.7)
             )
             new_nodes.append(derived_id)
             
@@ -1151,13 +1173,24 @@ def tension_detection(db_path: str, model_fn: Callable[[str], str],
         domain_filter = "AND json_extract(tn.metadata, '$.domain') = ?"
         params.append(focus_domain)
     
+    # Degree+access gate: same deterministic signal as the think gate.
+    # Only consider nodes that have either been retrieved (access_count > 0)
+    # or are connected (edge_degree > 0). node_type is display-only and
+    # never participates in this filter.
     cursor.execute(f"""
-        SELECT tn.id, tn.content, tn.node_type, 
+        SELECT tn.id, tn.content, tn.node_type,
                COALESCE(json_extract(tn.metadata, '$.domain'), 'unknown') as domain,
                e.vector
         FROM thought_nodes tn
         JOIN embeddings e ON tn.id = e.node_id
         WHERE (tn.decayed IS NULL OR tn.decayed = 0)
+        AND (
+            COALESCE(tn.access_count, 0) > 0
+            OR EXISTS (
+                SELECT 1 FROM derivation_edges de
+                WHERE de.parent_id = tn.id OR de.child_id = tn.id
+            )
+        )
         {domain_filter}
     """, params)
     
@@ -1240,10 +1273,10 @@ A tension is:
 - An aspiration that conflicts with a comfort zone
 
 Respond with ONLY a JSON array. Each item:
-{{"pair": <pair_number>, "tension": "specific articulation of the tension", "type": "contradiction|competing_values|belief_behavior_gap|aspiration_comfort", "confidence": 0.7, "resolution_hint": "optional brief suggestion"}}
+{{"pair": <pair_number>, "tension": "specific articulation of the tension", "type": "contradiction|competing_values|belief_behavior_gap|aspiration_comfort", "resolution_hint": "optional brief suggestion"}}
 
 If no genuine tensions exist, return an empty array [].
-Only include tensions you're confident about (>= 0.75).
+Only include tensions you're highly confident about — skip any pair where you're unsure.
 """
     
     try:
@@ -1256,12 +1289,12 @@ Only include tensions you're confident about (>= 0.75).
             clean = re.sub(r'\n?```$', '', clean)
         
         tensions = json.loads(clean) if clean.strip().startswith('[') else []
-        
-        # Filter by confidence
-        tensions = [t for t in tensions if t.get("confidence", 0) >= 0.75]
-        
+
+        # Keep only items with required fields — LLM is asked to skip uncertain ones.
+        tensions = [t for t in tensions if t.get("tension") and t.get("type")]
+
         if not tensions:
-            return ThinkResult(new_nodes=[], new_edges=[], cluster_topic="tension detection (no high-confidence tensions found)")
+            return ThinkResult(new_nodes=[], new_edges=[], cluster_topic="tension detection (no tensions found)")
         
         # Create tension nodes
         new_nodes = []
@@ -1280,7 +1313,7 @@ Only include tensions you're confident about (>= 0.75).
             
             node_id = _create_node(
                 db_path, content, "tension",
-                "system_generated", t.get("confidence", 0.75)
+                "system_generated"
             )
             new_nodes.append(node_id)
             
@@ -1329,9 +1362,9 @@ def main():
     def mock_model_fn(prompt: str) -> str:
         """Simple mock that returns basic extraction"""
         if "conversation" in prompt.lower():
-            return '[{"content": "Mock extracted insight", "type": "insight", "confidence": 0.8}]'
+            return '[{"content": "Mock extracted insight", "type": "insight"}]'
         else:
-            return '[{"content": "Mock think cycle result", "type": "insight", "confidence": 0.7}]'
+            return '[{"content": "Mock think cycle result", "type": "insight"}]'
     
     if args.command == "start":
         result = start_session(args.db, args.session_id, args.hints)

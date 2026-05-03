@@ -167,7 +167,6 @@ function renderConclusions(containerId, conclusions, isGraph) {
     const el = document.getElementById(containerId);
     el.innerHTML = conclusions.map((c, i) => {
         const text = typeof c === 'string' ? c : c.content;
-        const conf = typeof c === 'string' ? '' : c.confidence;
         const cycle = c.cycle || c.focus || '';
         return `<div class="conclusion">
             <span class="num">#${i+1}</span>

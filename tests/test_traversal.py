@@ -237,7 +237,6 @@ class TestTraversalEngine:
         assert node.id == "seed1"
         assert node.content == "God exists"
         assert node.node_type == "seed"
-        assert node.confidence == 1.0
         assert node.mood_state == "certain"
     
     def test_load_node_returns_none_for_missing_node(self, temp_db):

@@ -258,19 +258,30 @@ class SleepProtocol:
         conn = self._get_connection()
         cursor = conn.cursor()
         
-        # Get both nodes
-        cursor.execute("SELECT * FROM thought_nodes WHERE id IN (?, ?)", (node1_id, node2_id))
+        # Get both nodes — prefer the more-accessed one; tie-break on older timestamp.
+        cursor.execute("""
+            SELECT id, COALESCE(access_count, 0), COALESCE(timestamp, '')
+            FROM thought_nodes WHERE id IN (?, ?)
+        """, (node1_id, node2_id))
         nodes = cursor.fetchall()
-        
+
         if len(nodes) != 2:
             conn.close()
             return
-        
-        # Keep the node with higher confidence
+
+        # Higher access_count wins; on tie, older timestamp wins (more established).
         node1, node2 = nodes
-        keep_node = node1 if node1[4] >= node2[4] else node2  # confidence is index 4
-        remove_node = node2 if node1[4] >= node2[4] else node1
-        
+        a_score = (node1[1], -1 if not node1[2] else 0, node1[2] or "")
+        b_score = (node2[1], -1 if not node2[2] else 0, node2[2] or "")
+        # Keep the node with higher access_count; on tie, older timestamp (smaller ISO string).
+        if node1[1] != node2[1]:
+            keep_node, remove_node = (node1, node2) if node1[1] > node2[1] else (node2, node1)
+        else:
+            # Older timestamp wins (lexicographic min on ISO strings; empty sorts after).
+            ts1 = node1[2] or "9999"
+            ts2 = node2[2] or "9999"
+            keep_node, remove_node = (node1, node2) if ts1 <= ts2 else (node2, node1)
+
         keep_id = keep_node[0]
         remove_id = remove_node[0]
         
@@ -411,7 +422,7 @@ class SleepProtocol:
         Merge a cluster of near-duplicate nodes into a single representative node.
 
         - Synthesizes content via model_fn (fallback: longest member).
-        - permanent = OR across cluster, confidence = max, access_count = sum,
+        - permanent = OR across cluster, access_count = sum,
           timestamp = earliest, last_accessed = most recent (NULL-safe),
           source_file/tags = unioned, metadata = merged (keeper wins on shared keys),
           node_type = mode (fallback "derived"), mood_state = mode (fallback NULL).
@@ -460,8 +471,6 @@ class SleepProtocol:
         had_permanent = any(bool(col(m, "permanent")) for m in members)
         merged_permanent = 1 if had_permanent else 0
 
-        merged_confidence = max(float(col(m, "confidence") or 0.0) for m in members)
-
         merged_access_count = sum(int(col(m, "access_count") or 0) for m in members)
 
         timestamps = [col(m, "timestamp") for m in members if col(m, "timestamp")]
@@ -492,9 +501,13 @@ class SleepProtocol:
                         tag_set.append(piece)
         merged_tags = ",".join(tag_set) if tag_set else None
 
-        # metadata: dict-merge; keeper (highest confidence) wins on shared keys
-        keeper_idx = max(range(len(members)),
-                         key=lambda i: float(col(members[i], "confidence") or 0.0))
+        # metadata: dict-merge; keeper (highest access_count, tie-break older timestamp) wins on shared keys
+        def _keeper_rank(i):
+            ac = int(col(members[i], "access_count") or 0)
+            ts = col(members[i], "timestamp") or "9999"
+            # Higher ac better; older ts better -> negate ts ordering by using tuple with -ac then ts asc, take min.
+            return (-ac, ts)
+        keeper_idx = min(range(len(members)), key=_keeper_rank)
         merged_metadata: dict = {}
         # First, fold in non-keeper entries; keeper goes last so it overrides.
         order = [i for i in range(len(members)) if i != keeper_idx] + [keeper_idx]
@@ -541,8 +554,8 @@ class SleepProtocol:
 
         # --- write merged node ---
         # Build column list dynamically based on what the schema actually has.
-        write_cols = ["id", "content", "node_type", "timestamp", "confidence"]
-        write_vals = [merged_id, synthesized, merged_node_type, merged_timestamp, merged_confidence]
+        write_cols = ["id", "content", "node_type", "timestamp"]
+        write_vals = [merged_id, synthesized, merged_node_type, merged_timestamp]
         if "mood_state" in columns:
             write_cols.append("mood_state"); write_vals.append(merged_mood)
         if "metadata" in columns:
@@ -726,9 +739,9 @@ class SleepProtocol:
         dream_id = hashlib.sha256(dream_content.encode()).hexdigest()[:12]
         
         cursor.execute("""
-            INSERT OR REPLACE INTO thought_nodes 
-            (id, content, node_type, timestamp, confidence, mood_state, metadata, source_file)
-            VALUES (?, ?, 'dream', ?, 0.7, 'dreamy', '{}', 'sleep_protocol')
+            INSERT OR REPLACE INTO thought_nodes
+            (id, content, node_type, timestamp, mood_state, metadata, source_file)
+            VALUES (?, ?, 'dream', ?, 'dreamy', '{}', 'sleep_protocol')
         """, (dream_id, dream_content, datetime.now().isoformat()))
         
         # Connect dream to both nodes
@@ -759,14 +772,13 @@ class SleepProtocol:
         conn = self._get_connection()
         cursor = conn.cursor()
         
-        # Get all non-decayed nodes (with confidence)
+        # Get all non-decayed nodes
         cursor.execute("""
-            SELECT id, node_type, COALESCE(confidence, 0.5) FROM thought_nodes 
+            SELECT id, node_type FROM thought_nodes
             WHERE decayed = 0 OR decayed IS NULL
         """)
         rows = cursor.fetchall()
         nodes = {row[0]: row[1] for row in rows}
-        node_confidence = {row[0]: row[2] for row in rows}
         
         metrics = {}
         
@@ -795,9 +807,7 @@ class SleepProtocol:
             
             # Composite fitness score
             # Seeds get bonus, core memories get bonus, depth adds value
-            # Confidence prevents high-quality orphans from being GC'd before sleep links them
-            confidence = node_confidence.get(node_id, 0.5)
-            base_score = branching_factor + cross_links * 0.5 + derivation_depth * 0.1 + confidence * 0.5
+            base_score = branching_factor + cross_links * 0.5 + derivation_depth * 0.1
             
             if node_type == "seed":
                 base_score *= 2.0  # Seeds are important

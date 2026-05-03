@@ -92,20 +92,6 @@
         .type-dream { background: #22d3ee; color: white; }
         .type-decayed { background: #868e96; color: white; }
 
-        .confidence-bar {
-            width: 100%;
-            height: 4px;
-            background: #404040;
-            border-radius: 2px;
-            overflow: hidden;
-            margin: 0.5rem 0;
-        }
-
-        .confidence-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff6b6b, #ffd93d, #51cf66);
-            transition: width 0.3s ease;
-        }
 
         .derivation-chain {
             background: #1a1a1a;
@@ -385,7 +371,7 @@
                         border: node.decayed ? '#666' : '#333',
                         highlight: { background: this.lightenColor(this.getNodeColor(node.type)), border: '#fff' }
                     },
-                    size: Math.max(10, Math.min(30, node.confidence * 25)),
+                    size: 18,
                     font: { 
                         color: node.type === 'core_memory' ? '#000' : '#fff',
                         size: node.type === 'seed' || node.type === 'core_memory' ? 14 : 12
@@ -539,7 +525,7 @@
                         border: node.decayed ? '#666' : '#333',
                         highlight: { background: this.lightenColor(this.getNodeColor(node.type)), border: '#fff' }
                     },
-                    size: Math.max(10, Math.min(30, node.confidence * 25)),
+                    size: 18,
                     font: { 
                         color: node.type === 'core_memory' ? '#000' : '#fff',
                         size: node.type === 'seed' || node.type === 'core_memory' ? 14 : 12
@@ -572,13 +558,7 @@
                     <h3>Node Details</h3>
                     <div class="node-details">
                         <div class="node-type type-${nodeData.type}">${nodeData.type}</div>
-                        <div class="step-content">${nodeData.content}</div>
-                        <div class="confidence-bar">
-                            <div class="confidence-fill" style="width: ${nodeData.confidence * 100}%"></div>
-                        </div>
-                        <div style="font-size: 0.8rem; color: #888; margin-top: 0.5rem;">
-                            Confidence: ${(nodeData.confidence * 100).toFixed(0)}% | 
-                            Mood: ${nodeData.mood_state} | 
+                        <div class="step-content">${nodeData.content}</div><div style="font-size: 0.8rem; color: #888; margin-top: 0.5rem;">Mood: ${nodeData.mood_state} | 
                             Source: ${nodeData.source_file}
                         </div>
                         ${nodeData.decayed ? '<div style="color: #ff6b6b; font-size: 0.8rem; margin-top: 0.5rem;">⚠️ Decayed</div>' : ''}

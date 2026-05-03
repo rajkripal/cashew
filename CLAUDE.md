@@ -26,7 +26,7 @@ integration/               — OpenClaw bridges
 | `context.py` | Composes retrieval results into formatted context strings for LLM consumption. |
 | `session.py` | Session lifecycle: `start_session()`, `end_session()`, `think_cycle()`, `tension_detection()`. |
 | `sleep.py` | Deep consolidation: cross-linking, decay, deduplication, core memory promotion. Runs daily. |
-| `decay.py` | Prunes stale nodes (low access, low confidence, old). Sets `decayed=1`. |
+| `decay.py` | Prunes stale nodes (no access, no live edges, old). Sets `decayed=1`. |
 | `traversal.py` | Graph walk utilities (DFS, BFS, path finding). |
 | `stats.py` | Graph statistics and health metrics. |
 | `export.py` | Export graph data to JSON for dashboard visualization. |
@@ -56,18 +56,18 @@ All extractors: use `model_fn` for LLM extraction when available, fall back to p
 
 SQLite with 3 tables + 1 virtual table:
 
-- **`thought_nodes`** — Knowledge nodes (id, content, node_type, domain, confidence, access_count, decayed, permanent, tags)
-- **`derivation_edges`** — Relationships (parent_id, child_id, weight, confidence)
+- **`thought_nodes`** — Knowledge nodes (id, content, node_type, domain, access_count, decayed, permanent, tags)
+- **`derivation_edges`** — Relationships (parent_id, child_id, weight)
 - **`embeddings`** — Vector embeddings per node (node_id, vector as BLOB, model name)
 - **`vec_embeddings`** — sqlite-vec virtual table for O(log N) nearest neighbor search (node_id, embedding float[384], cosine distance)
 
 ### Key Columns
 
 - `domain` — Classifies who the knowledge belongs to. Configurable via config.yaml.
-- `node_type` — One of: fact, observation, insight, decision, belief, derived, meta, core_memory, cross_link
+- `node_type` — One of: fact, observation, insight, decision, belief, derived, meta, core_memory, cross_link. Display/informational only — never used in filter or scoring logic.
 - `decayed` — 0 or 1. Decayed nodes are excluded from retrieval but kept in DB.
 - `permanent` — 0 or 1. Permanent nodes are immune to decay.
-- `confidence` — Float 0-1. Think cycle outputs are gated at 0.75.
+- `access_count` — Integer. How many times this node has been retrieved. Deterministic signal for think/tension gates and decay.
 - `tags` — Comma-separated tags (e.g., `vault:private` for privacy classification).
 
 ## Retrieval: Recursive BFS
@@ -115,7 +115,7 @@ Periodic background consolidation (`core/sleep.py`):
 - **Decay** — Node fitness decays over time. Low-fitness nodes get `decayed=1`.
 - **Cross-linking** — Finds semantically similar nodes across domains, creates edges.
 - **Deduplication** — Merges near-identical nodes.
-- **Core memory promotion** — Frequently accessed, high-confidence nodes get promoted.
+- **Core memory promotion** — Frequently accessed nodes get promoted.
 - **Think cycle penalty** — Think-cycle-generated nodes face 1.5x higher decay threshold.
 
 No hotspot creation, no clustering, no hierarchy maintenance. The graph self-organizes through cross-linking and decay.

@@ -35,7 +35,6 @@ class TestSleepProtocol:
                 content TEXT NOT NULL,
                 node_type TEXT NOT NULL,
                 timestamp TEXT NOT NULL,
-                confidence REAL NOT NULL,
                 mood_state TEXT,
                 metadata TEXT,
                 source_file TEXT,
@@ -61,21 +60,21 @@ class TestSleepProtocol:
         
         # Insert test nodes with similar content for cross-linking tests
         nodes = [
-            ("seed1", "God exists and is all-powerful", "seed", "2023-01-01T00:00:00", 1.0, "certain", "{}", "test", 0),
-            ("similar1", "God exists and is all-powerful and omnipotent", "derived", "2023-01-02T00:00:00", 0.8, "confident", "{}", "test", 0),
-            ("similar2", "God exists and is all-powerful deity", "belief", "2023-01-03T00:00:00", 0.7, "hopeful", "{}", "test", 0),
-            ("different1", "Prayer works sometimes", "belief", "2023-01-04T00:00:00", 0.6, "hopeful", "{}", "test", 0),
-            ("hub1", "Core belief about reality", "core_memory", "2023-01-05T00:00:00", 0.9, "stable", "{}", "test", 0),
-            ("weak1", "Uncertain thought", "derived", "2023-01-06T00:00:00", 0.2, "doubtful", "{}", "test", 0),
-            ("weak2", "Another weak idea", "derived", "2023-01-07T00:00:00", 0.1, "confused", "{}", "test", 0),
-            ("isolated1", "Completely separate thought", "derived", "2023-01-08T00:00:00", 0.5, "neutral", "{}", "different_source", 0),
-            ("isolated2", "Another isolated idea", "belief", "2023-01-09T00:00:00", 0.4, "neutral", "{}", "different_source", 0),
+            ("seed1", "God exists and is all-powerful", "seed", "2023-01-01T00:00:00", "certain", "{}", "test", 0),
+            ("similar1", "God exists and is all-powerful and omnipotent", "derived", "2023-01-02T00:00:00", "confident", "{}", "test", 0),
+            ("similar2", "God exists and is all-powerful deity", "belief", "2023-01-03T00:00:00", "hopeful", "{}", "test", 0),
+            ("different1", "Prayer works sometimes", "belief", "2023-01-04T00:00:00", "hopeful", "{}", "test", 0),
+            ("hub1", "Core belief about reality", "core_memory", "2023-01-05T00:00:00", "stable", "{}", "test", 0),
+            ("weak1", "Uncertain thought", "derived", "2023-01-06T00:00:00", "doubtful", "{}", "test", 0),
+            ("weak2", "Another weak idea", "derived", "2023-01-07T00:00:00", "confused", "{}", "test", 0),
+            ("isolated1", "Completely separate thought", "derived", "2023-01-08T00:00:00", "neutral", "{}", "different_source", 0),
+            ("isolated2", "Another isolated idea", "belief", "2023-01-09T00:00:00", "neutral", "{}", "different_source", 0),
         ]
-        
+
         cursor.executemany("""
-            INSERT INTO thought_nodes 
-            (id, content, node_type, timestamp, confidence, mood_state, metadata, source_file, decayed)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO thought_nodes
+            (id, content, node_type, timestamp, mood_state, metadata, source_file, decayed)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, nodes)
         
         # Create edges to establish hierarchy and connectivity
@@ -502,7 +501,6 @@ class TestSleepProtocol:
                 content TEXT NOT NULL,
                 node_type TEXT NOT NULL,
                 timestamp TEXT NOT NULL,
-                confidence REAL NOT NULL,
                 mood_state TEXT,
                 metadata TEXT,
                 source_file TEXT,
@@ -1003,9 +1001,8 @@ class TestGCConfigModes:
         
         # Try to decay with very aggressive settings
         result = auto_decay(
-            permanence_db, 
+            permanence_db,
             min_age_days=0,  # No age restriction
-            max_confidence_for_decay=1.0,  # Even high confidence nodes
             enable_cascading=False
         )
         
@@ -1129,7 +1126,6 @@ class TestMergeCluster:
                 content TEXT NOT NULL,
                 node_type TEXT NOT NULL,
                 timestamp TEXT NOT NULL,
-                confidence REAL NOT NULL,
                 mood_state TEXT,
                 metadata TEXT,
                 source_file TEXT,
@@ -1171,7 +1167,7 @@ class TestMergeCluster:
             tags=None, last_updated=None,
         )
         defaults.update(kw)
-        cols = ["id", "content", "node_type", "timestamp", "confidence",
+        cols = ["id", "content", "node_type", "timestamp",
                 "mood_state", "metadata", "source_file", "decayed", "permanent",
                 "domain", "access_count", "last_accessed", "tags", "last_updated"]
         conn = sqlite3.connect(db)
@@ -1222,18 +1218,17 @@ class TestMergeCluster:
 
             conn = sqlite3.connect(db)
             row = conn.execute(
-                "SELECT id, content, node_type, timestamp, confidence, permanent, "
+                "SELECT id, content, node_type, timestamp, permanent, "
                 "access_count, last_accessed, source_file, tags, metadata "
                 "FROM thought_nodes WHERE id = ?",
                 (new_id,),
             ).fetchone()
             assert row is not None
-            (_, content, node_type, ts, conf, perm, acc, last_acc, src, tags, md) = row
+            (_, content, node_type, ts, perm, acc, last_acc, src, tags, md) = row
 
             # Fallback (model_fn=None) returns the longest member content
             assert content == "Build broken on main branch since Tuesday"
             assert perm == 1, "any-member-permanent => merged permanent"
-            assert conf == 0.9, "max confidence"
             assert acc == 10, "sum access_count"
             assert ts == "2024-01-01T00:00:00", "earliest timestamp"
             assert last_acc == "2024-02-15T00:00:00", "latest last_accessed"

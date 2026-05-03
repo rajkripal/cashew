@@ -110,10 +110,10 @@ class TestThinkCyclePrepareIngest:
         _ensure_schema(temp_db)
         conn = _get_connection(temp_db)
         cursor = conn.cursor()
-        cursor.execute("INSERT OR IGNORE INTO thought_nodes (id, content, node_type, timestamp, confidence, source_file, domain) VALUES (?, ?, ?, datetime('now'), ?, ?, ?)",
-                      ("test_node_1", "Test source node 1", "observation", 0.7, "test", "bunny"))
-        cursor.execute("INSERT OR IGNORE INTO thought_nodes (id, content, node_type, timestamp, confidence, source_file, domain) VALUES (?, ?, ?, datetime('now'), ?, ?, ?)",
-                      ("test_node_2", "Test source node 2", "observation", 0.7, "test", "raj"))
+        cursor.execute("INSERT OR IGNORE INTO thought_nodes (id, content, node_type, timestamp, source_file, domain) VALUES (?, ?, ?, datetime('now'), ?, ?)",
+                      ("test_node_1", "Test source node 1", "observation", "test", "bunny"))
+        cursor.execute("INSERT OR IGNORE INTO thought_nodes (id, content, node_type, timestamp, source_file, domain) VALUES (?, ?, ?, datetime('now'), ?, ?)",
+                      ("test_node_2", "Test source node 2", "observation", "test", "raj"))
         conn.commit()
         conn.close()
         
@@ -154,7 +154,7 @@ class TestThinkCyclePrepareIngest:
         # Create a node with specific content
         _ensure_schema(temp_db)
         existing_content = "This is a very specific test insight about engineering patterns"
-        existing_id = _create_node(temp_db, existing_content, "insight", "system_generated", 0.8)
+        existing_id = _create_node(temp_db, existing_content, "insight", "system_generated")
         embed_nodes(temp_db)
         
         # Try to ingest very similar content

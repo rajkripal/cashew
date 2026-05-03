@@ -14,7 +14,8 @@ Cashew implements a flat-graph retrieval system that uses recursive BFS (Breadth
 ## Current System State (April 2026, Author's Personal Graph)
 
 - **3,064 thought nodes** across 9 distinct node types
-- **6,122 derivation edges** with weight and confidence scores  
+- **6,122 derivation edges** with weight scores
+
 - **Flat graph structure** with organic cross-linking (0 hotspots)
 - **O(log N) retrieval** via sqlite-vec seeding + recursive BFS traversal
 - **Domain separation** with cross-domain insight generation
@@ -118,7 +119,7 @@ The sleep protocol (`core/sleep.py`) maintains graph structure through organic p
 - Builds the organic connectivity that BFS traversal exploits
 
 ### Decay and Fitness Scoring
-- Computes composite fitness scores based on access count, confidence, and age
+- Computes composite fitness scores based on access count, edge degree, and age
 - Marks low-fitness nodes as `decayed=1` (excluded from retrieval)
 - Think-cycle-generated nodes face 1.5x higher decay threshold
 - Preserves high-value knowledge while pruning noise
@@ -130,7 +131,7 @@ The sleep protocol (`core/sleep.py`) maintains graph structure through organic p
 - Prevents graph bloat from repeated information
 
 ### Core Memory Promotion
-- Promotes frequently accessed, high-confidence nodes to `permanent=1`
+- Promotes frequently accessed nodes to `permanent=1`
 - Immune to decay cycles
 - Represents stable, foundational knowledge
 
@@ -165,7 +166,7 @@ BFS search achieves sub-linear complexity through:
 ### Database Schema Utilization
 
 Uses flat node/edge schema with vector acceleration:
-- **`thought_nodes`**: Content, metadata, confidence, decay status
+- **`thought_nodes`**: Content, metadata, decay status
 - **`derivation_edges`**: Parent-child relationships with weights
 - **`embeddings`**: BLOB storage for backward compatibility 
 - **`vec_embeddings`**: sqlite-vec virtual table for O(log N) search
@@ -282,7 +283,7 @@ Sleep cycles create connections spanning domains:
 1. **Query optimization**: Cache embeddings, batch similarity computations
 2. **Adaptive parameters**: Dynamic picks_per_hop based on graph density  
 3. **Performance benchmarking**: Systematic comparison against baseline retrieval methods
-4. **Advanced filtering**: Time-based, confidence-weighted retrieval
+4. **Advanced filtering**: Time-based, access-weighted retrieval
 
 ### Medium-term  
 1. **Incremental indexing**: Update sqlite-vec index without full rebuild

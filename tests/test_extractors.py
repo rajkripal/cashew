@@ -184,7 +184,6 @@ Another paragraph with useful information.""")
         for node in nodes:
             self.assertIn('content', node)
             self.assertIn('type', node)
-            self.assertIn('confidence', node)
             self.assertIn('source_file', node)
             self.assertTrue(node['source_file'].startswith('extractor:obsidian:'))
 

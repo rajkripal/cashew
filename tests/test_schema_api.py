@@ -29,7 +29,7 @@ OWNED_TABLES = {
 
 OWNED_NODE_COLUMNS = {
     "id", "content", "node_type", "domain", "timestamp",
-    "access_count", "last_accessed", "confidence", "source_file",
+    "access_count", "last_accessed", "source_file",
     "decayed", "metadata", "last_updated", "mood_state", "permanent",
     "tags", "referent_time",
 }

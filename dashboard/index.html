@@ -463,7 +463,7 @@ function showPanel(d) {
     let html = `
         <div class="panel-label">Thought ${typeBadge}</div>
         <div class="panel-text" style="font-size:16px;font-weight:500;">${d.content}</div>
-        <div class="panel-meta">Confidence: ${d.confidence} · ${d.domain === 'bunny' ? '🐰 Bunny' : '🧠 Raj'} · ${d.source_file === 'system_generated' ? '🤖 AI Generated' : '✍️ Human'}</div>
+        <div class="panel-meta">${d.domain === 'bunny' ? '🐰 Bunny' : '🧠 Raj'} · ${d.source_file === 'system_generated' ? '🤖 AI Generated' : '✍️ Human'}</div>
         ${d.tags && d.tags.length ? `<div class="panel-tags">${d.tags.map(t => `<span class="tag-pill" onclick="window.filterByTag('${t}')">${t}</span>`).join('')}</div>` : ''}
     `;
     if (parents.length) {
