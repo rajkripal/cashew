@@ -115,7 +115,6 @@ def create_database_schema(db_path: str):
             timestamp TEXT,
             access_count INTEGER DEFAULT 0,
             last_accessed TEXT,
-            confidence REAL,
             source_file TEXT,
             decayed INTEGER DEFAULT 0,
             metadata TEXT DEFAULT '{}',
@@ -132,7 +131,6 @@ def create_database_schema(db_path: str):
             child_id TEXT,
             weight REAL,
             reasoning TEXT,
-            confidence REAL,
             timestamp TEXT,
             PRIMARY KEY (parent_id, child_id),
             FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
@@ -339,7 +337,6 @@ def build_config(interactive: bool = True, config_path: str = None, global_confi
             'think_cycle_nodes': 5,
             'clustering_eps': 0.35,
             'novelty_threshold': 0.82,
-            'confidence_threshold': 0.7,
             'max_think_iterations': 3
         },
         'integration': {},

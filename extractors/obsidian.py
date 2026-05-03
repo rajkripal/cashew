@@ -138,7 +138,7 @@ Return a list of distinct knowledge statements. Each should be:
 - Actionable or memorable
 - Free of markdown formatting
 
-Focus on substantive content, not formatting or structure."""
+Before emitting each statement, ask yourself: should this node exist in the graph forever? If you would not want future-you to read it, drop it. There is no hedging and no padding — either it is worth a permanent node or it is not. Focus on substantive content, not formatting or structure."""
 
         try:
             response = model_fn(prompt)
@@ -148,7 +148,6 @@ Focus on substantive content, not formatting or structure."""
             return [{
                 "content": stmt,
                 "type": "insight",
-                "confidence": 0.8,
                 "domain": domain,
                 "source_file": source_tag
             } for stmt in statements if len(stmt) > 20]
@@ -166,7 +165,6 @@ Focus on substantive content, not formatting or structure."""
         return [{
             "content": para,
             "type": "observation",
-            "confidence": 0.6,
             "domain": domain,
             "source_file": source_tag
         } for para in paragraphs]
@@ -214,21 +212,21 @@ Focus on substantive content, not formatting or structure."""
                     # Create bidirectional edge
                     try:
                         cursor.execute("""
-                            INSERT OR IGNORE INTO derivation_edges 
-                            (parent_id, child_id, weight, reasoning, confidence, timestamp)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                        """, (source_node, target_node, 1.0, 
-                              f"Wikilink: {note_name} -> {linked_note}", 
-                              0.9, datetime.now().isoformat()))
-                        
+                            INSERT OR IGNORE INTO derivation_edges
+                            (parent_id, child_id, weight, reasoning, timestamp)
+                            VALUES (?, ?, ?, ?, ?)
+                        """, (source_node, target_node, 1.0,
+                              f"Wikilink: {note_name} -> {linked_note}",
+                              datetime.now().isoformat()))
+
                         # Create reverse edge too
                         cursor.execute("""
-                            INSERT OR IGNORE INTO derivation_edges 
-                            (parent_id, child_id, weight, reasoning, confidence, timestamp)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                        """, (target_node, source_node, 1.0, 
-                              f"Wikilink: {linked_note} -> {note_name}", 
-                              0.9, datetime.now().isoformat()))
+                            INSERT OR IGNORE INTO derivation_edges
+                            (parent_id, child_id, weight, reasoning, timestamp)
+                            VALUES (?, ?, ?, ?, ?)
+                        """, (target_node, source_node, 1.0,
+                              f"Wikilink: {linked_note} -> {note_name}",
+                              datetime.now().isoformat()))
                         
                         edges_created += 2
                     except sqlite3.Error as e:

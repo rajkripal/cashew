@@ -454,7 +454,7 @@ function showPanel(d) {
     let html = `
         <div class="panel-label">Thought ${typeBadge}</div>
         <div class="panel-text" style="font-size:16px;font-weight:500;">${d.content}</div>
-        <div class="panel-meta">Confidence: ${d.confidence} · Source: ${d.source_file || 'unknown'}${d.source_file === 'system_generated' ? ' 🤖' : ' 🧠'}</div>
+        <div class="panel-meta">Source: ${d.source_file || 'unknown'}${d.source_file === 'system_generated' ? ' 🤖' : ' 🧠'}</div>
     `;
 
     if (parents.length) {

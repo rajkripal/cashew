@@ -69,7 +69,6 @@ class TestCreateNodeStoresReferentTime:
             "Event X happened in 2019",
             "observation",
             "sess",
-            confidence=0.7,
             domain="default",
             referent_time="2019-03-14T12:00:00+00:00",
         )
@@ -139,13 +138,13 @@ class TestSimilarityUsesCoalesce:
         conn = sqlite3.connect(temp_db)
         conn.execute(
             "INSERT INTO thought_nodes (id, content, node_type, timestamp, "
-            "confidence, source_file, referent_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            ("nA", "old event imported today", "observation", now_iso, 0.7, "t", old_iso),
+            "source_file, referent_time) VALUES (?, ?, ?, ?, ?, ?)",
+            ("nA", "old event imported today", "observation", now_iso, "t", old_iso),
         )
         conn.execute(
             "INSERT INTO thought_nodes (id, content, node_type, timestamp, "
-            "confidence, source_file, referent_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            ("nB", "fresh event", "observation", now_iso, 0.7, "t", None),
+            "source_file, referent_time) VALUES (?, ?, ?, ?, ?, ?)",
+            ("nB", "fresh event", "observation", now_iso, "t", None),
         )
         conn.commit()
         conn.close()
@@ -181,11 +180,11 @@ class TestDecayIgnoresReferentTime:
         conn = sqlite3.connect(temp_db)
         conn.execute(
             "INSERT INTO thought_nodes "
-            "(id, content, node_type, timestamp, confidence, source_file, "
+            "(id, content, node_type, timestamp, source_file, "
             "access_count, referent_time, decayed) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)",
+            "VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
             ("imp1", "old WA note imported fresh", "observation", fresh_ts,
-             0.3, "whatsapp:2019", 0, ancient_ref),
+             "whatsapp:2019", 0, ancient_ref),
         )
         conn.commit()
         conn.close()
@@ -193,7 +192,7 @@ class TestDecayIgnoresReferentTime:
         from core.decay import auto_decay
 
         result = auto_decay(
-            temp_db, min_age_days=30, max_confidence_for_decay=0.85,
+            temp_db, min_age_days=30,
             enable_cascading=False,
         )
         assert result["pruned"] == 0, (
@@ -210,10 +209,10 @@ class TestDecayIgnoresReferentTime:
         conn = sqlite3.connect(temp_db)
         conn.execute(
             "INSERT INTO thought_nodes "
-            "(id, content, node_type, timestamp, confidence, source_file, "
+            "(id, content, node_type, timestamp, source_file, "
             "access_count, referent_time, decayed) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)",
-            ("old1", "stale ingest", "observation", old_ts, 0.3, "x", 0, future_ref),
+            "VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
+            ("old1", "stale ingest", "observation", old_ts, "x", 0, future_ref),
         )
         conn.commit()
         conn.close()
@@ -221,7 +220,7 @@ class TestDecayIgnoresReferentTime:
         from core.decay import auto_decay
 
         result = auto_decay(
-            temp_db, min_age_days=14, max_confidence_for_decay=0.85,
+            temp_db, min_age_days=14,
             enable_cascading=False,
         )
         assert result["pruned"] == 1
@@ -239,9 +238,9 @@ class TestBackfill:
         for (nid, metadata, source_file) in rows:
             conn.execute(
                 "INSERT INTO thought_nodes (id, content, node_type, "
-                "timestamp, confidence, source_file, metadata, referent_time) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, NULL)",
-                (nid, f"content {nid}", "observation", now_iso, 0.7,
+                "timestamp, source_file, metadata, referent_time) "
+                "VALUES (?, ?, ?, ?, ?, ?, NULL)",
+                (nid, f"content {nid}", "observation", now_iso,
                  source_file, metadata),
             )
         conn.commit()

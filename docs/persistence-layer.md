@@ -22,9 +22,8 @@ Replace flat memory with a thought graph that:
 CREATE TABLE thought_nodes (
     id TEXT PRIMARY KEY,          -- sha256(content)[:12]
     content TEXT NOT NULL,
-    node_type TEXT NOT NULL,       -- 'observation', 'belief', 'decision', 'insight', 'fact'
+    node_type TEXT NOT NULL,       -- 'observation', 'belief', 'decision', 'insight', 'fact' (display-only tag, never used in filter logic)
     domain TEXT,                   -- 'work', 'personal', 'fitness', 'engineering', etc.
-    confidence REAL DEFAULT 0.5,
     created_at TEXT,
     last_accessed TEXT,            -- for decay/promotion
     access_count INTEGER DEFAULT 0,
@@ -87,8 +86,8 @@ New node N contradicts existing node E (detected by LLM during extraction)
 → Create edge between N and E
 → Queue cluster {N, E, neighbors(E)} for next think cycle
 → Think cycle produces resolution node R
-→ Update confidence on E (lower) and R (higher)
-→ E is not deleted — it's part of the derivation chain
+→ Edge from E to R records the supersession
+→ E is not deleted — it's part of the derivation chain (organic decay handles eventual removal if E stops being touched)
 ```
 
 ### Retrieval: Hybrid Approach

@@ -27,22 +27,22 @@ def _cursor(db_path):
 
 
 def _add_node(cursor, node_id, content="test", node_type="fact",
-              domain="raj", confidence=0.8, decayed=0, source_file="test"):
+              domain="raj", decayed=0, source_file="test"):
     now = datetime.now(timezone.utc).isoformat()
     cursor.execute("""
         INSERT INTO thought_nodes
-        (id, content, node_type, domain, timestamp, confidence, source_file,
+        (id, content, node_type, domain, timestamp, source_file,
          decayed, access_count, metadata)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, '{}')
-    """, (node_id, content, node_type, domain, now, confidence, source_file, decayed))
+        VALUES (?, ?, ?, ?, ?, ?, ?, 0, '{}')
+    """, (node_id, content, node_type, domain, now, source_file, decayed))
 
 
 def _add_edge(cursor, parent_id, child_id, relation="supports", weight=0.7):
     now = datetime.now(timezone.utc).isoformat()
     cursor.execute("""
         INSERT INTO derivation_edges
-        (parent_id, child_id, weight, reasoning, confidence, timestamp)
-        VALUES (?, ?, ?, ?, 0.8, ?)
+        (parent_id, child_id, weight, reasoning, timestamp)
+        VALUES (?, ?, ?, ?, ?)
     """, (parent_id, child_id, weight, f"{relation} - test", now))
 
 

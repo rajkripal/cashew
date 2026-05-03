@@ -67,7 +67,6 @@ class MarkdownExtractor(BaseExtractor):
                 nodes.append({
                     "content": para,
                     "type": "observation",
-                    "confidence": 0.6,
                     "source_file": f"extractor:markdown:{os.path.basename(filepath)}",
                 })
 

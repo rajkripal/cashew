@@ -207,7 +207,7 @@ def _cmd_extract_prepare_only(args):
         "status": "ready",
         "conversation_text": conversation_text,
         "conversation_length": len(conversation_text),
-        "extraction_prompt": f"Extract insights from the following conversation as a JSON array of objects with 'content', 'type', 'confidence', and 'domain' fields. Domain should be the user domain for the human's knowledge/decisions/preferences, or the AI domain for operational lessons/workflow patterns/tool quirks:\n\n{conversation_text[:500]}",
+        "extraction_prompt": f"Extract insights from the following conversation as a JSON array of objects with 'content', 'type', and 'domain' fields. Domain should be the user domain for the human's knowledge/decisions/preferences, or the AI domain for operational lessons/workflow patterns/tool quirks:\n\n{conversation_text[:500]}",
         "session_id": getattr(args, 'session_id', None) or "prepare_only",
         "file_path": args.input,
         "input_length": len(conversation_text),
@@ -235,7 +235,6 @@ def _cmd_extract_ingest(args):
     for item in data.get("insights", []):
         content = item.get("content", "")
         node_type = item.get("type", "insight")
-        confidence = item.get("confidence", 0.7)
         domain = item.get("domain", None)
         # Infer domain if not specified: ai signals → ai domain, else user domain
         if not domain:
@@ -249,7 +248,7 @@ def _cmd_extract_ingest(args):
             domain = ai_domain if any(s in content_lower for s in ai_signals) else user_domain
         if content:
             node_id = _create_node(args.db, content, node_type, "openclaw_extraction",
-                        confidence=confidence, domain=domain)
+                        domain=domain)
             new_node_ids.append(node_id)
             new_nodes += 1
     
@@ -342,7 +341,6 @@ def _cmd_think_ingest(args):
     for item in data.get("insights", []):
         content = item.get("content", "")
         node_type = item.get("type", "insight")
-        confidence = item.get("confidence", 0.7)
         if not content:
             continue
         
@@ -357,7 +355,7 @@ def _cmd_think_ingest(args):
                 pass
         
         node_id = _create_node(args.db, content, node_type, "system_generated",
-                              confidence=confidence, domain="bunny")
+                              domain="bunny")
         new_nodes += 1
         
         # Link to source nodes
@@ -486,30 +484,24 @@ def cmd_stats(args):
 
 
 def cmd_prune(args):
-    """Prune old unused low-confidence nodes with cascading tree decay"""
+    """Prune old unaccessed observation nodes with cascading tree decay"""
     dry_run = getattr(args, 'dry_run', False)
     min_age_days = getattr(args, 'min_age_days', 14)
-    max_confidence = getattr(args, 'max_confidence', 0.85)
     disable_cascading = getattr(args, 'disable_cascading', False)
-    decay_factor = getattr(args, 'decay_factor', 0.7)
-    
-    print(f"🧹 Pruning nodes older than {min_age_days} days with confidence < {max_confidence}")
+
+    print(f"🧹 Pruning unaccessed observations older than {min_age_days} days")
     if not disable_cascading:
-        print(f"🌊 Cascading decay enabled (factor: {decay_factor})")
+        print(f"🌊 Cascading decay enabled (children must also be unaccessed observations >=30d)")
     print(f"🔍 Dry run: {dry_run}")
     print()
-    
+
     if dry_run:
         # Show candidates without actually pruning, including cascade preview
-        candidates = get_decay_candidates(args.db, min_age_days, max_confidence, 
-                                        show_cascade_preview=not disable_cascading, 
-                                        decay_factor=decay_factor)
+        candidates = get_decay_candidates(args.db, min_age_days,
+                                        show_cascade_preview=not disable_cascading)
         print(f"📊 Decay candidates:")
         print(f"  Direct candidates: {candidates['candidates']}")
-        print(f"  Avg confidence: {candidates['avg_confidence']}")
-        print(f"  Min confidence: {candidates['min_confidence']}")
-        print(f"  Max confidence: {candidates['max_confidence']}")
-        
+
         if not disable_cascading and 'cascade_preview' in candidates:
             print(f"  Would cascade: {candidates['cascade_preview']}")
             print(f"  Total affected: {candidates['total_preview']}")
@@ -520,9 +512,8 @@ def cmd_prune(args):
             print(f"✅ No nodes eligible for pruning")
     else:
         # Actually prune with cascading
-        result = auto_decay(args.db, min_age_days, max_confidence, 
-                           enable_cascading=not disable_cascading, 
-                           decay_factor=decay_factor)
+        result = auto_decay(args.db, min_age_days,
+                           enable_cascading=not disable_cascading)
         
         direct_pruned = result['pruned']
         cascaded = result.get('cascaded', 0)
@@ -571,8 +562,8 @@ def cmd_compact(args):
                 for merge in stats['merges']:
                     print(f"  {merge['discarded_node']} → {merge['kept_node']} "
                           f"(similarity: {merge['similarity']:.3f}, edges: {merge['edges_transferred']})")
-                    print(f"    Kept (conf: {merge['kept_confidence']:.2f}): {merge['kept_content']}")
-                    print(f"    Discarded (conf: {merge['discarded_confidence']:.2f}): {merge['discarded_content']}")
+                    print(f"    Kept: {merge['kept_content']}")
+                    print(f"    Discarded: {merge['discarded_content']}")
                     print()
             else:
                 print("✅ No near-duplicates found")
@@ -857,7 +848,6 @@ def cmd_init(args):
                 timestamp TEXT,
                 access_count INTEGER DEFAULT 0,
                 last_accessed TEXT,
-                confidence REAL,
                 source_file TEXT,
                 decayed INTEGER DEFAULT 0,
                 metadata TEXT,
@@ -873,7 +863,6 @@ def cmd_init(args):
                 child_id TEXT,
                 weight REAL,
                 reasoning TEXT,
-                confidence REAL,
                 timestamp TEXT,
                 PRIMARY KEY (parent_id, child_id),
                 FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
@@ -955,7 +944,6 @@ def _migrate_extract_file(db_path: str, content: str, filename: str, session_id:
 For each item, output a JSON object on its own line with fields:
 - "content": the knowledge statement (clear, self-contained, pattern-level — not raw quotes)
 - "type": one of "fact", "observation", "insight", "decision", "belief"
-- "confidence": 0.0-1.0 (how certain/important)
 
 Focus on:
 - Decisions and their reasoning
@@ -1007,16 +995,12 @@ Document ({filename}):
         if not node_content or len(node_content) < 20:
             continue
         node_type = item.get("type", "observation")
-        confidence = item.get("confidence", 0.7)
-        
+
         # Primary gate: semantic novelty check (uses sqlite-vec O(log N) fast path)
         try:
             is_novel, max_sim, nearest_id = check_novelty(db_path, node_content)
             if not is_novel:
                 print(f"   ⊘ Rejecting duplicate (sim={max_sim:.3f}): {node_content[:60]}")
-                continue
-            if max_sim > 0.72 and confidence < 0.7:
-                print(f"   ⊘ Rejecting borderline (sim={max_sim:.3f}, conf={confidence}): {node_content[:60]}")
                 continue
         except Exception as e:
             # Fail open — if novelty check breaks, fall through
@@ -1039,10 +1023,10 @@ Document ({filename}):
         
         try:
             cursor.execute("""
-                INSERT OR IGNORE INTO thought_nodes 
-                (id, content, node_type, timestamp, confidence, source_file, access_count, metadata, domain)
-                VALUES (?, ?, ?, ?, ?, ?, 0, '{}', ?)
-            """, (node_id, node_content, node_type, now, confidence, f"migration:{filename}", domain))
+                INSERT OR IGNORE INTO thought_nodes
+                (id, content, node_type, timestamp, source_file, access_count, metadata, domain)
+                VALUES (?, ?, ?, ?, ?, 0, '{}', ?)
+            """, (node_id, node_content, node_type, now, f"migration:{filename}", domain))
             new_nodes.append(node_id)
         except Exception:
             continue
@@ -1106,9 +1090,9 @@ def _migrate_extract_heuristic(db_path: str, content: str, filename: str, sessio
         
         try:
             cursor.execute("""
-                INSERT OR IGNORE INTO thought_nodes 
-                (id, content, node_type, timestamp, confidence, source_file, access_count, metadata, domain)
-                VALUES (?, ?, 'observation', ?, 0.5, ?, 0, '{}', ?)
+                INSERT OR IGNORE INTO thought_nodes
+                (id, content, node_type, timestamp, source_file, access_count, metadata, domain)
+                VALUES (?, ?, 'observation', ?, ?, 0, '{}', ?)
             """, (node_id, clean, now, f"migration:{filename}", domain))
             new_nodes.append(node_id)
         except Exception:
@@ -1568,12 +1552,10 @@ def main():
     stats_parser.set_defaults(func=cmd_stats)
     
     # Prune command
-    prune_parser = subparsers.add_parser("prune", help="Prune old unused low-confidence nodes with cascading decay")
+    prune_parser = subparsers.add_parser("prune", help="Prune old unaccessed observation nodes with cascading decay")
     prune_parser.add_argument("--dry-run", action="store_true", help="Show what would be pruned without making changes")
     prune_parser.add_argument("--min-age-days", type=int, default=14, help="Minimum age in days for pruning (default: 14)")
-    prune_parser.add_argument("--max-confidence", type=float, default=0.85, help="Maximum confidence for pruning (default: 0.85)")
     prune_parser.add_argument("--disable-cascading", action="store_true", help="Disable cascading tree decay")
-    prune_parser.add_argument("--decay-factor", type=float, default=0.7, help="Decay factor for cascading (default: 0.7)")
     prune_parser.set_defaults(func=cmd_prune)
     
     # Compact command

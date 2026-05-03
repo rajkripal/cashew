@@ -149,7 +149,6 @@ class CashewConfig:
                 'think_cycle_nodes': DEFAULT_THINK_CYCLE_NODES,
                 'clustering_eps': 0.35,
                 'novelty_threshold': 0.82,
-                'confidence_threshold': 0.7,
                 'max_think_iterations': 3
             },
             'integration': {},
@@ -218,7 +217,6 @@ class CashewConfig:
         self.think_cycle_nodes = int(perf['think_cycle_nodes'])
         self.clustering_eps = float(perf.get('clustering_eps', 0.35))
         self.novelty_threshold = float(perf.get('novelty_threshold', 0.82))
-        self.confidence_threshold = float(perf.get('confidence_threshold', 0.7))
         
         # Model configuration (env var override)
         self.embedding_model = os.environ.get('CASHEW_EMBEDDING_MODEL', self._raw_config['models']['embedding']['name'])

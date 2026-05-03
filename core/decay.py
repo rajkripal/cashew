@@ -1,313 +1,339 @@
 #!/usr/bin/env python3
 """
 Decay functionality for cashew thought graph.
-Handles automatic aging/pruning of unused low-quality nodes.
+Handles automatic aging/pruning of nodes that have shown no signal.
+
+Decay signals (post-confidence-removal, post-node_type-removal):
+  - access_count == 0   (never retrieved by a query/think cycle)
+  - age >= min_age_days (had time to be useful)
+  - edge_degree == 0    (orphaned: no derivation edges in or out)
+
+These are pure deterministic graph facts. node_type is informational
+metadata only and never participates in decay logic.
+
+Cascade decay propagates only when the same gate holds on the child:
+old, never-touched, and orphaned once the parent goes away.
 """
 
 import sqlite3
 from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Set
+from typing import Dict, Set
 
 
-def cascade_decay(db_path: str, decayed_node_id: str, decay_factor: float = 0.7, min_confidence: float = 0.3) -> Dict:
+CASCADE_MIN_AGE_DAYS = 30
+
+
+def _ensure_edges_table(cursor: sqlite3.Cursor) -> None:
+    """Defensive: callers may pass a DB without the edges table (legacy
+    test fixtures, partially-initialized brains). The degree gate references
+    it from a subquery, so ensure it exists with at least the columns we read."""
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS derivation_edges (
+            parent_id TEXT,
+            child_id TEXT,
+            weight REAL,
+            reasoning TEXT,
+            timestamp TEXT,
+            PRIMARY KEY (parent_id, child_id)
+        )
+    """)
+
+
+def _edge_degree_excluding(cursor: sqlite3.Cursor, node_id: str,
+                           exclude_parent: str = None) -> int:
+    """Count live edges touching `node_id` (as src or dst), optionally
+    pretending one parent edge is gone (used by cascade to test the
+    "would-be orphan after parent decays" condition)."""
+    if exclude_parent is None:
+        cursor.execute("""
+            SELECT COUNT(*) FROM derivation_edges de
+            WHERE de.parent_id = ? OR de.child_id = ?
+        """, (node_id, node_id))
+    else:
+        cursor.execute("""
+            SELECT COUNT(*) FROM derivation_edges de
+            WHERE (de.parent_id = ? OR de.child_id = ?)
+            AND NOT (de.parent_id = ? AND de.child_id = ?)
+        """, (node_id, node_id, exclude_parent, node_id))
+    return cursor.fetchone()[0]
+
+
+def _cascade_eligible(cursor: sqlite3.Cursor, child_id: str,
+                      decayed_parent_id: str) -> bool:
+    """Return True if `child_id` matches the cascade gate after
+    `decayed_parent_id` is removed from the live graph.
+
+    Gate: access_count == 0 AND age >= 30d AND edge_degree == 0
+    (where edge_degree is computed excluding the parent that just decayed
+    and ignoring all other already-decayed parents — see caller).
+    Permanent or already-decayed nodes are filtered separately by callers.
     """
-    DFS down from a decayed node, reducing confidence of children.
-    
-    Args:
-        db_path: Path to the SQLite database
-        decayed_node_id: ID of the node that was just decayed
-        decay_factor: Factor to reduce confidence by at each level
-        min_confidence: Minimum confidence threshold below which nodes get decayed
-        
+    cursor.execute("""
+        SELECT access_count, timestamp
+        FROM thought_nodes WHERE id = ?
+    """, (child_id,))
+    row = cursor.fetchone()
+    if not row:
+        return False
+    access_count, timestamp = row
+    if access_count and int(access_count) > 0:
+        return False
+    if not timestamp:
+        return False
+    try:
+        ts = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return False
+    age = datetime.now(timezone.utc) - ts.astimezone(timezone.utc)
+    return age >= timedelta(days=CASCADE_MIN_AGE_DAYS)
+
+
+def cascade_decay(db_path: str, decayed_node_id: str) -> Dict:
+    """
+    DFS down from a decayed node, decaying children that match the gate
+    (access_count == 0 AND age >= 30d) AND whose only live parent was the
+    just-decayed node (i.e. they become orphaned by its removal).
+
     Returns:
         Dict with cascading statistics
     """
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
+    _ensure_edges_table(cursor)
+
     cascaded_count = 0
-    nodes_to_process = [(decayed_node_id, 1)]  # (node_id, depth)
-    processed_nodes = set()
-    
+    nodes_to_process = [decayed_node_id]
+    processed_nodes: Set[str] = set()
+
     while nodes_to_process:
-        current_node_id, depth = nodes_to_process.pop(0)
-        
+        current_node_id = nodes_to_process.pop(0)
+
         if current_node_id in processed_nodes:
             continue
         processed_nodes.add(current_node_id)
-        
+
         # Find all children of the current node
         cursor.execute("""
-            SELECT child_id FROM derivation_edges 
+            SELECT child_id FROM derivation_edges
             WHERE parent_id = ?
         """, (current_node_id,))
-        
         children = [row[0] for row in cursor.fetchall()]
-        
+
         for child_id in children:
-            # Check if this child has other live (non-decayed) parents
+            # Skip children that have other live parents — they're anchored
             cursor.execute("""
                 SELECT COUNT(*) FROM derivation_edges de
                 JOIN thought_nodes tn ON de.parent_id = tn.id
-                WHERE de.child_id = ? 
+                WHERE de.child_id = ?
                 AND (tn.decayed IS NULL OR tn.decayed = 0)
                 AND tn.id != ?
             """, (child_id, current_node_id))
-            
-            live_parent_count = cursor.fetchone()[0]
-            
-            # Skip children that have other live parents - they're anchored
-            if live_parent_count > 0:
+            if cursor.fetchone()[0] > 0:
                 continue
-            
-            # Get current child node info (including permanence status)
-            cursor.execute("""
-                SELECT confidence, decayed, permanent FROM thought_nodes 
-                WHERE id = ?
-            """, (child_id,))
-            
-            result = cursor.fetchone()
-            if not result:
-                continue
-                
-            current_confidence, is_decayed, is_permanent = result
-            
+
             # Skip if already decayed or permanent
+            cursor.execute("""
+                SELECT decayed, permanent FROM thought_nodes WHERE id = ?
+            """, (child_id,))
+            row = cursor.fetchone()
+            if not row:
+                continue
+            is_decayed, is_permanent = row
             if is_decayed or is_permanent:
                 continue
-            
-            # Calculate new confidence with decay factor applied by depth
-            new_confidence = current_confidence * (decay_factor ** depth)
-            
-            # Update the child's confidence
+
+            # Apply degree+access+age gate
+            if not _cascade_eligible(cursor, child_id, current_node_id):
+                continue
+
             cursor.execute("""
-                UPDATE thought_nodes 
-                SET confidence = ?, last_updated = ?
+                UPDATE thought_nodes
+                SET decayed = 1, last_updated = ?
                 WHERE id = ?
-            """, (new_confidence, datetime.now(timezone.utc).isoformat(), child_id))
-            
-            # If confidence drops below threshold, mark as decayed and continue DFS
-            if new_confidence < min_confidence:
-                cursor.execute("""
-                    UPDATE thought_nodes 
-                    SET decayed = 1, last_updated = ?
-                    WHERE id = ?
-                """, (datetime.now(timezone.utc).isoformat(), child_id))
-                
-                cascaded_count += 1
-                nodes_to_process.append((child_id, depth + 1))
-    
+            """, (datetime.now(timezone.utc).isoformat(), child_id))
+
+            cascaded_count += 1
+            nodes_to_process.append(child_id)
+
     conn.commit()
     conn.close()
-    
+
     return {"cascaded": cascaded_count}
 
 
-def auto_decay(db_path: str, min_age_days: int = 14, max_confidence_for_decay: float = 0.85, 
-               enable_cascading: bool = True, decay_factor: float = 0.7) -> Dict:
-    """Decay nodes that have never been accessed and are old enough, with optional cascading
-    
+def auto_decay(db_path: str, min_age_days: int = 14,
+               enable_cascading: bool = True) -> Dict:
+    """Decay orphaned, never-accessed nodes old enough to be safe to lose.
+
+    Direct decay gate:
+      - not already decayed, not permanent
+      - access_count == 0
+      - age >= min_age_days
+      - edge_degree == 0 (no live derivation edges in or out)
+
+    A "live" edge is one whose other endpoint is also not decayed. Already-
+    decayed neighbors don't count — they're effectively gone.
+
+    Cascade decay walks children that match the same gate (with the
+    stricter 30d threshold) and have no other live parents.
+
     Args:
         db_path: Path to the SQLite database
-        min_age_days: Minimum age in days for a node to be eligible for decay
-        max_confidence_for_decay: Maximum confidence for a node to be eligible for decay
+        min_age_days: Minimum age in days for direct decay eligibility
         enable_cascading: Whether to enable cascading decay to children
-        decay_factor: Factor for cascading decay (confidence *= decay_factor^depth)
-        
+
     Returns:
         Dict with pruning statistics
     """
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
+    _ensure_edges_table(cursor)
+
     cutoff = (datetime.now(timezone.utc) - timedelta(days=min_age_days)).isoformat()
-    
-    # First, find nodes that will be decayed
-    # Skip permanent nodes
-    cursor.execute("""
+
+    # Orphaned = no edges to any *live* (non-decayed) neighbor.
+    direct_filter = """
+        (decayed IS NULL OR decayed = 0)
+        AND (permanent IS NULL OR permanent = 0)
+        AND access_count = 0
+        AND timestamp < ?
+        AND NOT EXISTS (
+            SELECT 1 FROM derivation_edges de
+            JOIN thought_nodes other ON (
+                (de.parent_id = thought_nodes.id AND other.id = de.child_id)
+                OR (de.child_id = thought_nodes.id AND other.id = de.parent_id)
+            )
+            WHERE (other.decayed IS NULL OR other.decayed = 0)
+        )
+    """
+
+    cursor.execute(f"""
         SELECT id FROM thought_nodes
-        WHERE (decayed IS NULL OR decayed = 0)
-        AND (permanent IS NULL OR permanent = 0)
-        
-        AND access_count = 0
-        AND confidence < ?
-        AND timestamp < ?
-    """, (max_confidence_for_decay, cutoff))
-    
+        WHERE {direct_filter}
+    """, (cutoff,))
     nodes_to_decay = [row[0] for row in cursor.fetchall()]
-    
-    # Mark them as decayed (skip permanent nodes)
-    cursor.execute("""
+
+    cursor.execute(f"""
         UPDATE thought_nodes SET decayed = 1, last_updated = ?
-        WHERE (decayed IS NULL OR decayed = 0)
-        AND (permanent IS NULL OR permanent = 0)
-        
-        AND access_count = 0
-        AND confidence < ?
-        AND timestamp < ?
-    """, (datetime.now(timezone.utc).isoformat(), max_confidence_for_decay, cutoff))
-    
+        WHERE {direct_filter}
+    """, (datetime.now(timezone.utc).isoformat(), cutoff))
+
     direct_count = cursor.rowcount
     conn.commit()
     conn.close()
-    
-    # Run cascading decay for each newly decayed node
+
     total_cascaded = 0
     if enable_cascading:
         for node_id in nodes_to_decay:
-            cascade_result = cascade_decay(db_path, node_id, decay_factor)
+            cascade_result = cascade_decay(db_path, node_id)
             total_cascaded += cascade_result["cascaded"]
-    
+
     return {
-        "pruned": direct_count, 
+        "pruned": direct_count,
         "cascaded": total_cascaded,
         "total": direct_count + total_cascaded
     }
 
 
-def get_decay_candidates(db_path: str, min_age_days: int = 14, max_confidence_for_decay: float = 0.85, 
-                        show_cascade_preview: bool = False, decay_factor: float = 0.7) -> Dict:
-    """Get statistics on nodes eligible for decay without actually decaying them
-    
-    Args:
-        db_path: Path to the SQLite database
-        min_age_days: Minimum age in days for a node to be eligible for decay
-        max_confidence_for_decay: Maximum confidence for a node to be eligible for decay
-        show_cascade_preview: Whether to simulate cascading effects
-        decay_factor: Factor for cascading decay simulation
-        
-    Returns:
-        Dict with candidate statistics
-    """
+def get_decay_candidates(db_path: str, min_age_days: int = 14,
+                        show_cascade_preview: bool = False) -> Dict:
+    """Get statistics on nodes eligible for decay without actually decaying them."""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
+    _ensure_edges_table(cursor)
+
     cutoff = (datetime.now(timezone.utc) - timedelta(days=min_age_days)).isoformat()
-    
-    # Get direct candidates (excluding permanent nodes)
-    cursor.execute("""
-        SELECT COUNT(*), AVG(confidence), MIN(confidence), MAX(confidence)
-        FROM thought_nodes 
-        WHERE (decayed IS NULL OR decayed = 0)
+
+    direct_filter = """
+        (decayed IS NULL OR decayed = 0)
         AND (permanent IS NULL OR permanent = 0)
         AND access_count = 0
-        AND confidence < ?
         AND timestamp < ?
-    """, (max_confidence_for_decay, cutoff))
-    
-    result = cursor.fetchone()
-    count, avg_conf, min_conf, max_conf = result
-    
-    result_dict = {
-        "candidates": count or 0,
-        "avg_confidence": round(avg_conf, 3) if avg_conf else 0,
-        "min_confidence": round(min_conf, 3) if min_conf else 0,
-        "max_confidence": round(max_conf, 3) if max_conf else 0
-    }
-    
-    # Simulate cascade effects if requested
+        AND NOT EXISTS (
+            SELECT 1 FROM derivation_edges de
+            JOIN thought_nodes other ON (
+                (de.parent_id = thought_nodes.id AND other.id = de.child_id)
+                OR (de.child_id = thought_nodes.id AND other.id = de.parent_id)
+            )
+            WHERE (other.decayed IS NULL OR other.decayed = 0)
+        )
+    """
+
+    cursor.execute(f"""
+        SELECT COUNT(*) FROM thought_nodes
+        WHERE {direct_filter}
+    """, (cutoff,))
+    count = cursor.fetchone()[0]
+
+    result_dict = {"candidates": count or 0}
+
     if show_cascade_preview and count and count > 0:
-        # Get the actual candidate node IDs (excluding permanent nodes)
-        cursor.execute("""
-            SELECT id FROM thought_nodes 
-            WHERE (decayed IS NULL OR decayed = 0)
-            AND (permanent IS NULL OR permanent = 0)
-            AND access_count = 0
-            AND confidence < ?
-            AND timestamp < ?
-        """, (max_confidence_for_decay, cutoff))
-        
+        cursor.execute(f"""
+            SELECT id FROM thought_nodes
+            WHERE {direct_filter}
+        """, (cutoff,))
         candidate_ids = [row[0] for row in cursor.fetchall()]
-        
-        # Simulate cascade for each candidate
+
         total_would_cascade = 0
         for node_id in candidate_ids:
-            would_cascade = simulate_cascade_decay(db_path, node_id, decay_factor)
-            total_would_cascade += would_cascade
-        
+            total_would_cascade += simulate_cascade_decay(db_path, node_id)
+
         result_dict["cascade_preview"] = total_would_cascade
         result_dict["total_preview"] = (count or 0) + total_would_cascade
-    
+
     conn.close()
-    
     return result_dict
 
 
-def simulate_cascade_decay(db_path: str, decayed_node_id: str, decay_factor: float = 0.7, min_confidence: float = 0.3) -> int:
-    """
-    Simulate cascading decay without actually modifying the database.
-    
-    Args:
-        db_path: Path to the SQLite database
-        decayed_node_id: ID of the node that would be decayed
-        decay_factor: Factor to reduce confidence by at each level
-        min_confidence: Minimum confidence threshold below which nodes would get decayed
-        
-    Returns:
-        Number of nodes that would cascade
-    """
+def simulate_cascade_decay(db_path: str, decayed_node_id: str) -> int:
+    """Simulate cascading decay without modifying the database."""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
+    _ensure_edges_table(cursor)
+
     would_cascade = 0
-    nodes_to_process = [(decayed_node_id, 1)]  # (node_id, depth)
-    processed_nodes = set()
-    
+    nodes_to_process = [decayed_node_id]
+    processed_nodes: Set[str] = set()
+
     while nodes_to_process:
-        current_node_id, depth = nodes_to_process.pop(0)
-        
+        current_node_id = nodes_to_process.pop(0)
         if current_node_id in processed_nodes:
             continue
         processed_nodes.add(current_node_id)
-        
-        # Find all children of the current node
+
         cursor.execute("""
-            SELECT child_id FROM derivation_edges 
-            WHERE parent_id = ?
+            SELECT child_id FROM derivation_edges WHERE parent_id = ?
         """, (current_node_id,))
-        
         children = [row[0] for row in cursor.fetchall()]
-        
+
         for child_id in children:
-            # Check if this child has other live (non-decayed) parents
             cursor.execute("""
                 SELECT COUNT(*) FROM derivation_edges de
                 JOIN thought_nodes tn ON de.parent_id = tn.id
-                WHERE de.child_id = ? 
+                WHERE de.child_id = ?
                 AND (tn.decayed IS NULL OR tn.decayed = 0)
                 AND tn.id != ?
             """, (child_id, current_node_id))
-            
-            live_parent_count = cursor.fetchone()[0]
-            
-            # Skip children that have other live parents - they're anchored
-            if live_parent_count > 0:
+            if cursor.fetchone()[0] > 0:
                 continue
-            
-            # Get current child node info (including permanence status)
+
             cursor.execute("""
-                SELECT confidence, decayed, permanent FROM thought_nodes 
-                WHERE id = ?
+                SELECT decayed, permanent FROM thought_nodes WHERE id = ?
             """, (child_id,))
-            
-            result = cursor.fetchone()
-            if not result:
+            row = cursor.fetchone()
+            if not row:
                 continue
-                
-            current_confidence, is_decayed, is_permanent = result
-            
-            # Skip if already decayed or permanent
+            is_decayed, is_permanent = row
             if is_decayed or is_permanent:
                 continue
-            
-            # Calculate what new confidence would be
-            new_confidence = current_confidence * (decay_factor ** depth)
-            
-            # If confidence would drop below threshold, count it and continue simulation
-            if new_confidence < min_confidence:
-                would_cascade += 1
-                nodes_to_process.append((child_id, depth + 1))
-    
+
+            if not _cascade_eligible(cursor, child_id, current_node_id):
+                continue
+
+            would_cascade += 1
+            nodes_to_process.append(child_id)
+
     conn.close()
-    
     return would_cascade

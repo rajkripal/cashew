@@ -20,7 +20,6 @@ class ThoughtNode:
     id: str
     content: str
     node_type: str
-    confidence: float
     mood_state: str
     metadata: dict
     source_file: str
@@ -58,24 +57,23 @@ class TraversalEngine:
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT id, content, node_type, confidence, mood_state, metadata, source_file, timestamp
-            FROM thought_nodes 
+            SELECT id, content, node_type, mood_state, metadata, source_file, timestamp
+            FROM thought_nodes
             WHERE id = ?
         """, (node_id,))
-        
+
         row = cursor.fetchone()
         conn.close()
-        
+
         if row:
             return ThoughtNode(
                 id=row[0],
                 content=row[1],
                 node_type=row[2],
-                confidence=row[3],
-                mood_state=row[4],
-                metadata=json.loads(row[5]) if row[5] else {},
-                source_file=row[6],
-                timestamp=row[7]
+                mood_state=row[3],
+                metadata=json.loads(row[4]) if row[4] else {},
+                source_file=row[5],
+                timestamp=row[6]
             )
         return None
     
@@ -86,14 +84,14 @@ class TraversalEngine:
         
         cursor.execute("""
             SELECT de.parent_id, de.weight, de.reasoning,
-                   tn.content, tn.node_type, tn.confidence, tn.mood_state, 
+                   tn.content, tn.node_type, tn.mood_state,
                    tn.metadata, tn.source_file, tn.timestamp
             FROM derivation_edges de
             JOIN thought_nodes tn ON de.parent_id = tn.id
             WHERE de.child_id = ?
             ORDER BY de.weight DESC
         """, (node_id,))
-        
+
         results = []
         for row in cursor.fetchall():
             edge = DerivationEdge(
@@ -106,11 +104,10 @@ class TraversalEngine:
                 id=row[0],
                 content=row[3],
                 node_type=row[4],
-                confidence=row[5],
-                mood_state=row[6],
-                metadata=json.loads(row[7]) if row[7] else {},
-                source_file=row[8],
-                timestamp=row[9]
+                mood_state=row[5],
+                metadata=json.loads(row[6]) if row[6] else {},
+                source_file=row[7],
+                timestamp=row[8]
             )
             results.append((parent, edge))
         
@@ -176,7 +173,6 @@ class TraversalEngine:
                         "id": current_node.id,
                         "content": current_node.content,
                         "type": current_node.node_type,
-                        "confidence": current_node.confidence,
                         "source": current_node.source_file
                     },
                     "depth": depth,
@@ -189,7 +185,6 @@ class TraversalEngine:
                     "id": current_node.id,
                     "content": current_node.content,
                     "type": current_node.node_type,
-                    "confidence": current_node.confidence,
                     "source": current_node.source_file
                 },
                 "depth": depth,
@@ -227,7 +222,6 @@ class TraversalEngine:
                     "id": node.id,
                     "content": node.content,
                     "type": node.node_type,
-                    "confidence": node.confidence
                 },
                 "distance": 0
             }] if node else None
@@ -266,7 +260,6 @@ class TraversalEngine:
                                 "id": node.id,
                                 "content": node.content,
                                 "type": node.node_type,
-                                "confidence": node.confidence
                             },
                             "distance": i
                         }

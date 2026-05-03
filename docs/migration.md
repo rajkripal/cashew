@@ -316,7 +316,7 @@ For teams or families sharing knowledge:
 1. **Domain separation**: Use domain field to separate personal vs shared knowledge
 2. **Staged rollout**: Start with one person's content, then add others
 3. **Privacy boundaries**: Use vault:private tags to control access
-4. **Merge conflicts**: Use timestamp and confidence to resolve overlaps
+4. **Merge conflicts**: Use timestamp and access_count to resolve overlaps
 
 ## Troubleshooting
 

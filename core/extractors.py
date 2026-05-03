@@ -42,7 +42,6 @@ class BaseExtractor(ABC):
             List of node dicts, each with keys:
                 - content (str, required): The knowledge statement
                 - type (str, required): Node type (belief, insight, decision, observation, fact)
-                - confidence (float, required): 0.0-1.0
                 - domain (str, optional): Domain classification
                 - source_file (str, optional): Source identifier
         """
@@ -195,7 +194,6 @@ class ExtractorRegistry:
 
             node_id = str(uuid.uuid4())[:12]
             node_type = node.get("type", "observation")
-            confidence = float(node.get("confidence", 0.7))
             domain = node.get("domain", "default")
             source_file = node.get("source_file", f"extractor:{extractor_name}")
             now = datetime.now().isoformat()
@@ -219,18 +217,18 @@ class ExtractorRegistry:
                 if has_referent_time:
                     cursor.execute("""
                         INSERT INTO thought_nodes
-                        (id, content, node_type, confidence, domain, source_file,
+                        (id, content, node_type, domain, source_file,
                          timestamp, last_accessed, decayed, referent_time)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
-                    """, (node_id, content, node_type, confidence, domain,
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)
+                    """, (node_id, content, node_type, domain,
                           source_file, now, now, referent_time))
                 else:
                     cursor.execute("""
                         INSERT INTO thought_nodes
-                        (id, content, node_type, confidence, domain, source_file,
+                        (id, content, node_type, domain, source_file,
                          timestamp, last_accessed, decayed)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
-                    """, (node_id, content, node_type, confidence, domain,
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+                    """, (node_id, content, node_type, domain,
                           source_file, now, now))
                 created += 1
             except sqlite3.Error as e:

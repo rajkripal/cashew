@@ -174,7 +174,7 @@ Return distinct knowledge statements that would be valuable to remember. Each sh
 - Actionable or memorable for future reference
 - Written in a clear, standalone format
 
-Focus on substantive content and skip pleasantries or routine interactions."""
+Before emitting each statement, ask yourself: should this node exist in the graph forever? If you would not want future-you to read it, drop it. There is no hedging and no padding — either it is worth a permanent node or it is not. Skip pleasantries and routine interactions."""
 
         try:
             response = model_fn(prompt)
@@ -194,7 +194,6 @@ Focus on substantive content and skip pleasantries or routine interactions."""
             return [{
                 "content": stmt,
                 "type": self._classify_statement(stmt),
-                "confidence": 0.75,
                 "domain": "conversations",
                 "source_file": f"extractor:session:{session_id}",
                 "referent_time": batch_referent_time,
@@ -222,7 +221,6 @@ Focus on substantive content and skip pleasantries or routine interactions."""
             nodes.append({
                 "content": f"{role}: {content}",
                 "type": "observation",
-                "confidence": 0.5,
                 "domain": "conversations",
                 "source_file": f"extractor:session:{session_id}",
                 "referent_time": ts,

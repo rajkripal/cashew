@@ -27,7 +27,7 @@ def export(db_path: str, output_path: str, title: str = "cashew"):
 
     # Export nodes
     c.execute(f"""
-        SELECT id, content, node_type, confidence, source_file, timestamp, mood_state, domain, tags
+        SELECT id, content, node_type, source_file, timestamp, mood_state, domain, tags
         FROM {cdb.NODES_TABLE}
         WHERE decayed = 0 OR decayed IS NULL
     """)
@@ -41,17 +41,16 @@ def export(db_path: str, output_path: str, title: str = "cashew"):
         "default": "raj"
     }
     for row in c.fetchall():
-        db_domain = row[7] or "default"
+        db_domain = row[6] or "default"
         nodes.append({
             "id": row[0],
             "content": row[1],
             "node_type": row[2],
-            "confidence": row[3],
-            "source_file": row[4] or "",
-            "timestamp": row[5] or "",
-            "mood_state": row[6] or "",
+            "source_file": row[3] or "",
+            "timestamp": row[4] or "",
+            "mood_state": row[5] or "",
             "domain": DOMAIN_MAP.get(db_domain, "raj"),
-            "tags": (row[8] or "").split(",") if row[8] else []
+            "tags": (row[7] or "").split(",") if row[7] else []
         })
     
     # Export edges — use source/target format for dashboard compatibility

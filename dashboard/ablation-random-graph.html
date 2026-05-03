@@ -450,7 +450,7 @@ function showPanel(d) {
     let html = `
         <div class="panel-label">Thought ${typeBadge} <span style="color:#555;font-size:9px;margin-left:8px;">depth ${d._depth}</span></div>
         <div class="panel-text" style="font-size:16px;font-weight:500;">${d.content}</div>
-        <div class="panel-meta">Confidence: ${d.confidence} · ${d.source_file === 'system_generated' ? '🤖 AI Generated' : '🧠 Seeded'}</div>
+        <div class="panel-meta">${d.source_file === 'system_generated' ? '🤖 AI Generated' : '🧠 Seeded'}</div>
     `;
 
     if (parents.length) {

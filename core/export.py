@@ -21,7 +21,6 @@ class ExportedNode:
     id: str
     content: str
     type: str
-    confidence: float
     mood_state: str
     metadata: dict
     source_file: str
@@ -53,25 +52,24 @@ class GraphExporter:
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT id, content, node_type, confidence, mood_state, 
+            SELECT id, content, node_type, mood_state,
                    metadata, source_file, timestamp,
                    COALESCE(decayed, 0) as decayed
             FROM thought_nodes
             ORDER BY timestamp
         """)
-        
+
         nodes = []
         for row in cursor.fetchall():
             node = {
                 "id": row[0],
                 "content": row[1],
                 "type": row[2],
-                "confidence": row[3],
-                "mood_state": row[4],
-                "metadata": json.loads(row[5]) if row[5] else {},
-                "source_file": row[6],
-                "timestamp": row[7],
-                "decayed": bool(row[8])
+                "mood_state": row[3],
+                "metadata": json.loads(row[4]) if row[4] else {},
+                "source_file": row[5],
+                "timestamp": row[6],
+                "decayed": bool(row[7])
             }
             nodes.append(node)
         
@@ -106,21 +104,10 @@ class GraphExporter:
         """Calculate graph statistics"""
         # Node type counts
         node_types = {}
-        confidence_by_type = {}
-        
         for node in nodes:
             node_type = node["type"]
             node_types[node_type] = node_types.get(node_type, 0) + 1
-            
-            if node_type not in confidence_by_type:
-                confidence_by_type[node_type] = []
-            confidence_by_type[node_type].append(node["confidence"])
-        
-        # Average confidence by type
-        avg_confidence = {}
-        for node_type, confidences in confidence_by_type.items():
-            avg_confidence[node_type] = sum(confidences) / len(confidences)
-        
+
         # Edge reasoning patterns (simplified analysis)
         reasoning_keywords = {}
         for edge in edges:
@@ -179,7 +166,6 @@ class GraphExporter:
             "total_nodes": len(nodes),
             "total_edges": len(edges),
             "node_types": node_types,
-            "avg_confidence_by_type": avg_confidence,
             "reasoning_patterns": reasoning_keywords,
             "source_files": source_files,
             "avg_in_degree": sum(in_degrees) / len(in_degrees) if in_degrees else 0,
@@ -294,8 +280,7 @@ class GraphExporter:
         # Node types
         report.append(f"\n🏷️  Node Types:")
         for node_type, count in sorted(stats['node_types'].items()):
-            avg_conf = stats['avg_confidence_by_type'].get(node_type, 0)
-            report.append(f"  {node_type}: {count} nodes (avg confidence: {avg_conf:.2f})")
+            report.append(f"  {node_type}: {count} nodes")
         
         # Reasoning patterns
         report.append(f"\n🔗 Reasoning Patterns:")

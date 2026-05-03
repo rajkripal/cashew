@@ -31,7 +31,6 @@ def temp_db():
             timestamp TEXT,
             access_count INTEGER DEFAULT 0,
             last_accessed TEXT,
-            confidence REAL,
             source_file TEXT,
             decayed INTEGER DEFAULT 0,
             metadata TEXT DEFAULT '{}',
@@ -48,7 +47,6 @@ def temp_db():
             child_id TEXT,
             weight REAL,
             reasoning TEXT,
-            confidence REAL,
             timestamp TEXT,
             PRIMARY KEY (parent_id, child_id),
             FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
@@ -115,7 +113,6 @@ def temp_db_with_data():
             timestamp TEXT,
             access_count INTEGER DEFAULT 0,
             last_accessed TEXT,
-            confidence REAL,
             source_file TEXT,
             decayed INTEGER DEFAULT 0,
             metadata TEXT DEFAULT '{}',
@@ -132,7 +129,6 @@ def temp_db_with_data():
             child_id TEXT,
             weight REAL,
             reasoning TEXT,
-            confidence REAL,
             timestamp TEXT,
             PRIMARY KEY (parent_id, child_id),
             FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
@@ -153,32 +149,32 @@ def temp_db_with_data():
     # Add sample data
     now = datetime.now(timezone.utc).isoformat()
     sample_nodes = [
-        ("node1", "Machine learning algorithms improve with data", "fact", "tech", 0.8),
-        ("node2", "Python is good for data science", "observation", "tech", 0.7),
-        ("node3", "Exercise boosts cognitive function", "belief", "health", 0.9),
-        ("node4", "God exists and created the universe", "belief", "philosophy", 0.6),
-        ("node5", "Systems thinking reveals interconnections", "insight", "meta", 0.8)
+        ("node1", "Machine learning algorithms improve with data", "fact", "tech"),
+        ("node2", "Python is good for data science", "observation", "tech"),
+        ("node3", "Exercise boosts cognitive function", "belief", "health"),
+        ("node4", "God exists and created the universe", "belief", "philosophy"),
+        ("node5", "Systems thinking reveals interconnections", "insight", "meta")
     ]
-    
-    for node_id, content, node_type, domain, confidence in sample_nodes:
+
+    for node_id, content, node_type, domain in sample_nodes:
         cursor.execute("""
-            INSERT INTO thought_nodes 
-            (id, content, node_type, domain, timestamp, confidence, source_file, access_count, metadata)
-            VALUES (?, ?, ?, ?, ?, ?, 'test', 0, '{}')
-        """, (node_id, content, node_type, domain, now, confidence))
-    
+            INSERT INTO thought_nodes
+            (id, content, node_type, domain, timestamp, source_file, access_count, metadata)
+            VALUES (?, ?, ?, ?, ?, 'test', 0, '{}')
+        """, (node_id, content, node_type, domain, now))
+
     # Add sample edges
     sample_edges = [
         ("node1", "node2", 0.7, "supports - Both about tech/programming"),
         ("node3", "node5", 0.5, "related_to - Both about mental processes")
     ]
-    
+
     for parent_id, child_id, weight, reasoning in sample_edges:
         cursor.execute("""
-            INSERT INTO derivation_edges 
-            (parent_id, child_id, weight, reasoning, confidence, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (parent_id, child_id, weight, reasoning, 0.8, now))
+            INSERT INTO derivation_edges
+            (parent_id, child_id, weight, reasoning, timestamp)
+            VALUES (?, ?, ?, ?, ?)
+        """, (parent_id, child_id, weight, reasoning, now))
     
     conn.commit()
     conn.close()

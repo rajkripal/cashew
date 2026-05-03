@@ -40,7 +40,7 @@ def load_graph_json(db_path: str) -> dict:
     conn = cdb.connect(db_path)
     c = conn.cursor()
     c.execute(
-        f"SELECT id, content, node_type, confidence, source_file, timestamp, "
+        f"SELECT id, content, node_type, source_file, timestamp, "
         f"mood_state, domain, tags FROM {cdb.NODES_TABLE} "
         f"WHERE decayed = 0 OR decayed IS NULL"
     )
@@ -48,10 +48,10 @@ def load_graph_json(db_path: str) -> dict:
     for row in c.fetchall():
         nodes.append({
             "id": row[0], "content": row[1], "node_type": row[2],
-            "confidence": row[3], "source_file": row[4] or "",
-            "timestamp": row[5] or "", "mood_state": row[6] or "",
-            "domain": row[7] or "",
-            "tags": (row[8] or "").split(",") if row[8] else [],
+            "source_file": row[3] or "",
+            "timestamp": row[4] or "", "mood_state": row[5] or "",
+            "domain": row[6] or "",
+            "tags": (row[7] or "").split(",") if row[7] else [],
         })
     node_ids = {n["id"] for n in nodes}
     c.execute(f"SELECT parent_id, child_id, weight, reasoning FROM {cdb.EDGES_TABLE}")

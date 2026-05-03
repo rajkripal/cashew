@@ -139,9 +139,6 @@ class TestContextRetrieval(unittest.TestCase):
             
             # Should contain the header
             self.assertIn("Existing reasoning", context)
-            
-            # Should contain confidence scores
-            self.assertIn("Confidence:", context)
     
     def test_search_by_content(self):
         """Test searching for specific content fragments"""

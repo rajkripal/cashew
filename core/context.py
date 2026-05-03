@@ -17,12 +17,11 @@ from dataclasses import dataclass
 # Database path is now configurable via environment variable or CLI
 from .config import get_db_path
 
-@dataclass 
+@dataclass
 class RelevantNode:
     id: str
     content: str
     node_type: str
-    confidence: float
     relevance_score: float
     parent_chain: List[Dict]
 
@@ -111,14 +110,14 @@ class ContextRetriever:
             
             # Get current node
             cursor.execute("""
-                SELECT content, node_type, confidence FROM thought_nodes WHERE id = ?
+                SELECT content, node_type FROM thought_nodes WHERE id = ?
             """, (current_id,))
-            
+
             node_row = cursor.fetchone()
             if not node_row:
                 break
-            
-            content, node_type, confidence = node_row
+
+            content, node_type = node_row
             
             # Get parents
             cursor.execute("""
@@ -137,7 +136,6 @@ class ContextRetriever:
                     "id": current_id,
                     "content": content,
                     "type": node_type,
-                    "confidence": confidence
                 },
                 "depth": depth,
                 "derived_from": parent_row[0] if parent_row else None,  # parent_id
@@ -174,38 +172,36 @@ class ContextRetriever:
         
         # Get all non-decayed, non-question nodes
         cursor.execute("""
-            SELECT id, content, node_type, confidence
-            FROM thought_nodes 
-            WHERE (decayed = 0 OR decayed IS NULL) 
+            SELECT id, content, node_type
+            FROM thought_nodes
+            WHERE (decayed = 0 OR decayed IS NULL)
             AND node_type != 'question'
-            ORDER BY confidence DESC
         """)
-        
+
         candidates = []
-        
+
         for row in cursor.fetchall():
-            node_id, content, node_type, confidence = row
-            
+            node_id, content, node_type = row
+
             # Calculate relevance score
             relevance = self._calculate_relevance_score(content, keywords)
-            
+
             if relevance > 0.1:  # Only include somewhat relevant nodes
                 # Get parent chain for context
                 parent_chain = self._get_parent_chain(node_id)
-                
+
                 candidates.append(RelevantNode(
                     id=node_id,
                     content=content,
                     node_type=node_type,
-                    confidence=confidence,
                     relevance_score=relevance,
                     parent_chain=parent_chain
                 ))
-        
+
         conn.close()
-        
-        # Sort by combined relevance and confidence score
-        candidates.sort(key=lambda n: (n.relevance_score * 0.7 + n.confidence * 0.3), reverse=True)
+
+        # Sort by relevance score
+        candidates.sort(key=lambda n: n.relevance_score, reverse=True)
         
         return candidates[:max_nodes]
     
@@ -235,8 +231,6 @@ class ContextRetriever:
                 if derivation:
                     context_lines.append(f"   (derived from: {derivation})")
             
-            # Show confidence
-            context_lines.append(f"   Confidence: {node.confidence:.2f}")
             context_lines.append("")
         
         return "\n".join(context_lines)
@@ -276,25 +270,23 @@ class ContextRetriever:
         
         # Use SQLite FTS if available, otherwise LIKE
         cursor.execute("""
-            SELECT id, content, node_type, confidence
-            FROM thought_nodes 
+            SELECT id, content, node_type
+            FROM thought_nodes
             WHERE content LIKE ?
             AND (decayed = 0 OR decayed IS NULL)
             AND node_type != 'question'
-            ORDER BY confidence DESC
             LIMIT ?
         """, (f"%{content_fragment}%", max_nodes))
-        
+
         results = []
         for row in cursor.fetchall():
-            node_id, content, node_type, confidence = row
+            node_id, content, node_type = row
             parent_chain = self._get_parent_chain(node_id)
-            
+
             results.append(RelevantNode(
                 id=node_id,
                 content=content,
                 node_type=node_type,
-                confidence=confidence,
                 relevance_score=1.0,  # Exact content match
                 parent_chain=parent_chain
             ))
@@ -309,10 +301,10 @@ class ContextRetriever:
         
         # Get related nodes through edges (both directions)
         cursor.execute("""
-            SELECT tn.id, tn.content, tn.node_type, tn.confidence, de.weight
+            SELECT tn.id, tn.content, tn.node_type, de.weight
             FROM derivation_edges de
             JOIN thought_nodes tn ON (
-                (de.parent_id = ? AND tn.id = de.child_id) OR 
+                (de.parent_id = ? AND tn.id = de.child_id) OR
                 (de.child_id = ? AND tn.id = de.parent_id)
             )
             WHERE (tn.decayed = 0 OR tn.decayed IS NULL)
@@ -320,17 +312,16 @@ class ContextRetriever:
             ORDER BY de.weight DESC
             LIMIT ?
         """, (node_id, node_id, max_nodes))
-        
+
         results = []
         for row in cursor.fetchall():
-            rel_id, content, node_type, confidence, weight = row
+            rel_id, content, node_type, weight = row
             parent_chain = self._get_parent_chain(rel_id)
-            
+
             results.append(RelevantNode(
                 id=rel_id,
                 content=content,
                 node_type=node_type,
-                confidence=confidence,
                 relevance_score=weight,
                 parent_chain=parent_chain
             ))
@@ -362,7 +353,6 @@ def main():
                     "id": node.id,
                     "content": node.content,
                     "type": node.node_type,
-                    "confidence": node.confidence,
                     "relevance": node.relevance_score,
                     "parent_chain": node.parent_chain
                 })
