@@ -110,19 +110,20 @@ class TestTraversalEngine:
         assert "derived_from" in chain[0]
         assert len(chain[0]["derived_from"]) == 2  # Two parents: question1 and belief1 (contradiction)
         
-        # Check that it traces back to seed
-        found_seed = False
-        def check_for_seed(step):
-            nonlocal found_seed
-            if step.get("is_seed", False):
-                found_seed = True
+        # Check that it traces back to a graph root (no parents).
+        # node_type is display-only; "is_root" is a deterministic graph fact.
+        found_root = False
+        def check_for_root(step):
+            nonlocal found_root
+            if step.get("is_root", False):
+                found_root = True
                 return
             for derivation in step.get("derived_from", []):
                 for parent_step in derivation.get("parent_chain", []):
-                    check_for_seed(parent_step)
-        
-        check_for_seed(chain[0])
-        assert found_seed, "Should trace back to seed node"
+                    check_for_root(parent_step)
+
+        check_for_root(chain[0])
+        assert found_root, "Should trace back to a root node"
     
     def test_why_handles_orphan_nodes(self, temp_db):
         """Test that why() handles orphan nodes correctly"""
@@ -132,7 +133,10 @@ class TestTraversalEngine:
         
         assert len(chain) == 1
         assert chain[0]["node"]["id"] == "orphan1"
-        assert chain[0]["is_seed"] == False  # Not a seed, just has no parents
+        # orphan1 has no parents → it's a graph root in the why() output.
+        # Per strict display-only invariant for node_type, the flag we surface
+        # is is_root (deterministic), not is_seed (semantic).
+        assert chain[0]["is_root"] == True
         assert "derived_from" not in chain[0] or len(chain[0].get("derived_from", [])) == 0
     
     def test_how_finds_shortest_path(self, temp_db):

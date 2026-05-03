@@ -170,12 +170,13 @@ class ContextRetriever:
         conn = self._get_connection()
         cursor = conn.cursor()
         
-        # Get all non-decayed, non-question nodes
+        # Get all non-decayed nodes. node_type is display-only metadata
+        # and never participates in retrieval logic — let the LLM decide
+        # which shapes are useful context.
         cursor.execute("""
             SELECT id, content, node_type
             FROM thought_nodes
             WHERE (decayed = 0 OR decayed IS NULL)
-            AND node_type != 'question'
         """)
 
         candidates = []
@@ -274,7 +275,6 @@ class ContextRetriever:
             FROM thought_nodes
             WHERE content LIKE ?
             AND (decayed = 0 OR decayed IS NULL)
-            AND node_type != 'question'
             LIMIT ?
         """, (f"%{content_fragment}%", max_nodes))
 
@@ -308,7 +308,6 @@ class ContextRetriever:
                 (de.child_id = ? AND tn.id = de.parent_id)
             )
             WHERE (tn.decayed = 0 OR tn.decayed IS NULL)
-            AND tn.node_type != 'question'
             ORDER BY de.weight DESC
             LIMIT ?
         """, (node_id, node_id, max_nodes))
