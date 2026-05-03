@@ -21,7 +21,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.extractors import BaseExtractor
-from extractors.utils import load_ignore_patterns, parse_extraction_lines, should_ignore
+from extractors.utils import (
+    TYPE_TAGGING_INSTRUCTION,
+    load_ignore_patterns,
+    parse_extraction_lines,
+    parse_typed_statement,
+    should_ignore,
+)
 
 logger = logging.getLogger("cashew.extractors.sessions")
 
@@ -174,7 +180,9 @@ Return distinct knowledge statements that would be valuable to remember. Each sh
 - Actionable or memorable for future reference
 - Written in a clear, standalone format
 
-Before emitting each statement, ask yourself: should this node exist in the graph forever? If you would not want future-you to read it, drop it. There is no hedging and no padding — either it is worth a permanent node or it is not. Skip pleasantries and routine interactions."""
+Before emitting each statement, ask yourself: should this node exist in the graph forever? If you would not want future-you to read it, drop it. There is no hedging and no padding, either it is worth a permanent node or it is not. Skip pleasantries and routine interactions.
+
+{TYPE_TAGGING_INSTRUCTION}"""
 
         try:
             response = model_fn(prompt)
@@ -191,13 +199,20 @@ Before emitting each statement, ask yourself: should this node exist in the grap
                 if ts:
                     batch_referent_time = ts  # last non-empty wins
 
-            return [{
-                "content": stmt,
-                "type": self._classify_statement(stmt),
-                "domain": "conversations",
-                "source_file": f"extractor:session:{session_id}",
-                "referent_time": batch_referent_time,
-            } for stmt in statements if len(stmt) > 20]
+            nodes_out = []
+            for raw in statements:
+                node_type, content = parse_typed_statement(
+                    raw, fallback=self._classify_statement)
+                if len(content) <= 20:
+                    continue
+                nodes_out.append({
+                    "content": content,
+                    "type": node_type,
+                    "domain": "conversations",
+                    "source_file": f"extractor:session:{session_id}",
+                    "referent_time": batch_referent_time,
+                })
+            return nodes_out
             
         except Exception as e:
             logger.warning(f"LLM extraction failed for {session_id}: {e}")

@@ -7,7 +7,49 @@ import fnmatch
 import re
 import yaml
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+
+# Issue #12: LLMs tag statements at extraction time with one of these six
+# types. The parser strips the prefix and returns the type alongside the
+# statement text. Untagged lines fall back to a per-extractor classifier so
+# older prompts and odd LLM output still produce typed nodes.
+TYPED_STATEMENT_RE = re.compile(
+    r'^\[(fact|observation|insight|decision|commitment|belief)\]\s+(.+)$',
+    re.IGNORECASE,
+)
+
+TYPE_TAGGING_INSTRUCTION = (
+    "Output one statement per line. Prefix each with a type tag.\n"
+    "Types: [fact] concrete verifiable context-independent info | "
+    "[observation] something noticed in context, may be situational | "
+    "[insight] non-obvious connection requiring reasoning | "
+    "[decision] choice made between alternatives | "
+    "[commitment] stated intention or planned action | "
+    "[belief] held opinion, not objectively verifiable\n"
+    "When uncertain, use [observation].\n"
+    "Output typed statements only, one per line."
+)
+
+
+def parse_typed_statement(
+    line: str,
+    fallback: Optional[Callable[[str], str]] = None,
+    default_type: str = "observation",
+) -> Tuple[str, str]:
+    """Parse a possibly-typed statement line.
+
+    Tagged lines look like ``[insight] some text`` (case-insensitive). When
+    matched, the prefix is stripped and the lowercased type is returned. When
+    not matched, ``fallback(line)`` is consulted (if given) — otherwise
+    ``default_type`` is used and the line is returned unchanged.
+    """
+    m = TYPED_STATEMENT_RE.match(line)
+    if m:
+        return m.group(1).lower(), m.group(2).strip()
+    if fallback is not None:
+        return fallback(line), line
+    return default_type, line
 
 
 def parse_frontmatter(content: str) -> tuple[Dict[str, Any], str]:
