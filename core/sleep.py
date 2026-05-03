@@ -62,7 +62,6 @@ class SleepProtocol:
         self.gc_mode = getattr(config, 'gc_mode', 'soft')
         self.gc_threshold = getattr(config, 'gc_threshold', 0.05)
         self.gc_grace_days = getattr(config, 'gc_grace_days', 7)
-        self.gc_protect_types = getattr(config, 'gc_protect_types', ['seed', 'core_memory'])
         self.gc_think_cycle_penalty = getattr(config, 'gc_think_cycle_penalty', 1.5)
         self.events: List[SleepEvent] = []
     
@@ -862,7 +861,6 @@ class SleepProtocol:
         gc_mode = config.gc_mode
         gc_threshold = config.gc_threshold
         gc_grace_days = config.gc_grace_days
-        gc_protect_types = set(config.gc_protect_types)
         gc_think_cycle_penalty = config.gc_think_cycle_penalty
 
         if gc_mode == "off":
@@ -884,22 +882,18 @@ class SleepProtocol:
             metric = metrics[node_id]
 
             cursor.execute(
-                "SELECT node_type, source_file, last_accessed, permanent FROM thought_nodes WHERE id = ?",
+                "SELECT source_file, last_accessed, permanent FROM thought_nodes WHERE id = ?",
                 (node_id,),
             )
             row = cursor.fetchone()
             if not row:
                 continue
-            node_type, source_file, last_accessed, is_permanent = row
+            source_file, last_accessed, is_permanent = row
 
-            # Permanent nodes are protected regardless of node_type.
-            # gc_protect_types only covers a hardcoded subset (seed, core_memory)
-            # and misses derived/fact/insight/etc. that sleep promoted to permanent.
+            # Permanent nodes are protected. Seed and core_memory nodes are
+            # always created with permanent=1; the v2→v3 migration backfills
+            # any legacy rows. There is no separate node_type escape hatch.
             if is_permanent:
-                continue
-
-            # Protect configured types
-            if node_type in gc_protect_types:
                 continue
 
             # Grace period — use last_accessed (NOT created_at)

@@ -171,8 +171,6 @@ class CashewConfig:
                 'mode': 'soft',           # soft | hard | off
                 'threshold': 0.05,        # relevance score below which nodes are eligible
                 'grace_days': 7,          # days since last_accessed before eligible
-                
-                'protect_types': ['seed', 'core_memory'],
                 'think_cycle_penalty': 1.5,  # multiplier on threshold for think-cycle nodes
             },
             'sleep': {
@@ -257,7 +255,6 @@ class CashewConfig:
         self.gc_mode = gc.get('mode', 'soft')
         self.gc_threshold = float(gc.get('threshold', 0.05))
         self.gc_grace_days = int(gc.get('grace_days', 7))
-        self.gc_protect_types = list(gc.get('protect_types', ['seed', 'core_memory']))
         self.gc_think_cycle_penalty = float(gc.get('think_cycle_penalty', 1.5))
 
         # (node type taxonomy loaded above via _node_type_map)
@@ -466,7 +463,6 @@ def get_gc_config() -> dict:
         'mode': config.gc_mode,
         'threshold': config.gc_threshold,
         'grace_days': config.gc_grace_days,
-        'protect_types': config.gc_protect_types,
         'think_cycle_penalty': config.gc_think_cycle_penalty,
     }
 

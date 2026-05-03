@@ -833,8 +833,23 @@ class TestGCConfigModes:
         # Hotspot nodes are now treated like any other node
         assert "hot01" in result
 
-    def test_gc_protects_configured_types(self, gc_db):
-        """Nodes with types in protect_types should survive GC."""
+    def test_gc_protects_seed_and_core_memory_via_permanent(self, gc_db):
+        """Seed and core_memory nodes survive GC because they carry permanent=1.
+
+        The previous gc.protect_types config knob was removed; protection now
+        flows through a single signal — the permanent flag — and the v2→v3
+        schema migration backfills it on legacy seed/core_memory rows.
+        """
+        # Simulate the v3 migration backfill on the test fixture.
+        conn = sqlite3.connect(gc_db)
+        c = conn.cursor()
+        c.execute(
+            "UPDATE thought_nodes SET permanent = 1 "
+            "WHERE node_type IN ('seed', 'core_memory')"
+        )
+        conn.commit()
+        conn.close()
+
         protocol = SleepProtocol(gc_db, tempfile.mktemp(suffix=".json"))
         metrics = self._make_metrics(gc_db, fitness=0.0)
 
@@ -842,7 +857,6 @@ class TestGCConfigModes:
             mock_cfg.gc_mode = "soft"
             mock_cfg.gc_threshold = 10.0
             mock_cfg.gc_grace_days = 0
-            mock_cfg.gc_protect_types = ["seed", "core_memory"]
             mock_cfg.gc_protect_hotspots = False
             mock_cfg.gc_think_cycle_penalty = 1.0
 
