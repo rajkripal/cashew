@@ -1,19 +1,19 @@
-# Cashew Persistence Layer — Architecture
+# Cashew Persistence Layer: Architecture
 
 ## Problem
 Personal assistants have session amnesia. Current memory system:
-- `MEMORY.md` — flat prose, manually curated
-- `memory/YYYY-MM-DD.md` — daily logs, append-only
-- `memory_search` — keyword/embedding search over flat files
+- `MEMORY.md`: flat prose, manually curated
+- `memory/YYYY-MM-DD.md`: daily logs, append-only
+- `memory_search`: keyword/embedding search over flat files
 
 This is a filing cabinet. It stores WHAT was said but not WHY, has no derivation chains, can't update beliefs (only append), and can't discover cross-domain patterns.
 
 ## Solution
 Replace flat memory with a thought graph that:
-1. **Stores reasoning, not just facts** — every node traces back through edges to what produced it
-2. **Updates beliefs via contradiction** — new info creates edges to existing beliefs, think cycles resolve tensions
-3. **Surfaces relevant context** — hybrid retrieval (embeddings + graph walk) finds the right 5-10 nodes for any conversation
-4. **Generates insights autonomously** — think cycles on heartbeats discover patterns the agent hasn't articulated
+1. **Stores reasoning, not just facts**: every node traces back through edges to what produced it
+2. **Updates beliefs via contradiction**: new info creates edges to existing beliefs, think cycles resolve tensions
+3. **Surfaces relevant context**: hybrid retrieval (embeddings + graph walk) finds the right 5-10 nodes for any conversation
+4. **Generates insights autonomously**: think cycles on heartbeats discover patterns the agent hasn't articulated
 
 ## Architecture
 
@@ -42,15 +42,15 @@ CREATE TABLE edges (
 ```
 
 ### Node Types
-- **observation** — something that happened ("The user's manager gave performance feedback")
-- **belief** — an interpreted pattern ("User goes silent when struggling")
-- **decision** — a commitment made ("Will send manager update by Friday")
-- **insight** — a derived connection ("Silent periods correlate with avoidance of hard conversations")
-- **fact** — objective information ("User works in tech")
+- **observation**: something that happened ("The user's manager gave performance feedback")
+- **belief**: an interpreted pattern ("User goes silent when struggling")
+- **decision**: a commitment made ("Will send manager update by Friday")
+- **insight**: a derived connection ("Silent periods correlate with avoidance of hard conversations")
+- **fact**: objective information ("User works in tech")
 
 ### Integration Points
 
-#### 1. Session Start — Context Injection
+#### 1. Session Start: Context Injection
 ```
 User message arrives
 → Embed message
@@ -61,7 +61,7 @@ User message arrives
 → Update last_accessed on retrieved nodes
 ```
 
-#### 2. Session End — Knowledge Extraction
+#### 2. Session End: Knowledge Extraction
 ```
 Conversation ends (or compaction triggers)
 → Summarize key decisions, new info, emotional beats
@@ -70,7 +70,7 @@ Conversation ends (or compaction triggers)
 → If new info contradicts existing belief → flag for think cycle
 ```
 
-#### 3. Heartbeat — Generative Think Cycles
+#### 3. Heartbeat: Generative Think Cycles
 ```
 Heartbeat fires, nothing urgent
 → Pick underexplored cluster (low access_count, high edge density)
@@ -87,7 +87,7 @@ New node N contradicts existing node E (detected by LLM during extraction)
 → Queue cluster {N, E, neighbors(E)} for next think cycle
 → Think cycle produces resolution node R
 → Edge from E to R records the supersession
-→ E is not deleted — it's part of the derivation chain (organic decay handles eventual removal if E stops being touched)
+→ E is not deleted; it's part of the derivation chain (organic decay handles eventual removal if E stops being touched)
 ```
 
 ### Retrieval: Hybrid Approach
