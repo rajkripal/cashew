@@ -60,7 +60,7 @@ A flat memory file cannot do this. A vector store without graph structure cannot
 
 ## 7. Patterns, Not Echoes
 
-The agent's job is to reflect patterns back to the human with clarity the human cannot reach alone. An echo agrees with whatever was just said ("you're right, that's a great insight"). A pattern reflection situates the claim against accumulated evidence ("this is the third time this shape has come up, here is where it connects, here is where it might be a blind spot"). The graph is what makes the second mode possible.
+The agent's job is to reflect patterns back to the human with clarity the human cannot reach alone. Echoing means agreeing with whatever was just said ("you're right, that's a great insight"). Pattern reflection situates the claim against accumulated evidence ("this is the third time this shape has come up, here is where it connects, here is where it might be a blind spot"). The graph is what makes pattern reflection possible.
 
 ---
 
@@ -80,6 +80,6 @@ Decay is the forgetting mechanism. Don't fight it with structures that pin nodes
 
 ## 10. Constant Context Cost
 
-Retrieval is the interface between a graph that grows without bound and a context window that does not. The graph could hold 100,000 nodes; the per-session context cost stays roughly the same because each query pulls a bounded subgraph.
+Retrieval is the interface between a graph that grows without bound and a context window that does not. As the graph grows, the per-session context cost stays roughly bounded because each query pulls a bounded subgraph rather than scanning the whole store.
 
-In practice, a context query against the current brain returns on the order of a few hundred words of structured output, regardless of total graph size. Boot context plus one or two topic queries plus a handful of extraction acks fits comfortably inside any session budget. That bound is the architectural guarantee: graph size and context cost are decoupled.
+In practice, a context query against the author's current brain returns on the order of a few hundred words of structured output (measured at roughly 270 to 430 words per topic query across mixed hints), and that range does not move with total graph size. Boot context plus one or two topic queries plus a handful of extraction acks fits comfortably inside any session budget. Graph size and context cost are decoupled by design.
