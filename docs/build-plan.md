@@ -1,8 +1,10 @@
 # Cashew Brain — Build Plan
 
+> **Status:** historical. This was the original Q1 2026 build plan. All six phases shipped between March and April 2026 (initial migration and core modules landed 2026-03-08, extractor plugin interface 2026-03-18, and Phase 6 integration via the OpenClaw skill plus later Claude Code skill packages). The doc is preserved as the design intent it was written under; for current behavior see DESIGN.md, PHILOSOPHY.md, and docs/architecture.md.
+
 ## Build Order (each phase is testable before moving to next)
 
-### Phase 1: Migration + Schema
+### Phase 1: Migration + Schema  ✅ Shipped 2026-03
 **Build:** Migration script for brain graph → new architecture
 **What it does:**
 - Copy current graph.db → brain.db (backup original)
@@ -26,7 +28,7 @@ python3 -m pytest tests/test_migration.py
 
 ---
 
-### Phase 2: Embedding Layer
+### Phase 2: Embedding Layer  ✅ Shipped 2026-03-08 (`core/embeddings.py`)
 **Build:** Embed all nodes, store embeddings, similarity search
 **What it does:**
 - Embed every node's content using sentence-transformers (local, free)
@@ -54,7 +56,7 @@ python3 -m pytest tests/test_embeddings.py
 
 ---
 
-### Phase 3: Hybrid Retrieval
+### Phase 3: Hybrid Retrieval  ✅ Shipped 2026-03-08 (`core/retrieval.py`; later replaced by recursive BFS, see docs/architecture.md)
 **Build:** Graph-walk expansion on top of embedding search
 **What it does:**
 - `cashew.retrieve(query, k=10)` =
@@ -91,7 +93,7 @@ def test_retrieval_vs_memory_search():
 
 ---
 
-### Phase 4: Knowledge Extraction
+### Phase 4: Knowledge Extraction  ✅ Shipped 2026-03 (`core/extractors.py` + plugin interface in 5c94ca7, 2026-03-18)
 **Build:** Extract nodes from conversations as ISOLATED fragments
 **What it does:**
 - `cashew.extract(conversation_text)` →
@@ -122,7 +124,7 @@ python3 -m pytest tests/test_extraction.py
 
 ---
 
-### Phase 5: Think Cycle Integration
+### Phase 5: Think Cycle Integration  ✅ Shipped 2026-03 (`core/sleep.py`, `core/session.py` think cycles)
 **Build:** Autonomous think cycles on heartbeat
 **What it does:**
 - `cashew.think()` →
@@ -148,7 +150,7 @@ python3 -m pytest tests/test_think_cycle.py
 
 ---
 
-### Phase 6: Integration Hooks (THE HARD PART)
+### Phase 6: Integration Hooks (THE HARD PART)  ✅ Shipped 2026-04 (skill-based path, packaged as the OpenClaw and Claude Code skills)
 **Build:** Wire cashew into OpenClaw's session lifecycle
 **What it does:**
 - On session start: retrieve relevant context, inject into system prompt
