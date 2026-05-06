@@ -1,12 +1,12 @@
-# cashew — Design Document
+# cashew Design Document
 
 ## 1. Problem Statement
 
 Current AI systems (and humans) produce conclusions but discard the derivation path. Chain-of-thought exists during inference but is ephemeral. Knowledge graphs store what is known but not how it was derived. No existing system combines:
 
-1. **Persistent derivation chains** — every thought linked to its parents
-2. **Emergent self-organization** — organic structure from cross-linking and decay  
-3. **Auditability as a first-class operation** — "why do I believe X?" is a query, not introspection
+1. **Persistent derivation chains**: every thought linked to its parents
+2. **Emergent self-organization**: organic structure from cross-linking and decay  
+3. **Auditability as a first-class operation**: "why do I believe X?" is a query, not introspection
 
 ### Core Question
 If you store reasoning with its full derivation path, can a system meaningfully audit and self-correct its own beliefs while exhibiting emergent insights?
@@ -15,7 +15,7 @@ If you store reasoning with its full derivation path, can a system meaningfully 
 | System | What it does | Gap |
 |--------|-------------|-----|
 | Knowledge Graphs | Stores entities + relationships | No derivation tracking |
-| Chain-of-thought (LLMs) | Step-by-step reasoning | Ephemeral — gone after response |
+| Chain-of-thought (LLMs) | Step-by-step reasoning | Ephemeral, gone after response |
 | RAG (LlamaIndex etc.) | Retrieves context for generation | Flat memory, no graph structure |
 | MemGPT | Persistent LLM memory | No derivation graph |
 | Argument mapping (Kialo) | Structured debate trees | Human-curated, not emergent |
@@ -113,7 +113,7 @@ CREATE VIRTUAL TABLE vec_embeddings USING vec0(
 
 Cashew is embeddable as a library: downstream consumers (e.g. `hermes-cashew`) layer their own tables on top of cashew's database. This section defines what cashew owns and what extension points consumers can rely on.
 
-**Cashew-owned tables** — schema is managed by `core.db.ensure_schema()`, may change across cashew versions under the rules below:
+**Cashew-owned tables**: schema is managed by `core.db.ensure_schema()`, may change across cashew versions under the rules below:
 
 - `thought_nodes`
 - `derivation_edges`
@@ -134,7 +134,7 @@ Cashew is embeddable as a library: downstream consumers (e.g. `hermes-cashew`) l
 
 **Extension points for downstream consumers**
 
-- Consumers may create their own tables (use a clear prefix, e.g. `hermes_*`) — cashew will not touch them.
+- Consumers may create their own tables (use a clear prefix, e.g. `hermes_*`). Cashew will not touch them.
 - Consumers may add columns prefixed `ext_` to cashew-owned tables. Cashew will never introduce an `ext_`-prefixed column.
 - Consumers should call `ensure_schema(db)` before running their own migrations, then branch on `get_schema_version(db)` to decide whether their own migration ladder needs to run.
 
@@ -149,15 +149,15 @@ if get_schema_version(db_path) >= 1:
 ```
 
 ### Node Types (Current Implementation)
-- **fact** — Data points and factual observations
-- **observation** — Personal experiences and direct observations
-- **insight** — Derived understanding from think cycles and analysis
-- **decision** — Specific choices and their reasoning
-- **belief** — Core principles and values
-- **derived** — LLM-generated hypotheses and conclusions
-- **meta** — Self-analysis and system reflection
-- **core_memory** — High-importance, frequently accessed knowledge
-- **cross_link** — Connections between disparate knowledge domains
+- **fact**: Data points and factual observations
+- **observation**: Personal experiences and direct observations
+- **insight**: Derived understanding from think cycles and analysis
+- **decision**: Specific choices and their reasoning
+- **belief**: Core principles and values
+- **derived**: LLM-generated hypotheses and conclusions
+- **meta**: Self-analysis and system reflection
+- **core_memory**: High-importance, frequently accessed knowledge
+- **cross_link**: Connections between disparate knowledge domains
 
 ---
 
@@ -295,10 +295,10 @@ def run_sleep_cycle():
 
 ### Power Law Properties
 The graph exhibits natural power law behavior:
-- **Preferential attachment** — New thoughts connect to high-connectivity hubs
-- **Self-organized criticality** — Sleep cycles restructure accumulated knowledge
-- **Fractal structure** — Same patterns at all scales
-- **Emergent hierarchy** — Organization from simple connection rules
+- **Preferential attachment**: New thoughts connect to high-connectivity hubs
+- **Self-organized criticality**: Sleep cycles restructure accumulated knowledge
+- **Fractal structure**: Same patterns at all scales
+- **Emergent hierarchy**: Organization from simple connection rules
 
 ### Organic Retrieval Scaling
 Traditional RAG systems use flat vector search (O(N) comparisons). cashew uses sqlite-vec for O(log N) seed selection followed by recursive BFS graph traversal, achieving efficient retrieval while preserving semantic relationships through organic connectivity.
@@ -311,12 +311,12 @@ Cross-domain context synthesis produces insights that connect disparate knowledg
 ## 8. Success Criteria
 
 ### Phase 1: Personal Thought Graph ✅ ACHIEVED
-1. ✅ **why(node) produces non-obvious derivation chains** — tracing reveals unplanned connections
-2. ✅ **audit() catches real circular reasoning** — cycle detection works
-3. ✅ **Organic connectivity emerges** — cross-linking creates natural pathways without synthetic structure  
-4. ✅ **Think cycles produce cross-domain synthesis** — connections across knowledge areas
-5. ✅ **Graph exhibits preferential attachment** — high-connectivity nodes via cross-linking  
-6. ✅ **sqlite-vec retrieval scales** — O(log N) seed selection + BFS traversal
+1. ✅ **why(node) produces non-obvious derivation chains**: tracing reveals unplanned connections
+2. ✅ **audit() catches real circular reasoning**: cycle detection works
+3. ✅ **Organic connectivity emerges**: cross-linking creates natural pathways without synthetic structure  
+4. ✅ **Think cycles produce cross-domain synthesis**: connections across knowledge areas
+5. ✅ **Graph exhibits preferential attachment**: high-connectivity nodes via cross-linking  
+6. ✅ **sqlite-vec retrieval scales**: O(log N) seed selection + BFS traversal
 
 ### Phase 2: Multi-Domain Knowledge ✅ ACHIEVED  
 1. ✅ Multiple domains (user/ai) co-exist in single graph
@@ -383,7 +383,7 @@ cashew/
 ## 10. Sleep Protocol Details
 
 ### Purpose
-Connect isolated thought chains, deduplicate, garbage collect, and consolidate — mirrors neural sleep consolidation.
+Connect isolated thought chains, deduplicate, garbage collect, and consolidate. Mirrors neural sleep consolidation.
 
 ### Operations (run periodically or daily):
 
@@ -405,26 +405,26 @@ Connect isolated thought chains, deduplicate, garbage collect, and consolidate �
 ## 11. Engineering Principles
 
 ### Testing Philosophy
-"I don't want an unfalsifiable system." — Every behavior gets a test.
+"I don't want an unfalsifiable system." Every behavior gets a test.
 
 **Test categories:**
-1. **Unit tests** — Every function, every edge case
+1. **Unit tests**: Every function, every edge case
    - Graph store: CRUD, dedup, edge creation, integrity
    - Traversal: why() correctness, audit() cycle detection
    - Sleep: fitness scoring, decay behavior, promotion logic
 
-2. **Behavioral tests** — Does the system do what we claim?
+2. **Behavioral tests**: Does the system do what we claim?
    - Derivation: why(A) includes correct parent chain
    - Contradiction detection: audit() flags conflicts
    - Sleep preservation: high-value nodes survive GC
    - Cross-linking: independent clusters connect
 
-3. **Emergence tests** — Can we measure emergent properties?  
+3. **Emergence tests**: Can we measure emergent properties?  
    - Power laws: degree distribution vs random graphs
    - Clustering: modularity scores vs random networks
    - Insight generation: think cycle novelty assessment
 
-4. **Regression tests** — Don't break what works
+4. **Regression tests**: Don't break what works
    - Every bug gets test before fix
    - Reproducible experiments (seeded randomness)
 
@@ -433,7 +433,7 @@ Connect isolated thought chains, deduplicate, garbage collect, and consolidate �
 ### Code Standards
 - Type hints everywhere
 - Docstrings on public functions  
-- No magic numbers — constants named and documented
+- No magic numbers, constants named and documented
 - Git hygiene: specific `git add`, one feature per PR
 
 ---
@@ -443,18 +443,18 @@ Connect isolated thought chains, deduplicate, garbage collect, and consolidate �
 ### Graph Statistics (Author's Personal Graph)
 - **3,064 thought nodes** across 9 distinct types (fact, insight, observation, etc.)
 - **6,122 derivation edges** with weight and confidence
-- **Domain separation** — user/ai domains in single graph
-- **288/288 tests passing** — comprehensive coverage
-- **sqlite-vec integration** — O(log N) vector search
+- **Domain separation**: user/ai domains in single graph
+- **288/288 tests passing**: comprehensive coverage
+- **sqlite-vec integration**: O(log N) vector search
 
 *Note: These statistics reflect the author's personal knowledge graph as of April 2026. New users start with an empty graph.*
 
 ### Proven Capabilities  
-1. **BFS retrieval at scale** — 2000+ nodes with sub-second response
-2. **Organic graph evolution** — cross-linking creates natural structure
-3. **Sleep cycles maintain quality** — decay prevents bloat, dedup prevents redundancy
-4. **Zero infrastructure** — single SQLite file, no external servers
-5. **Dashboard visualization** — real-time graph rendering
+1. **BFS retrieval at scale**: 2000+ nodes with sub-second response
+2. **Organic graph evolution**: cross-linking creates natural structure
+3. **Sleep cycles maintain quality**: decay prevents bloat, dedup prevents redundancy
+4. **Zero infrastructure**: single SQLite file, no external servers
+5. **Dashboard visualization**: real-time graph rendering
 
 ### In Production Use
 - Daily context retrieval for agent sessions
@@ -469,17 +469,17 @@ Connect isolated thought chains, deduplicate, garbage collect, and consolidate �
 **Done = You look at the graph and it surprises you.**
 
 Concrete achievements (April 2026):
-1. ✅ Graph scaled — 3,064 nodes, 6,122 edges from organic growth (author's personal graph)
-2. ✅ sqlite-vec integration — O(log N) vector search with cosine distance
-3. ✅ BFS retrieval — recursive traversal replaces hierarchical hotspots  
-4. ✅ Sleep cycle evolution — cross-linking, decay, dedup without clustering
-5. ✅ Think cycles via session.py — function-based, not class-based
-6. ✅ Test coverage — 288/288 tests passing after major refactor
+1. ✅ Graph scaled to 3,064 nodes, 6,122 edges from organic growth (author's personal graph)
+2. ✅ sqlite-vec integration: O(log N) vector search with cosine distance
+3. ✅ BFS retrieval: recursive traversal replaces hierarchical hotspots  
+4. ✅ Sleep cycle evolution: cross-linking, decay, dedup without clustering
+5. ✅ Think cycles via session.py, function-based not class-based
+6. ✅ Test coverage: 288/288 tests passing after major refactor
 
 ### Key Learning: Foundation Model AS Reasoning Engine
-Don't build Python reasoning modules — the LLM reasoning over structured graph context IS the think cycle. Only tooling needed is graph plumbing (retrieve nodes, insert results).
+Don't build Python reasoning modules. The LLM reasoning over structured graph context IS the think cycle. Only tooling needed is graph plumbing (retrieve nodes, insert results).
 
 ### Philosophy Confirmed  
-- **Orphans are unsolved problems, not bugs** — Don't force connections
-- **Honest attempts > curve fitting** — Genuine relationships matter more than graph density
-- **Emergent structure validates the architecture** — Power laws and organic connectivity prove self-organization
+- **Orphans are unsolved problems, not bugs**: Don't force connections
+- **Honest attempts > curve fitting**: Genuine relationships matter more than graph density
+- **Emergent structure validates the architecture**: Power laws and organic connectivity prove self-organization
