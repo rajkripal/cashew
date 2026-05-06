@@ -19,6 +19,8 @@ import sqlite3
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Set
 
+from .decay_audit import log_decay_event
+
 
 CASCADE_MIN_AGE_DAYS = 30
 
@@ -154,6 +156,13 @@ def cascade_decay(db_path: str, decayed_node_id: str) -> Dict:
                 WHERE id = ?
             """, (datetime.now(timezone.utc).isoformat(), child_id))
 
+            log_decay_event(
+                conn,
+                child_id,
+                "organic_cascade",
+                related_nodes={"parent_id": current_node_id, "root_id": decayed_node_id},
+            )
+
             cascaded_count += 1
             nodes_to_process.append(child_id)
 
@@ -221,6 +230,18 @@ def auto_decay(db_path: str, min_age_days: int = 14,
     """, (datetime.now(timezone.utc).isoformat(), cutoff))
 
     direct_count = cursor.rowcount
+
+    # Audit each newly-decayed node. We've already done the UPDATE above
+    # (decayed = 1), so log_decay_event reads the post-update node row;
+    # that's fine — we only need identity/metadata for the audit row.
+    for nid in nodes_to_decay:
+        log_decay_event(
+            conn,
+            nid,
+            "organic_age_no_access",
+            metadata={"min_age_days": min_age_days, "cutoff": cutoff},
+        )
+
     conn.commit()
     conn.close()
 

@@ -21,6 +21,7 @@ logger = logging.getLogger("cashew.sleep")
 
 # Database path is now configurable via environment variable or CLI
 from .config import get_db_path, config
+from .decay_audit import log_decay_event, gc_decay_audit
 DEFAULT_SLEEP_LOG_PATH = "./data/sleep_log.json"
 
 @dataclass
@@ -315,7 +316,16 @@ class SleepProtocol:
             UPDATE thought_nodes SET decayed = 1
             WHERE id = ? AND (permanent IS NULL OR permanent = 0)
         """, (remove_id,))
-        
+
+        if cursor.rowcount > 0:
+            log_decay_event(
+                conn,
+                remove_id,
+                "dedup_loser",
+                related_nodes={"keeper_id": keep_id},
+                metadata={"similarity": similarity},
+            )
+
         conn.commit()
         conn.close()
         
@@ -911,6 +921,19 @@ class SleepProtocol:
             effective_threshold = gc_threshold * gc_think_cycle_penalty if is_think_cycle else gc_threshold
 
             if metric.composite_fitness < effective_threshold:
+                # Audit BEFORE the actual decay/delete so log_decay_event can
+                # still read the node row (hard mode wipes thought_nodes).
+                log_decay_event(
+                    conn,
+                    node_id,
+                    "gc_fitness",
+                    metadata={
+                        "fitness_score": metric.composite_fitness,
+                        "threshold": effective_threshold,
+                        "mode": gc_mode,
+                    },
+                )
+
                 if gc_mode == "hard":
                     # DELETE the node and its edges
                     cursor.execute("DELETE FROM derivation_edges WHERE parent_id = ? OR child_id = ?",
@@ -1064,6 +1087,17 @@ class SleepProtocol:
         print("📍 Running cluster detection...")
         clustering_results = {"clusters_found": 0, "new_hotspots_created": 0, "stale_hotspots_found": 0}
         
+        # 6.5. Decay-audit retention GC (one-shot per cycle).
+        try:
+            audit_conn = self._get_connection()
+            audit_pruned = gc_decay_audit(audit_conn, retention_days=7)
+            audit_conn.commit()
+            audit_conn.close()
+            if audit_pruned:
+                self._log_event("decay_audit_gc", {"rows_pruned": audit_pruned})
+        except Exception as e:
+            logger.warning(f"decay_audit GC failed: {e}")
+
         # 7. Build summary before saving (save clears events)
         events_count = len(self.events)
         self.save_sleep_log()
