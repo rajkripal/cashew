@@ -71,29 +71,32 @@ CREATE TABLE thought_nodes (
     id TEXT PRIMARY KEY,
     content TEXT NOT NULL,
     node_type TEXT NOT NULL,
-    timestamp TEXT NOT NULL,
-    confidence REAL NOT NULL,
-    metadata TEXT,
+    domain TEXT,
+    timestamp TEXT,
+    access_count INTEGER DEFAULT 0,
+    last_accessed TEXT,
     source_file TEXT,
     decayed INTEGER DEFAULT 0,
-    last_updated TEXT DEFAULT NULL,
-    last_accessed TEXT,
-    access_count INTEGER DEFAULT 0,
-    domain TEXT,
+    metadata TEXT DEFAULT '{}',
+    last_updated TEXT,
+    mood_state TEXT,
     permanent INTEGER DEFAULT 0,
-    tags TEXT
+    tags TEXT,
+    referent_time TEXT
 );
 
 CREATE TABLE derivation_edges (
-    parent_id TEXT NOT NULL,
-    child_id TEXT NOT NULL,
-    weight REAL NOT NULL,
-    confidence REAL NOT NULL,
+    parent_id TEXT,
+    child_id TEXT,
+    weight REAL,
     reasoning TEXT,
+    timestamp TEXT,
     FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
     FOREIGN KEY (child_id) REFERENCES thought_nodes(id),
     PRIMARY KEY (parent_id, child_id)
 );
+
+> **Note on `confidence`**: an earlier schema carried a `confidence REAL` column on both `thought_nodes` and `derivation_edges`. It was killed in PR #25 (May 2026); the values were uncalibrated LLM self-reports, not a real signal. The deterministic survival gate is now `access_count > 0 OR edge_degree > 0` (see PHILOSOPHY.md §9), and fitness scoring uses pure graph signals (see §10 below).
 
 CREATE TABLE embeddings (
     node_id TEXT PRIMARY KEY,
@@ -122,9 +125,9 @@ Cashew is embeddable as a library: downstream consumers (e.g. `hermes-cashew`) l
 - `metrics`
 - `vec_embeddings` (virtual, when sqlite-vec is available)
 
-**Cashew-owned columns** on `thought_nodes`: `id`, `content`, `node_type`, `domain`, `timestamp`, `access_count`, `last_accessed`, `confidence`, `source_file`, `decayed`, `metadata`, `last_updated`, `mood_state`, `permanent`, `tags`, `referent_time`.
+**Cashew-owned columns** on `thought_nodes`: `id`, `content`, `node_type`, `domain`, `timestamp`, `access_count`, `last_accessed`, `source_file`, `decayed`, `metadata`, `last_updated`, `mood_state`, `permanent`, `tags`, `referent_time`.
 
-**Cashew-owned columns** on `derivation_edges`: `parent_id`, `child_id`, `weight`, `reasoning`, `confidence`, `timestamp`.
+**Cashew-owned columns** on `derivation_edges`: `parent_id`, `child_id`, `weight`, `reasoning`, `timestamp`.
 
 **Migration policy**
 
@@ -179,7 +182,7 @@ def retrieve_recursive_bfs(hints: list[str], n_seeds=5, picks_per_hop=3, max_dep
 def extract(input_text: str) -> list[ThoughtNode]:
     # 1. Parse input for extractable knowledge
     # 2. Find derivation parents via similarity
-    # 3. Generate new nodes with confidence scores
+    # 3. Generate new nodes
     # 4. Create edges with reasoning explanations
 ```
 
@@ -213,9 +216,10 @@ def roots() -> list[ThoughtNode]:
 ```python
 def run_sleep_cycle():
     # 1. Cross-link semantically similar nodes across domains (0.7-0.85 similarity)
-    # 2. Decay low-fitness nodes (composite: access + confidence + age)
+    # 2. Decay low-fitness nodes (pure graph signal:
+    #      branching_factor + cross_links * 0.5 + derivation_depth * 0.1)
     # 3. Deduplicate near-identical content (>0.82 similarity, merge + redirect)
-    # 4. Promote frequently accessed, high-confidence nodes to permanent=1
+    # 4. Promote top sqrt(N) nodes by fitness to core_memory + permanent=1
     # 5. Log all operations for auditability
 ```
 
@@ -388,9 +392,9 @@ Connect isolated thought chains, deduplicate, garbage collect, and consolidate. 
 ### Operations (run periodically or daily):
 
 1. **Cross-linking:** Find semantically similar nodes across domains (0.7-0.85 similarity range). Create edges between related but previously disconnected knowledge. Preserves diversity by not over-connecting highly similar nodes.
-2. **Fitness-based decay:** Composite scoring (access_count, confidence, age). Below threshold → `decayed=1`. Think cycle outputs face 1.5x higher decay threshold.
+2. **Fitness-based decay:** Pure graph-signal scoring (`branching_factor + cross_links * 0.5 + derivation_depth * 0.1`, see `core/sleep.py::calculate_node_metrics`). Below `gc_threshold` → `decayed=1`. Think-cycle outputs face a `gc_think_cycle_penalty` (1.5x by default) on the threshold. Permanent nodes (seeds, core_memory) skip GC entirely.
 3. **Deduplication:** Merge near-identical nodes (>0.82 similarity), redirect edges to canonical version, preserve derivation links.
-4. **Core memory promotion:** Frequently accessed, high-confidence nodes get `permanent=1` immunity from decay.
+4. **Core memory promotion:** Top sqrt(total_nodes) by composite fitness get `node_type='core_memory'` and `permanent=1`. (Seed and core_memory ingest also sets `permanent=1` directly; promotion is the runtime path that adds new ones.)
 5. **Logging:** Every operation logged for analysis and auditability.
 
 ### Self-similarity Across Scales:
@@ -442,7 +446,7 @@ Connect isolated thought chains, deduplicate, garbage collect, and consolidate. 
 
 ### Graph Statistics (Author's Personal Graph)
 - **3,064 thought nodes** across 9 distinct types (fact, insight, observation, etc.)
-- **6,122 derivation edges** with weight and confidence
+- **6,122 derivation edges** with weight and reasoning
 - **Domain separation**: user/ai domains in single graph
 - **288/288 tests passing**: comprehensive coverage
 - **sqlite-vec integration**: O(log N) vector search
