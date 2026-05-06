@@ -7,7 +7,7 @@
 [![Downloads/month](https://static.pepy.tech/badge/cashew-brain/month)](https://pepy.tech/project/cashew-brain)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-The name comes from asking "do cats eat cashews?" — a question I asked my aunt as a 10-year-old kid in India, because the cashews were left open in the kitchen and I knew stray cats sneak into homes to eat food. My family still brings it up every time I visit. I never stopped asking questions. This system doesn't either — autonomous think cycles find connections you didn't know existed.
+The name comes from asking "do cats eat cashews?", a question I asked my aunt as a 10-year-old kid in India, because the cashews were left open in the kitchen and I knew stray cats sneak into homes to eat food. My family still brings it up every time I visit. I never stopped asking questions. This system doesn't either: autonomous think cycles find connections you didn't know existed.
 
 📝 **Blog post:** [I Built My AI a Brain and It Started Thinking for Itself](https://open.substack.com/pub/rajkripaldanday/p/i-built-my-ai-a-brain-and-it-started)
 
@@ -18,12 +18,12 @@ The name comes from asking "do cats eat cashews?" — a question I asked my aunt
 ## What It Does
 
 - **Remembers across sessions.** Decisions, patterns, relationships, and project context survive compaction and restart. Your agent picks up where it left off.
-- **Learns autonomously.** Think cycles find cross-domain connections without prompting. A pattern in your work habits connects to a pattern in your communication style — the brain surfaces it.
+- **Learns autonomously.** Think cycles find cross-domain connections without prompting. A pattern in your work habits connects to a pattern in your communication style, and the brain surfaces it.
 - **Stays fast at scale.** sqlite-vec for O(log N) retrieval, recursive BFS graph walk, constant context cost regardless of graph size. 3,000 nodes costs the same as 300.
 
 ## What If Forgetting Is the Intelligence?
 
-Cashew doesn't hoard everything. Organic decay means low-value knowledge fades naturally while important patterns strengthen through use. No manual curation needed — the graph self-organizes through cross-linking and natural selection. See [PHILOSOPHY.md](PHILOSOPHY.md) for the full manifesto.
+Cashew doesn't hoard everything. Organic decay means low-value knowledge fades naturally while important patterns strengthen through use. No manual curation needed: the graph self-organizes through cross-linking and natural selection. See [PHILOSOPHY.md](PHILOSOPHY.md) for the full manifesto.
 
 ## Quick Start
 
@@ -58,11 +58,11 @@ cp -r skills/claude-code/ ~/.claude/skills/cashew/
 
 This gives you the `/cashew` slash command and automatic context loading. Claude Code will query your brain before answering substantive questions and extract knowledge during conversations.
 
-Or if you cloned the repo, just open it in Claude Code — the `.claude/skills/cashew/` directory auto-discovers.
+Or if you cloned the repo, just open it in Claude Code. The `.claude/skills/cashew/` directory auto-discovers.
 
 ### OpenClaw
 
-Install as an OpenClaw skill for full automation — cron jobs handle extraction, think cycles, and dashboard deployment without manual intervention. See `skills/openclaw/SKILL.md` for setup instructions.
+Install as an OpenClaw skill for full automation. Cron jobs handle extraction, think cycles, and dashboard deployment without manual intervention. See `skills/openclaw/SKILL.md` for setup instructions.
 
 ### Ingest Sources
 
@@ -74,7 +74,7 @@ Cashew ships with built-in extractors for common knowledge sources. Each one han
 cashew ingest obsidian /path/to/vault
 ```
 
-Parses YAML frontmatter (tags, aliases, dates), follows `[[wikilinks]]` to create edges between related notes, respects `.obsidianignore`, and auto-detects domains from your folder structure. Your second brain becomes your AI's brain.
+Parses YAML frontmatter (tags, aliases, dates), follows `[[wikilinks]]` to create edges between related notes, respects `.obsidianignore`, and auto-detects domains from your folder structure.
 
 **OpenClaw session logs:**
 
@@ -118,8 +118,8 @@ context = retriever.generate_context(hints=["work", "projects"])
 - **Single SQLite file.** No external servers, no separate indexes. Your entire brain is one portable file.
 - **Local embeddings.** all-MiniLM-L6-v2 (384 dims). Downloads ~500MB on first run, then runs locally forever. No API calls for retrieval.
 - **LLM for intelligence.** Extraction and think cycles need an LLM (Claude, GPT, etc). Retrieval and storage don't. Bring your own via `model_fn` parameter or API key.
-- **Retrieval.** sqlite-vec seeds (O(log N) nearest neighbor) → recursive BFS graph walk (seeds=5, picks_per_hop=3, max_depth=3). The graph's organic connectivity provides implicit hierarchy — no synthetic summary nodes needed.
-- **Organic decay.** Nodes that aren't accessed lose fitness over time. Low-fitness nodes get marked decayed and excluded from retrieval. The graph forgets what doesn't matter.
+- **Retrieval.** sqlite-vec seeds (O(log N) nearest neighbor) → recursive BFS graph walk (seeds=5, picks_per_hop=3, max_depth=3). The graph's organic connectivity provides implicit hierarchy, so no synthetic summary nodes are needed.
+- **Organic decay.** Nodes that aren't accessed lose fitness over time. Low-fitness nodes get marked decayed and excluded from retrieval.
 
 ## CLI Reference
 
@@ -147,7 +147,7 @@ A minimalist browser UI over the brain. The full graph renders as a canvas force
 
 ## Warm Daemon
 
-Every CLI invocation normally loads the sentence-transformer model from scratch (~2s cold start). For a responsive query loop, run the warm daemon once and every call routes through it automatically — no code changes in consumers.
+Every CLI invocation normally loads the sentence-transformer model from scratch (~2s cold start). For a responsive query loop, run the warm daemon once and every call routes through it automatically, with no code changes in consumers.
 
 ```bash
 # Foreground (development)
@@ -159,7 +159,7 @@ cp packaging/com.cashew.daemon.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.cashew.daemon.plist
 ```
 
-The daemon listens on `~/.cashew/daemon.sock`. A content-hash embedding cache at `~/.cashew/embedding_cache.db` makes repeat embeds free, keyed by `(model_version, sha256(text))` — deterministic, so no invalidation logic is needed beyond model swaps.
+The daemon listens on `~/.cashew/daemon.sock`. A content-hash embedding cache at `~/.cashew/embedding_cache.db` makes repeat embeds free, keyed by `(model_version, sha256(text))`. Deterministic by construction, so no invalidation logic is needed beyond model swaps.
 
 Every entry point (`context`, `extract`, `think`, sleep cycles) checks the cache first, then the daemon, then falls back to in-process embedding if the daemon is down. Clients never need to know which path served them.
 
@@ -185,11 +185,11 @@ pip install -e ".[dev]"
 pytest
 ```
 
-See [CLAUDE.md](CLAUDE.md) for the developer guide — architecture, schema, conventions, and engineering philosophy.
+See [CLAUDE.md](CLAUDE.md) for the developer guide: architecture, schema, conventions, and engineering philosophy.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
 
 ---
 
