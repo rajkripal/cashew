@@ -204,6 +204,95 @@ def get_graph_stats(db_path):
         'near_duplicate_count': near_duplicate_count
     }
 
+def get_decay_audit_stats(db_path, window_days=7):
+    """Summarize the decay_audit table over the last `window_days` days.
+
+    Returns a dict with totals, by-reason / by-node_type / by-source_file
+    distributions, and a `today_anomaly` flag if today's count is more than
+    2x the trailing average daily rate over the window.
+    """
+    import sqlite3 as _sql
+    from collections import Counter
+
+    out = {
+        'window_days': window_days,
+        'total_events': 0,
+        'by_reason': {},
+        'by_node_type_top5': {},
+        'by_source_file_top5': {},
+        'today_count': 0,
+        'avg_daily': 0.0,
+        'today_anomaly': False,
+    }
+
+    conn = _sql.connect(db_path)
+    try:
+        cur = conn.cursor()
+        # Make sure the table exists; older DBs without it just produce zeros.
+        cur.execute("""
+            SELECT name FROM sqlite_master
+            WHERE type='table' AND name='decay_audit'
+        """)
+        if not cur.fetchone():
+            return out
+
+        cutoff_expr = f"datetime('now', '-{int(window_days)} days')"
+        cur.execute(
+            f"SELECT decay_reason, node_type, source_file, decay_timestamp "
+            f"FROM decay_audit WHERE decay_timestamp >= {cutoff_expr}"
+        )
+        rows = cur.fetchall()
+
+        out['total_events'] = len(rows)
+        reasons = Counter()
+        types = Counter()
+        sources = Counter()
+        today_str = datetime.utcnow().strftime("%Y-%m-%d")
+        today_count = 0
+        for reason, ntype, src, ts in rows:
+            reasons[reason or '(none)'] += 1
+            types[ntype or '(none)'] += 1
+            sources[src or '(none)'] += 1
+            if ts and ts.startswith(today_str):
+                today_count += 1
+
+        out['by_reason'] = dict(reasons.most_common())
+        out['by_node_type_top5'] = dict(types.most_common(5))
+        out['by_source_file_top5'] = dict(sources.most_common(5))
+        out['today_count'] = today_count
+        avg_daily = (out['total_events'] / window_days) if window_days else 0.0
+        out['avg_daily'] = round(avg_daily, 2)
+        # Anomaly: today > 2x trailing avg, and we have at least a small sample.
+        out['today_anomaly'] = bool(
+            avg_daily > 0 and today_count > 2 * avg_daily and out['total_events'] >= 5
+        )
+    finally:
+        conn.close()
+
+    return out
+
+
+def print_decay_audit_section(stats):
+    """Pretty-print the decay-audit summary."""
+    print("\n=== Decay Audit (last {}d) ===".format(stats['window_days']))
+    print(f"  total events: {stats['total_events']} "
+          f"(today: {stats['today_count']}, avg/day: {stats['avg_daily']})")
+    if stats['today_anomaly']:
+        print("  ANOMALY: today's decay count is more than 2x the 7-day avg")
+    if stats['by_reason']:
+        print("  by reason:")
+        for k, v in stats['by_reason'].items():
+            print(f"    {k}: {v}")
+    if stats['by_node_type_top5']:
+        print("  top node_type:")
+        for k, v in stats['by_node_type_top5'].items():
+            print(f"    {k}: {v}")
+    if stats['by_source_file_top5']:
+        print("  top source_file:")
+        for k, v in stats['by_source_file_top5'].items():
+            print(f"    {k}: {v}")
+
+
 def save_metrics(retrieval_results, graph_stats, metrics_file):
     """Save metrics to JSONL file."""
     timestamp = datetime.now().isoformat()
@@ -460,7 +549,14 @@ def main():
         # Save metrics
         print("  Saving metrics...", file=sys.stderr)
         metrics_entry = save_metrics(retrieval_results, graph_stats, args.metrics_file)
-        
+
+        # Decay-audit section
+        try:
+            decay_stats = get_decay_audit_stats(args.db_path, window_days=7)
+            print_decay_audit_section(decay_stats)
+        except Exception as e:
+            print(f"Warning: decay_audit section failed: {e}", file=sys.stderr)
+
         print("✅ Metrics collection complete", file=sys.stderr)
         print(f"📊 Results: {metrics_entry['retrieval']['successful_queries']}/{metrics_entry['retrieval']['total_queries']} queries successful, avg {metrics_entry['retrieval']['avg_nodes']} nodes/query", file=sys.stderr)
         

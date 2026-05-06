@@ -451,6 +451,44 @@ def cmd_ingest(args):
         return 1
 
 
+def cmd_audit(args):
+    """Decay-audit operations (gc retention pruning, peek)."""
+    from core.decay_audit import gc_decay_audit
+
+    db_path = args.db
+    sub = getattr(args, "audit_action", None)
+
+    if sub == "gc":
+        retention = args.retention_days
+        conn = sqlite3.connect(db_path)
+        try:
+            pruned = gc_decay_audit(conn, retention_days=retention)
+            conn.commit()
+        finally:
+            conn.close()
+        print(f"decay_audit gc: pruned {pruned} rows older than {retention}d")
+        return 0
+
+    if sub == "show":
+        conn = sqlite3.connect(db_path)
+        try:
+            rows = conn.execute(
+                "SELECT decay_timestamp, decay_reason, node_type, source_file, "
+                "       substr(content_summary, 1, 60) "
+                "FROM decay_audit "
+                "ORDER BY decay_timestamp DESC LIMIT ?",
+                (args.limit,),
+            ).fetchall()
+        finally:
+            conn.close()
+        for r in rows:
+            print("\t".join("" if x is None else str(x) for x in r))
+        return 0
+
+    print("usage: cashew audit {gc|show} [...]")
+    return 2
+
+
 def cmd_dashboard(args):
     """Launch the dashboard HTTP+SSE server."""
     import importlib.util
@@ -612,6 +650,16 @@ Examples:
     cs_parser = subparsers.add_parser('complete-sleep', help='Full sleep with hierarchy evolution')
     cs_parser.add_argument('--no-evolution', action='store_true', help='Skip hierarchy evolution')
     cs_parser.set_defaults(func=cmd_complete_sleep)
+
+    # audit command (decay_audit table operations)
+    audit_parser = subparsers.add_parser('audit', help='Decay audit operations (gc, show)')
+    audit_sub = audit_parser.add_subparsers(dest='audit_action')
+    audit_gc = audit_sub.add_parser('gc', help='Prune decay_audit rows past retention')
+    audit_gc.add_argument('--retention-days', type=int, default=7,
+                          help='Keep rows newer than this many days (default 7)')
+    audit_show = audit_sub.add_parser('show', help='Show recent decay_audit rows')
+    audit_show.add_argument('--limit', type=int, default=20)
+    audit_parser.set_defaults(func=cmd_audit)
 
     serve_parser = subparsers.add_parser('serve', help='Run the warm daemon (keeps model + sqlite-vec loaded)')
     serve_parser.add_argument('--socket', help='Unix socket path (default: $CASHEW_SOCKET or ~/.cashew/daemon.sock)')
