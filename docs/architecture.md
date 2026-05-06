@@ -11,16 +11,12 @@ Cashew implements a flat-graph retrieval system that uses recursive BFS (Breadth
 3. **Organic connectivity is the index** - Cross-linked relationships provide implicit hierarchy
 4. **Emergent structure** - No synthetic categories; organization forms through cross-linking and decay
 
-## Current System State (April 2026, Author's Personal Graph)
+## Current System State
 
-- **3,064 thought nodes** across 9 distinct node types
-- **6,122 derivation edges** with weight scores
-
-- **Flat graph structure** with organic cross-linking (0 hotspots)
+- A few thousand thought nodes and derivation edges in the author's personal graph; new installs start empty and grow organically.
+- **Flat graph structure** with organic cross-linking, no hotspots layer
 - **O(log N) retrieval** via sqlite-vec seeding + recursive BFS traversal
 - **Domain separation** with cross-domain insight generation
-
-*Note: These statistics reflect the author's personal knowledge graph as of April 2026. New users start with an empty graph.*
 
 ## Recursive BFS Retrieval System
 
@@ -119,10 +115,13 @@ The sleep protocol (`core/sleep.py`) maintains graph structure through organic p
 - Builds the organic connectivity that BFS traversal exploits
 
 ### Decay and Fitness Scoring
-- Computes composite fitness scores based on access count, edge degree, and age
-- Marks low-fitness nodes as `decayed=1` (excluded from retrieval)
-- Think-cycle-generated nodes face 1.5x higher decay threshold
-- Preserves high-value knowledge while pruning noise
+
+Two-stage protection model (per PHILOSOPHY.md §9):
+
+1. **Deterministic survival gate**: any node with `access_count > 0 OR edge_degree > 0` survives the cheap pass. If it has been retrieved at least once or is connected to anything, it stays.
+2. **Fitness scoring** for everything else: `composite_fitness = branching_factor + cross_links * 0.5 + derivation_depth * 0.1` (see `core/sleep.py::calculate_node_metrics`). Nodes below `gc_threshold` get marked `decayed=1` (excluded from retrieval) or hard-deleted, depending on `gc_mode`.
+
+Nodes whose `source_file` contains `think_cycle` are scored against `gc_threshold * gc_think_cycle_penalty` (default 1.5x), so think-cycle output has to clear a higher bar to survive. Permanent nodes (seeds, core memories) are protected by the `permanent=1` flag and skip GC entirely.
 
 ### Deduplication
 - Identifies near-duplicate nodes (>0.82 similarity)
@@ -201,7 +200,7 @@ python3 scripts/cashew_context.py think
 - **Deduplication**: O(N log N) for similarity clustering
 
 ### Storage Efficiency
-- **Database size**: ~16MB for 3,064 nodes (as of April 2026, author's personal graph)
+- **Database size**: roughly a few MB per thousand nodes in practice (single SQLite file, embeddings inline)
 - **Embedding vectors**: Local sentence-transformers, no API dependencies
 - **sqlite-vec overhead**: Minimal additional storage for accelerated search
 - **No synthetic nodes**: 100% of storage used for real knowledge
