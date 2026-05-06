@@ -1,5 +1,7 @@
 # Research Notes - Session Integration Best Practices
 
+> **Scope note:** these are research notes from external papers and production-system writeups reviewed during cashew's design phase. They describe patterns from the literature (GraphRAG, ConversationKGMemory, hybrid retrieval), **not** what cashew actually implements. Specifically, things like learned ranking weights, temporal-decay coefficients in the score function, and TF-IDF fallbacks are paper concepts, not cashew behavior. For the implemented retrieval algorithm see [`docs/architecture.md`](architecture.md), and for the survival/decay model see PHILOSOPHY.md §9.
+
 ## 1. Knowledge Graph Retrieval Ranking
 
 ### Key Insights from Production Systems
