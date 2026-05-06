@@ -2,6 +2,11 @@
 
 **Persistent thought-graph memory for AI agents.**
 
+[![PyPI](https://img.shields.io/pypi/v/cashew-brain)](https://pypi.org/project/cashew-brain/)
+[![Downloads](https://static.pepy.tech/badge/cashew-brain)](https://pepy.tech/project/cashew-brain)
+[![Downloads/month](https://static.pepy.tech/badge/cashew-brain/month)](https://pepy.tech/project/cashew-brain)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 The name comes from asking "do cats eat cashews?" — a question I asked my aunt as a 10-year-old kid in India, because the cashews were left open in the kitchen and I knew stray cats sneak into homes to eat food. My family still brings it up every time I visit. I never stopped asking questions. This system doesn't either — autonomous think cycles find connections you didn't know existed.
 
 📝 **Blog post:** [I Built My AI a Brain and It Started Thinking for Itself](https://open.substack.com/pub/rajkripaldanday/p/i-built-my-ai-a-brain-and-it-started)
