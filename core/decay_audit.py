@@ -22,23 +22,10 @@ DECAY_REASONS = (
     "gc_fitness",             # core/sleep.py garbage_collect fitness prune
 )
 
-_PRIVATE_TAG = "vault:private"
-_PRIVATE_PLACEHOLDER = "[private]"
 _SUMMARY_LEN = 80
 
 
-def _is_private(tags: Optional[str]) -> bool:
-    if not tags:
-        return False
-    # tags column is freeform comma/space-separated. Match whole token to avoid
-    # false-positives on a substring like "vault:private-draft".
-    parts = [p.strip() for p in tags.replace(",", " ").split()]
-    return _PRIVATE_TAG in parts
-
-
-def _summary(content: Optional[str], private: bool) -> str:
-    if private:
-        return _PRIVATE_PLACEHOLDER
+def _summary(content: Optional[str]) -> str:
     if not content:
         return ""
     s = content.strip().replace("\n", " ")
@@ -54,13 +41,11 @@ def log_decay_event(
 ) -> None:
     """Insert one decay_audit row for `node_id`.
 
-    Reads node fields (content, tags, source_file, domain, node_type,
+    Reads node fields (content, source_file, domain, node_type,
     access_count, last_accessed) from `thought_nodes` on the same connection
     so callers don't have to re-fetch. Caller is responsible for committing.
 
     `related_nodes` and `metadata` are stored as JSON strings if provided.
-    Privacy: if tags contain `vault:private`, content_summary is replaced
-    with the literal "[private]". All other fields still get logged.
     """
     if reason not in DECAY_REASONS:
         # Don't silently accept typos — they break the metrics distribution.
@@ -77,27 +62,20 @@ def log_decay_event(
     ).fetchone()
     if not has_audit:
         return
-    # Older fixtures (and partially-migrated brains) may not have `tags`.
-    # Probe the column list once and build the SELECT defensively.
-    cols = {r[1] for r in cursor.execute("PRAGMA table_info(thought_nodes)").fetchall()}
-    has_tags = "tags" in cols
-    select_cols = "content, {tags}, source_file, domain, node_type, access_count, last_accessed".format(
-        tags="tags" if has_tags else "NULL AS tags"
-    )
     cursor.execute(
-        f"SELECT {select_cols} FROM thought_nodes WHERE id = ?",
+        "SELECT content, source_file, domain, node_type, access_count, last_accessed "
+        "FROM thought_nodes WHERE id = ?",
         (node_id,),
     )
     row = cursor.fetchone()
     if row is None:
         # Node was deleted (hard-GC path) before we could audit. Log a stub
         # row so the event isn't lost.
-        content = tags = source_file = domain = node_type = last_accessed = None
+        content = source_file = domain = node_type = last_accessed = None
         access_count = None
     else:
-        content, tags, source_file, domain, node_type, access_count, last_accessed = row
+        content, source_file, domain, node_type, access_count, last_accessed = row
 
-    private = _is_private(tags)
     cursor.execute(
         """
         INSERT INTO decay_audit (
@@ -109,7 +87,7 @@ def log_decay_event(
         """,
         (
             node_id,
-            _summary(content, private),
+            _summary(content),
             reason,
             None,  # confidence field is dead in cashew; kept for schema compat
             access_count,
