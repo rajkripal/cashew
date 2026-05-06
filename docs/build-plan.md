@@ -1,4 +1,4 @@
-# Cashew Brain — Build Plan
+# Cashew Brain: Build Plan
 
 > **Status:** historical. This was the original Q1 2026 build plan. All six phases shipped between March and April 2026 (initial migration and core modules landed 2026-03-08, extractor plugin interface 2026-03-18, and Phase 6 integration via the OpenClaw skill plus later Claude Code skill packages). The doc is preserved as the design intent it was written under; for current behavior see DESIGN.md, PHILOSOPHY.md, and docs/architecture.md.
 
@@ -100,7 +100,7 @@ def test_retrieval_vs_memory_search():
   1. LLM call: "Extract key decisions, observations, beliefs, insights from this conversation"
   2. For each: create node with type, domain, content
   3. Embed new node (for later retrieval)
-  4. Nodes land ISOLATED — no edges created yet
+  4. Nodes land ISOLATED (no edges created yet)
   5. Flag contradictions for sleep cycle
 - Returns list of new node IDs
 - **Edge creation happens during sleep, not here** (original design: daytime = fragments, sleep = consolidation)
@@ -118,7 +118,7 @@ python3 -m pytest tests/test_extraction.py
 
 **Decision (from original design):**
 - Extract every N minutes if there's stuff to extract. Lightweight scan. Don't wait for compaction.
-- Edge creation happens during SLEEP, not extraction. New nodes land isolated during the day. Sleep rewires — finds nearest neighbors, creates edges, runs think cycles on new clusters, GCs noise. Biologically honest: daytime = fragments, sleep = consolidation.
+- Edge creation happens during SLEEP, not extraction. New nodes land isolated during the day. Sleep rewires: finds nearest neighbors, creates edges, runs think cycles on new clusters, GCs noise. Biologically honest: daytime = fragments, sleep = consolidation.
 
 **Files:** `core/extraction.py`, `tests/test_extraction.py`
 
@@ -166,8 +166,8 @@ python3 -m pytest tests/test_think_cycle.py
 5. Can I add a custom tool (like `memory_search` but `cashew_retrieve`)?
 
 **Two approaches:**
-- **A: Skill-based** — I explicitly call `cashew retrieve "query"` when I need context. Simple, testable, no OpenClaw core changes needed. I control when it's used.
-- **B: Hook-based** — Automatically runs on every session start/end. More powerful, but requires OpenClaw integration. Harder to test. Risk of breaking things.
+- **A: Skill-based**. I explicitly call `cashew retrieve "query"` when I need context. Simple, testable, no OpenClaw core changes needed. I control when it's used.
+- **B: Hook-based**. Automatically runs on every session start/end. More powerful, but requires OpenClaw integration. Harder to test. Risk of breaking things.
 
 **Decision (from original design):** Option A. Skill-based. Period. Don't get "comfortable" with A and then creep to B. A is the design. I call cashew explicitly when I need context.
 
@@ -190,9 +190,9 @@ python3 -m pytest tests/test_think_cycle.py
 - Graph growth over N conversations (does it stay healthy or explode?)
 
 ### Validation Tests (human eval, periodic)
-- "Does the retrieved context feel more relevant?" — User scores 1-5
-- "Did the think cycle produce genuine insights?" — User confirms/denies
-- "Am I responding better with cashew context?" — qualitative over 2 weeks
+- "Does the retrieved context feel more relevant?" (User scores 1-5)
+- "Did the think cycle produce genuine insights?" (User confirms/denies)
+- "Am I responding better with cashew context?" (qualitative over 2 weeks)
 
 ### Regression Tests
 - Response quality shouldn't degrade during transition
@@ -202,11 +202,11 @@ python3 -m pytest tests/test_think_cycle.py
 ---
 
 ## Dependencies
-- `sentence-transformers` — local embeddings (pip install)
-- `numpy` — vector operations (already installed?)
-- `anthropic` — LLM calls for extraction/think cycles (already installed)
-- `sqlite3` — graph storage (stdlib)
-- `pytest` — testing (pip install)
+- `sentence-transformers`: local embeddings (pip install)
+- `numpy`: vector operations (already installed?)
+- `anthropic`: LLM calls for extraction/think cycles (already installed)
+- `sqlite3`: graph storage (stdlib)
+- `pytest`: testing (pip install)
 
 ## Timeline Estimate
 - Phase 1 (migration): 1 session
