@@ -41,7 +41,9 @@ class BaseExtractor(ABC):
         Returns:
             List of node dicts, each with keys:
                 - content (str, required): The knowledge statement
-                - type (str, required): Node type (belief, insight, decision, observation, fact)
+                - type (str, required): Node type. Must be one of the names
+                  defined in core.config (config.node_type_names). The full
+                  set is the canonical taxonomy, do not hand-roll it.
                 - domain (str, optional): Domain classification
                 - source_file (str, optional): Source identifier
         """
