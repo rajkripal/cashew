@@ -184,10 +184,10 @@ def embed_nodes(db_path: str, batch_size: int = 100) -> dict:
                 vector_bytes = embeddings[j].astype(np.float32).tobytes()
                 
                 cursor.execute("""
-                    INSERT OR REPLACE INTO embeddings 
+                    INSERT OR REPLACE INTO embeddings
                     (node_id, vector, model, updated_at)
                     VALUES (?, ?, ?, ?)
-                """, (node_id, vector_bytes, "all-MiniLM-L6-v2", datetime.now().isoformat()))
+                """, (node_id, vector_bytes, service.model, datetime.now().isoformat()))
                 
                 # Dual-write to vec_embeddings for O(log N) search
                 if has_vec:
