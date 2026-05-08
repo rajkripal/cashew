@@ -10,23 +10,38 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 
-# Issue #12: LLMs tag statements at extraction time with one of these six
-# types. The parser strips the prefix and returns the type alongside the
-# statement text. Untagged lines fall back to a per-extractor classifier so
-# older prompts and odd LLM output still produce typed nodes.
+# LLMs tag statements at extraction time with one of the configured node
+# types. The regex is built from core.config so adding a type in config
+# automatically makes it valid here. Untagged lines fall back to a
+# per-extractor classifier so older prompts still produce typed nodes.
+from core.config import config as _cashew_config
+
+_extraction_types = list(_cashew_config._node_type_map.keys())
 TYPED_STATEMENT_RE = re.compile(
-    r'^\[(fact|observation|insight|decision|commitment|belief)\]\s+(.+)$',
+    r'^\[(' + '|'.join(re.escape(t) for t in _extraction_types) + r')\]\s+(.+)$',
     re.IGNORECASE,
 )
 
+# Description text is richer here than the one-liners in config because
+# extractors emit format-strict prompts. Keep this hand-tuned, but the
+# *set* of types is derived from config above. If config grows a new
+# type, add a one-line description here in the same order.
+_TYPE_DESCRIPTIONS = {
+    "fact": "concrete verifiable context-independent info",
+    "observation": "something noticed in context, may be situational",
+    "insight": "non-obvious connection requiring reasoning",
+    "decision": "choice made between alternatives",
+    "commitment": "stated intention or planned action",
+    "belief": "held opinion, not objectively verifiable",
+}
+
+_lines = [
+    f"[{t}] {_TYPE_DESCRIPTIONS.get(t, _cashew_config._node_type_map.get(t, ''))}"
+    for t in _extraction_types
+]
 TYPE_TAGGING_INSTRUCTION = (
     "Output one statement per line. Prefix each with a type tag.\n"
-    "Types: [fact] concrete verifiable context-independent info | "
-    "[observation] something noticed in context, may be situational | "
-    "[insight] non-obvious connection requiring reasoning | "
-    "[decision] choice made between alternatives | "
-    "[commitment] stated intention or planned action | "
-    "[belief] held opinion, not objectively verifiable\n"
+    "Types: " + " | ".join(_lines) + "\n"
     "When uncertain, use [observation].\n"
     "Output typed statements only, one per line."
 )

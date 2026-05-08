@@ -927,7 +927,7 @@ def _migrate_extract_file(db_path: str, content: str, filename: str, session_id:
     import hashlib
     from datetime import datetime, timezone
     from core.embeddings import ensure_schema, embed_nodes
-    from core.config import get_ai_domain, get_user_domain
+    from core.config import get_ai_domain, get_user_domain, config
 
     ensure_schema(db_path)
 
@@ -935,22 +935,25 @@ def _migrate_extract_file(db_path: str, content: str, filename: str, session_id:
     if model_fn is None:
         print(f"   📝 CLI extraction - using heuristic method (LLM extraction available via claude_code backend)")
         return _migrate_extract_heuristic(db_path, content, filename, session_id)
-    
+
     print(f"   🤖 LLM extraction - using smart extraction via claude_code backend")
-    
-    # Use LLM to extract semantic knowledge
-    prompt = f"""Extract knowledge from this document into structured facts, insights, observations, and decisions.
+
+    # Type taxonomy comes from config so the prompt stays in sync with the
+    # canonical node_type list. Hand-rolling the list here previously caused
+    # the "commitment" type to be silently absent for months despite being
+    # defined in core.config defaults.
+    prompt = f"""Extract knowledge from this document.
 
 For each item, output a JSON object on its own line with fields:
-- "content": the knowledge statement (clear, self-contained, pattern-level — not raw quotes)
-- "type": one of "fact", "observation", "insight", "decision", "belief"
+- "content": the knowledge statement (clear, self-contained, pattern-level, not raw quotes)
+- "type": one of the types below
 
-Focus on:
-- Decisions and their reasoning
-- Patterns and behavioral observations  
-- Insights that connect multiple ideas
-- Facts about people, projects, relationships
-- Beliefs and preferences
+Valid types:
+{config.node_type_prompt_fragment}
+
+Be aggressive about capturing commitments. Anything anyone said they
+would do, including operational commitments by the assistant itself,
+must be tagged type=commitment.
 
 Skip: transient logistics, greetings, trivial statements.
 Output ONLY JSON lines, no other text.
