@@ -63,6 +63,23 @@ _KNOWN_DIMS = {
 }
 
 
+def resolve_embedding_dim(model_name: Optional[str] = None) -> int:
+    """Resolve the embedding dimension for ``model_name``.
+
+    Checks the known-dims table first (cheap, no model load). Falls back to
+    constructing a LocalBackend and probing the loaded SentenceTransformer.
+    Used by callers (e.g. sqlite-vec table creation in core/embeddings.py)
+    that need the dim before any embed call has happened. Single source of
+    truth: keep this in sync with _KNOWN_DIMS rather than duplicating the
+    table elsewhere.
+    """
+    name = model_name or _resolve_default_model()
+    if name in _KNOWN_DIMS:
+        return _KNOWN_DIMS[name]
+    # Unknown model — probe by loading it. LocalBackend.dim handles this.
+    return LocalBackend(name).dim
+
+
 TextLike = Union[str, Sequence[str]]
 
 
