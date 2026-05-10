@@ -4,6 +4,7 @@ Cashew Sleep Protocol
 Memory consolidation, cross-linking, garbage collection, and core memory promotion
 """
 
+import re
 import sqlite3
 import json
 import math
@@ -29,6 +30,58 @@ class SleepEvent:
     timestamp: str
     event_type: str  # "cross_link", "dedup", "dream", "gc_decay", "core_promotion", "core_demotion"
     details: dict
+
+# Temporal anchor detection — used to guard cluster merge against losing
+# date/weekday/relative-time information during LLM synthesis.
+_MONTHS = (
+    "january|february|march|april|may|june|july|august|"
+    "september|october|november|december|"
+    "jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec"
+)
+_WEEKDAYS = "monday|tuesday|wednesday|thursday|friday|saturday|sunday"
+_RELATIVE = (
+    r"yesterday|today|tonight|tomorrow|"
+    r"(?:last|next|this|past|coming)\s+(?:week|month|year|"
+    + _WEEKDAYS + r")|"
+    r"(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|"
+    r"eleven|twelve|few|several|couple\s+of)\s+"
+    r"(?:minute|hour|day|week|month|year)s?\s+ago|"
+    r"in\s+(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+"
+    r"(?:minute|hour|day|week|month|year)s?"
+)
+_TEMPORAL_PATTERNS = [
+    re.compile(r"\b\d{4}-\d{2}-\d{2}\b"),                      # ISO date
+    re.compile(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b"),                # 3/5/2026
+    re.compile(rf"\b(?:{_MONTHS})\b\.?\s*\d{{1,2}}(?:,\s*\d{{4}})?", re.IGNORECASE),
+    re.compile(rf"\b\d{{1,2}}\s+(?:{_MONTHS})\b", re.IGNORECASE),
+    re.compile(rf"\b(?:{_MONTHS})\s+\d{{4}}\b", re.IGNORECASE),
+    re.compile(rf"\b(?:{_WEEKDAYS})\b", re.IGNORECASE),
+    re.compile(r"\b(?:19|20)\d{2}\b"),                         # bare year
+    re.compile(rf"\b(?:{_RELATIVE})\b", re.IGNORECASE),
+]
+
+
+def _collect_temporal_anchors(snippets: List[str]) -> List[str]:
+    """Return distinct lowercase temporal anchor strings found across snippets."""
+    seen: Set[str] = set()
+    for s in snippets or ():
+        if not s:
+            continue
+        for pat in _TEMPORAL_PATTERNS:
+            for m in pat.findall(s):
+                tok = m.lower().strip()
+                if tok:
+                    seen.add(tok)
+    return list(seen)
+
+
+def _has_any_anchor(text: str, anchors: List[str]) -> bool:
+    """True if `text` (case-insensitive) contains at least one anchor string."""
+    if not text or not anchors:
+        return False
+    low = text.lower()
+    return any(a in low for a in anchors)
+
 
 @dataclass
 class CrossLinkCandidate:
@@ -396,10 +449,18 @@ class SleepProtocol:
 
         With model_fn, asks the LLM for a single-line synthesis. Falls back to
         the longest member's content on None or failure (degraded but not blank).
+
+        Temporal-anchor preservation: any date, weekday, month, year, or relative
+        time phrase ("last Tuesday", "in March", "two weeks ago") that appears in
+        a source snippet must survive into the merged statement. If the LLM
+        synthesis drops every temporal anchor present in the inputs, fall back to
+        the longest source rather than emit a temporally bleached merge.
         """
         longest = max(cluster_contents, key=lambda s: len(s or "")) if cluster_contents else ""
         if model_fn is None:
             return longest
+
+        source_anchors = _collect_temporal_anchors(cluster_contents)
 
         snippet_block = "\n\n".join(
             f"SNIPPET {i+1} ({t}):\n{c}"
@@ -412,6 +473,10 @@ class SleepProtocol:
             "express. Preserve the strongest, most specific phrasing. Do not "
             "average or hedge. If they disagree on detail, keep the version that "
             "is most concrete.\n\n"
+            "Critical: preserve every temporal anchor (specific dates, weekdays, "
+            "months, years, relative times like 'last Tuesday' or 'two weeks ago') "
+            "that appears in any snippet. Temporal context is load-bearing — "
+            "never drop it for brevity.\n\n"
             "Rules: no preamble, no headers, no markdown. Output only the "
             "consolidated statement, on a single line.\n\n"
             f"{snippet_block}\n"
@@ -421,6 +486,12 @@ class SleepProtocol:
             if response:
                 candidate = response.strip().splitlines()[0].strip()
                 if len(candidate) >= 10:
+                    if source_anchors and not _has_any_anchor(candidate, source_anchors):
+                        logger.warning(
+                            "Cluster synthesis dropped all temporal anchors; "
+                            "falling back to longest source to preserve them."
+                        )
+                        return longest
                     return candidate
         except Exception as e:
             logger.warning(f"Cluster LLM synthesis failed, falling back: {e}")
