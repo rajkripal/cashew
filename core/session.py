@@ -589,8 +589,8 @@ For each item, assign:
 
 BAD: "They discussed embeddings" (meta-comment)
 BAD: "The conversation covered several topics" (summary)
-GOOD: "Otto is a schnauzer — prefers Teddy over Chucky/Piggy"
-GOOD: "Echeveria subsessilis self-propagated in an Erlenmeyer flask — low-demand plant matching AuDHD PDA rhythms"
+GOOD: "Alice prefers async standups over morning syncs — finds them less overwhelming than real-time meetings"
+GOOD: "Project Orion Q3 deadline pushed back by two months due to a late GraphQL migration dependency"
 
 Personal knowledge (preferences, projects, people, infrastructure, decisions)
 should be weighted above system-internal discussion. Architecture details
