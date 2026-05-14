@@ -742,8 +742,13 @@ For each item, assign:
 
 BAD: "They discussed embeddings" (meta-comment)
 BAD: "The conversation covered several topics" (summary)
-GOOD: "Local embedding models (all-MiniLM-L6-v2) are sufficient for graphs under 100K nodes — brute force cosine similarity stays under 50ms"
-GOOD: "Extraction should be triggered by context fullness monitoring, not left to manual memory — don't let compaction happen to you"
+GOOD: "Alice prefers async standups over morning syncs — finds them less overwhelming than real-time meetings"
+GOOD: "Project Orion Q3 deadline pushed back by two months due to a late GraphQL migration dependency"
+
+Personal knowledge (preferences, projects, people, infrastructure, decisions)
+should be weighted above system-internal discussion. Architecture details
+belong in the '{get_ai_domain()}' domain when they describe the system itself,
+even if discussed collaboratively with the user.
 
 Respond with ONLY a JSON array. No markdown, no explanation, no code fences.
 
