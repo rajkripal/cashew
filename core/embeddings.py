@@ -59,6 +59,36 @@ def _has_vec_table(conn: sqlite3.Connection) -> bool:
         return False
 
 
+def _vec_table_dim(conn: sqlite3.Connection) -> Optional[int]:
+    """Parse the dim out of an existing vec_embeddings table's CREATE SQL.
+    Returns None if the table doesn't exist or the dim can't be parsed."""
+    try:
+        row = conn.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='vec_embeddings'"
+        ).fetchone()
+        if not row or not row[0]:
+            return None
+        import re
+        m = re.search(r"float\[(\d+)\]", row[0])
+        return int(m.group(1)) if m else None
+    except Exception:
+        return None
+
+
+def _vec_table_dim_matches(conn: sqlite3.Connection, expected_dim: int) -> bool:
+    """True iff vec_embeddings exists and its dim equals ``expected_dim``.
+    A False here is the signal to skip vec dual-write / vec search and fall
+    back to brute force (avoids cryptic sqlite-vec errors on dim mismatch)."""
+    actual = _vec_table_dim(conn)
+    return actual is not None and actual == expected_dim
+
+
+def _current_embedding_dim() -> int:
+    """Resolve the embedding dim for the currently configured model."""
+    from .embedding_service import resolve_embedding_dim
+    return resolve_embedding_dim()
+
+
 def _ensure_embeddings_table(db_path: str):
     """Ensure the embeddings table exists with the correct schema"""
     conn = sqlite3.connect(db_path)
@@ -103,7 +133,13 @@ def _ensure_embeddings_table(db_path: str):
     if 'reasoning' not in de_columns:
         cursor.execute("ALTER TABLE derivation_edges ADD COLUMN reasoning TEXT")
     
-    # sqlite-vec virtual table for O(log N) nearest neighbor search
+    # sqlite-vec virtual table for O(log N) nearest neighbor search.
+    # Dim comes from the configured embedding model (CASHEW_EMBEDDING_MODEL).
+    # If an existing vec table was created at a different dim (e.g. legacy
+    # 384-dim table now opened under gte-large/1024), we leave it alone and
+    # let dual-write/vec-search detect the mismatch and fall back to brute
+    # force. Recreating would silently drop existing vectors. See module
+    # docstring on dim mismatch handling.
     if _vec_available:
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='vec_embeddings'")
         if cursor.fetchone() is None:
@@ -111,13 +147,29 @@ def _ensure_embeddings_table(db_path: str):
                 conn.enable_load_extension(True)
                 sqlite_vec.load(conn)
                 conn.enable_load_extension(False)
-                cursor.execute("""
-                    CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings 
-                    USING vec0(node_id text primary key, embedding float[384] distance_metric=cosine)
+                dim = _current_embedding_dim()
+                cursor.execute(f"""
+                    CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings
+                    USING vec0(node_id text primary key, embedding float[{dim}] distance_metric=cosine)
                 """)
-                logging.info("Created vec_embeddings virtual table")
+                logging.info(f"Created vec_embeddings virtual table (dim={dim})")
             except Exception as e:
                 logging.warning(f"Could not create vec_embeddings table: {e}")
+        else:
+            # Existing table — warn (once per call) on dim mismatch so the
+            # silent brute-force fallback isn't fully invisible.
+            existing_dim = _vec_table_dim(conn)
+            try:
+                expected_dim = _current_embedding_dim()
+            except Exception:
+                expected_dim = None
+            if existing_dim is not None and expected_dim is not None and existing_dim != expected_dim:
+                logging.warning(
+                    f"vec_embeddings dim mismatch: table is float[{existing_dim}], "
+                    f"current model produces dim {expected_dim}. Vector index will "
+                    f"be skipped; falling back to brute-force search. To rebuild, "
+                    f"drop vec_embeddings and re-run backfill_vec_index()."
+                )
     
     conn.commit()
     conn.close()
@@ -177,17 +229,23 @@ def embed_nodes(db_path: str, batch_size: int = 100) -> dict:
         # Embed the batch
         try:
             embeddings = service.embed_np(batch_texts)
-            
-            # Store embeddings
-            has_vec = _vec_available and _has_vec_table(conn)
+
+            # Store embeddings. Only dual-write when the vec table's dim
+            # matches what we're about to insert — otherwise sqlite-vec will
+            # reject the bytes and we'd just spam warnings.
+            has_vec = (
+                _vec_available
+                and _has_vec_table(conn)
+                and _vec_table_dim_matches(conn, service.dim)
+            )
             for j, (node_id, content) in enumerate(batch):
                 vector_bytes = embeddings[j].astype(np.float32).tobytes()
                 
                 cursor.execute("""
-                    INSERT OR REPLACE INTO embeddings 
+                    INSERT OR REPLACE INTO embeddings
                     (node_id, vector, model, updated_at)
                     VALUES (?, ?, ?, ?)
-                """, (node_id, vector_bytes, "all-MiniLM-L6-v2", datetime.now().isoformat()))
+                """, (node_id, vector_bytes, service.model, datetime.now().isoformat()))
                 
                 # Dual-write to vec_embeddings for O(log N) search
                 if has_vec:
@@ -256,8 +314,14 @@ def search(db_path: str, query: str, top_k: int = 10) -> List[Tuple[str, float]]
     
     conn = sqlite3.connect(db_path)
     
-    # Try sqlite-vec first (O(log N))
-    if _vec_available and _has_vec_table(conn):
+    # Try sqlite-vec first (O(log N)). Skip when the vec table's dim doesn't
+    # match the query embedding (legacy 384-dim table under a 1024-dim model,
+    # etc.) — that case falls through to brute force on the raw embeddings.
+    if (
+        _vec_available
+        and _has_vec_table(conn)
+        and _vec_table_dim_matches(conn, query_embedding.shape[0])
+    ):
         try:
             _load_vec(conn)
             cursor = conn.cursor()
@@ -366,7 +430,11 @@ def check_novelty(db_path: str, content: str, threshold: float = NOVELTY_THRESHO
     # Fast path: sqlite-vec nearest neighbor
     if preloaded_embeddings is None:
         conn = sqlite3.connect(db_path)
-        if _vec_available and _has_vec_table(conn):
+        if (
+            _vec_available
+            and _has_vec_table(conn)
+            and _vec_table_dim_matches(conn, candidate_embedding.shape[0])
+        ):
             try:
                 _load_vec(conn)
                 row = conn.execute(
@@ -420,7 +488,22 @@ def backfill_vec_index(db_path: str) -> dict:
     if not _has_vec_table(conn):
         conn.close()
         return {"error": "vec_embeddings table not found"}
-    
+
+    # Refuse to backfill into a dim-mismatched table — sqlite-vec would
+    # reject every insert and we'd report success-with-zero. Make the
+    # mismatch loud so the operator can drop+recreate intentionally.
+    expected_dim = _current_embedding_dim()
+    table_dim = _vec_table_dim(conn)
+    if table_dim is not None and table_dim != expected_dim:
+        conn.close()
+        return {
+            "error": (
+                f"vec_embeddings dim mismatch: table=float[{table_dim}], "
+                f"current model dim={expected_dim}. Drop vec_embeddings and "
+                f"re-run to recreate at the new dim."
+            )
+        }
+
     # Get all active embeddings
     cursor.execute("""
         SELECT e.node_id, e.vector FROM embeddings e

@@ -72,15 +72,15 @@ def _handle(req: dict) -> dict:
     if op == "embed":
         # Handled directly by the local backend so we don't recurse through
         # the service (which would try the daemon and loop forever).
-        from .embedding_service import EMBEDDING_DIM
+        backend = _local_backend()
         text = req.get("text", "")
         if not text or not text.strip():
-            return {"ok": True, "result": [0.0] * EMBEDDING_DIM}
-        vec = _local_backend().encode([text])[0]
+            return {"ok": True, "result": [0.0] * backend.dim}
+        vec = backend.encode([text])[0]
         return {"ok": True, "result": vec.tolist()}
 
     if op == "embed_batch":
-        from .embedding_service import EMBEDDING_DIM
+        backend = _local_backend()
         texts = req.get("texts") or []
         if not isinstance(texts, list):
             return {"ok": False, "error": "'texts' must be a list"}
@@ -88,9 +88,9 @@ def _handle(req: dict) -> dict:
             return {"ok": True, "result": []}
         nonempty_idx = [i for i, t in enumerate(texts) if t and t.strip()]
         nonempty_texts = [texts[i] for i in nonempty_idx]
-        out = [[0.0] * EMBEDDING_DIM for _ in texts]
+        out = [[0.0] * backend.dim for _ in texts]
         if nonempty_texts:
-            vecs = _local_backend().encode(nonempty_texts)
+            vecs = backend.encode(nonempty_texts)
             for i, vec in zip(nonempty_idx, vecs):
                 out[i] = vec.tolist()
         return {"ok": True, "result": out}
