@@ -337,5 +337,111 @@ class TestSaturatedThemesHelper:
             assert count > 0, "Should have recent system_generated nodes"
 
 
-if __name__ == "__main__":
-    pytest.main([__file__])
+class TestIngestNoLlm:
+    """Tests for cashew ingest --no-llm flag (regression for #50)"""
+
+    @pytest.fixture
+    def obsidian_vault(self, tmp_path):
+        """Create a minimal Obsidian vault with a few markdown files."""
+        vault = tmp_path / "test-vault"
+        vault.mkdir()
+        (vault / "Note One.md").write_text("""---
+title: Note One
+tags: [test, engineering]
+created: 2026-01-01
+---
+
+This is a test note about engineering decisions.
+We learned that local embedding models work well.
+Another key insight: SQLite is simpler than PostgreSQL for small graphs.
+""")
+        (vault / "Projects").mkdir()
+        (vault / "Projects" / "Project Alpha.md").write_text("""---
+title: Project Alpha
+tags: [project, test]
+status: active
+---
+
+Project Alpha uses cashew for persistent memory.
+The architecture relies on sqlite-vec for vector search.
+""")
+        return str(vault)
+
+    def test_ingest_obsidian_no_llm_succeeds(self, obsidian_vault):
+        """Test that 'cashew ingest obsidian --no-llm' completes without errors."""
+        db_fd, db_path = tempfile.mkstemp(suffix='.db')
+        os.close(db_fd)
+
+        # Initialize the database schema (same as conftest.temp_db fixture)
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE thought_nodes (
+                id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                node_type TEXT NOT NULL,
+                domain TEXT,
+                timestamp TEXT,
+                access_count INTEGER DEFAULT 0,
+                last_accessed TEXT,
+                confidence REAL,
+                source_file TEXT,
+                decayed INTEGER DEFAULT 0,
+                metadata TEXT DEFAULT '{}',
+                last_updated TEXT,
+                mood_state TEXT,
+                permanent INTEGER DEFAULT 0,
+                referent_time TEXT
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE derivation_edges (
+                parent_id TEXT,
+                child_id TEXT,
+                weight REAL,
+                reasoning TEXT,
+                confidence REAL,
+                timestamp TEXT,
+                PRIMARY KEY (parent_id, child_id),
+                FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
+                FOREIGN KEY (child_id) REFERENCES thought_nodes(id)
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE embeddings (
+                node_id TEXT PRIMARY KEY,
+                vector BLOB NOT NULL,
+                model TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (node_id) REFERENCES thought_nodes(id)
+            )
+        ''')
+        conn.commit()
+        conn.close()
+
+        try:
+            result = subprocess.run([
+                sys.executable,
+                str(cashew_dir / "cashew_cli.py"),
+                "--db", db_path,
+                "ingest", "obsidian", obsidian_vault,
+                "--no-llm",
+            ], capture_output=True, text=True, timeout=60)
+
+            assert result.returncode == 0, (
+                f"ingest failed (rc={result.returncode}): {result.stderr[:500]}"
+            )
+            assert "✅ Extraction complete" in result.stdout, (
+                f"Expected success message in stdout: {result.stdout[:500]}"
+            )
+
+            # Verify nodes were created in the database
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM thought_nodes")
+            node_count = cursor.fetchone()[0]
+            conn.close()
+            assert node_count > 0, "Expected at least one node to be created"
+
+        finally:
+            os.unlink(db_path)
