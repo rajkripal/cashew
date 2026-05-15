@@ -64,6 +64,16 @@ Or if you cloned the repo, just open it in Claude Code. The `.claude/skills/cash
 
 Install as an OpenClaw skill for full automation. Cron jobs handle extraction, think cycles, and dashboard deployment without manual intervention. See `skills/openclaw/SKILL.md` for setup instructions.
 
+### Hermes Agent
+
+Use cashew as the memory provider for [NousResearch's Hermes Agent](https://hermes-agent.nousresearch.com/) via [hermes-cashew](https://github.com/magnus919/hermes-cashew), a plugin maintained by [Magnus Hedemark](https://github.com/magnus919):
+
+```bash
+hermes plugins install magnus919/hermes-cashew
+```
+
+The plugin exposes `cashew_query` and `cashew_extract` as agent-callable tools, auto-injects relevant context at session start, and works against a local cashew brain with no extra services. See the [hermes-cashew README](https://github.com/magnus919/hermes-cashew) for configuration and tuning notes.
+
 ### Ingest Sources
 
 Cashew ships with built-in extractors for common knowledge sources. Each one handles checkpointing, incremental updates, and deduplication automatically.
