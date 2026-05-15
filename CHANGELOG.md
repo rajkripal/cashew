@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-05-15
+## [Unreleased]
 
 ### Changed
 - **Default embedding model is now `thenlper/gte-large` (1024-dim), replacing `all-MiniLM-L6-v2` (384-dim).** Benchmarked on a 3,898-node brain, gte-large consumed ~300 MB less peak RAM than MiniLM because fastembed routes it through a quantized ONNX backend while MiniLM loads via the heavier sentence-transformers / PyTorch runtime. Retrieval latency increases ~10ms p50 (still well under 100ms). Better recall on harder queries.
