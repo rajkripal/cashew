@@ -166,7 +166,18 @@ def calculate_recommended_threshold(db_path: str) -> int:
     return recommended
 
 
-EXPECTED_EMBEDDING_DIM = 384  # all-MiniLM-L6-v2 produces 384-dim float32 vectors
+def _expected_embedding_dim() -> int:
+    """Resolve the expected embedding dim from the currently configured
+    model, so this stays in sync when the default model changes."""
+    try:
+        from .embedding_service import get_default_service
+        return get_default_service().dim
+    except Exception:
+        return 384  # last-resort fallback (MiniLM)
+
+
+# Legacy constant retained for back-compat; prefer _expected_embedding_dim().
+EXPECTED_EMBEDDING_DIM = _expected_embedding_dim()
 
 
 def validate_embeddings_integrity(db_path: str) -> Dict:
@@ -219,7 +230,7 @@ def validate_embeddings_integrity(db_path: str) -> Dict:
     for nid, blob in cursor.fetchall():
         total_embeddings += 1
         arr = np.frombuffer(blob, dtype=np.float32)
-        if len(arr) != EXPECTED_EMBEDDING_DIM:
+        if len(arr) != _expected_embedding_dim():
             wrong_dim += 1
             bad_ids.append(nid)
             continue
