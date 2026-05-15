@@ -489,6 +489,37 @@ def cmd_audit(args):
     return 2
 
 
+def cmd_migrate_embeddings(args):
+    """Re-embed every node under the currently configured embedding model.
+
+    Used after a default-model change (e.g., MiniLM -> gte-large) so an
+    existing brain stops mixing dims. Wipes the embeddings table and the
+    vec_embeddings virtual table, then re-runs the standard embed pass.
+    """
+    from scripts.migrate_embeddings import migrate_embeddings, detect_mismatch
+    db_path = args.sub_db or args.db
+    if not db_path:
+        from core.config import get_db_path
+        db_path = get_db_path()
+    mismatch = detect_mismatch(db_path)
+    if mismatch:
+        print(
+            f"Brain at {db_path} has {mismatch['stored_dim']}-dim embeddings; "
+            f"configured model {mismatch['configured_model']} produces "
+            f"{mismatch['configured_dim']}-dim."
+        )
+    try:
+        summary = migrate_embeddings(db_path, confirm=args.yes, quiet=False)
+    except (RuntimeError, FileNotFoundError) as e:
+        print(f"migrate-embeddings: {e}")
+        return 1
+    if not summary["nodes_embedded"]:
+        print("No nodes were re-embedded. Check the db has content and the "
+              "configured model loaded successfully.")
+        return 1
+    return 0
+
+
 def cmd_dashboard(args):
     """Launch the dashboard HTTP+SSE server."""
     import importlib.util
@@ -640,6 +671,16 @@ Examples:
     mf_parser.add_argument('--db', dest='sub_db', default=None, help='Database path')
     mf_parser.set_defaults(func=cmd_migrate_files)
     
+    # migrate-embeddings command
+    me_parser = subparsers.add_parser(
+        'migrate-embeddings',
+        help='Re-embed every node under the currently configured embedding model'
+    )
+    me_parser.add_argument('--db', dest='sub_db', default=None, help='Database path')
+    me_parser.add_argument('-y', '--yes', action='store_true',
+                           help='Skip the confirmation prompt')
+    me_parser.set_defaults(func=cmd_migrate_embeddings)
+
     # complete-context command
     cc_parser = subparsers.add_parser('complete-context', help='Context with complete coverage retrieval')
     cc_parser.add_argument('--hints', nargs='*', help='Topic hints')
