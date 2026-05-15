@@ -89,6 +89,48 @@ def _current_embedding_dim() -> int:
     return resolve_embedding_dim()
 
 
+_WARNED_DIM_MISMATCH: set = set()
+
+
+def _warn_on_dim_mismatch(db_path: str) -> None:
+    """Emit a prominent one-time warning if the brain's stored embedding dim
+    doesn't match what the currently configured model produces. Helps users
+    upgrading the default model see what's happening without silent fallback.
+    """
+    if db_path in _WARNED_DIM_MISMATCH:
+        return
+    try:
+        conn = sqlite3.connect(db_path)
+        row = conn.execute(
+            "SELECT LENGTH(vector) FROM embeddings WHERE vector IS NOT NULL LIMIT 1"
+        ).fetchone()
+        conn.close()
+    except sqlite3.OperationalError:
+        return
+    if row is None or row[0] is None:
+        return
+    stored = row[0] // 4  # float32
+    try:
+        expected = _current_embedding_dim()
+    except Exception:
+        return
+    if stored == expected:
+        return
+    _WARNED_DIM_MISMATCH.add(db_path)
+    from .embedding_service import _resolve_default_model
+    model = _resolve_default_model()
+    logging.warning(
+        "\n  ⚠ embedding dim mismatch\n"
+        f"  brain dim: {stored}\n"
+        f"  configured model {model} produces dim {expected}\n"
+        "  retrieval is falling back to brute-force similarity, and any new\n"
+        "  embeddings will be incompatible with existing ones. To upgrade run:\n"
+        "      cashew migrate-embeddings\n"
+        "  or set CASHEW_EMBEDDING_MODEL=<your previous model> to keep the\n"
+        "  brain on its current dim.\n"
+    )
+
+
 def _ensure_embeddings_table(db_path: str):
     """Ensure the embeddings table exists with the correct schema"""
     conn = sqlite3.connect(db_path)
@@ -186,9 +228,10 @@ def embed_nodes(db_path: str, batch_size: int = 100) -> dict:
         Dictionary with statistics about the embedding process
     """
     start_time = time.perf_counter() if is_metrics_enabled() else None
-    
+
     _ensure_embeddings_table(db_path)
-    
+    _warn_on_dim_mismatch(db_path)
+
     conn = sqlite3.connect(db_path)
     _load_vec(conn)
     cursor = conn.cursor()
