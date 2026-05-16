@@ -425,12 +425,7 @@ def cmd_ingest(args):
     print(f"🧠 Running {args.extractor} extractor on {args.path}...")
     
     try:
-        # Prepare kwargs for extractor-specific options
-        extractor_kwargs = {}
-        if args.no_llm:
-            extractor_kwargs['skip_llm'] = True
-
-        result = registry.run(args.extractor, args.path, model_fn, db_path, **extractor_kwargs)
+        result = registry.run(args.extractor, args.path, model_fn, db_path)
         
         if result["errors"]:
             print("❌ Extraction completed with errors:")
