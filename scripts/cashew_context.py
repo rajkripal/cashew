@@ -226,10 +226,13 @@ def _cmd_extract_ingest(args):
     
     with open(ingest_path, 'r') as f:
         data = json.load(f)
-    
+
+    if isinstance(data, list):
+        data = {"insights": data}
+
     from core.session import _ensure_schema, _create_node, _get_connection
     _ensure_schema(args.db)
-    
+
     new_nodes = 0
     new_node_ids = []
     for item in data.get("insights", []):
