@@ -42,6 +42,7 @@ Built-in source extractors in `extractors/`:
 | `obsidian.py` | Obsidian vault extraction. Frontmatter, `[[wikilink]]` edges, `.obsidianignore`, domain from folder structure. |
 | `sessions.py` | OpenClaw session JSONL extraction. Incremental line tracking, filters tool calls/system messages. |
 | `markdown_dir.py` | General markdown directory extraction. `.cashewignore` support. |
+| `claude_archive.py` | Claude.ai conversation archive extraction. Walks content blocks to strip tool calls/results, tracks processed conversations by UUID + updated_at, referent_time from message timestamps. |
 | `utils.py` | Shared: `parse_frontmatter()`, `extract_wikilinks()`, `load_ignore_patterns()`, `should_ignore()`, `split_into_paragraphs()`, `detect_domain_from_path()`. |
 
 All extractors: use `model_fn` for LLM extraction when available, fall back to paragraph splitting when not. Checkpointing via `get_state()`/`set_state()` persisted automatically by the registry.

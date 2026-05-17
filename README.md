@@ -102,6 +102,14 @@ cashew ingest markdown /path/to/notes/
 
 General purpose extractor for any directory of `.md` files. Respects `.cashewignore` for excluding files.
 
+**Claude.ai conversation archive:**
+
+```bash
+cashew ingest claude_archive /path/to/claude/export/
+```
+
+Extracts knowledge from `conversations.json` — the Claude.ai data export format. Walks content blocks to strip tool calls and results, keeping only human/assistant text. Supports incremental processing via conversation UUIDs, so re-running on the same directory only processes new or updated conversations. Also accepts a direct path to `conversations.json` for convenience.
+
 **Options:**
 
 ```bash
@@ -141,6 +149,7 @@ context = retriever.generate_context(hints=["work", "projects"])
 | `cashew ingest obsidian /path` | Ingest an Obsidian vault |
 | `cashew ingest sessions /path` | Ingest OpenClaw session logs |
 | `cashew ingest markdown /path` | Ingest a directory of markdown files |
+| `cashew ingest claude_archive /path` | Ingest a claude.ai conversation archive |
 | `cashew think` | Run a think cycle |
 | `cashew sleep` | Full sleep cycle (consolidation) |
 | `cashew stats` | Graph statistics |

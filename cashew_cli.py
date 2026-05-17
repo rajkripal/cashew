@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from core.config import config, reload_config, get_db_path
 from core.embeddings import embed_text
 from core.extractors import ExtractorRegistry
-from extractors import ObsidianExtractor, SessionExtractor, MarkdownDirExtractor
+from extractors import ObsidianExtractor, SessionExtractor, MarkdownDirExtractor, ClaudeArchiveExtractor
 
 logger = logging.getLogger("cashew")
 
@@ -392,6 +392,7 @@ def cmd_ingest(args):
     registry.register(ObsidianExtractor())
     registry.register(SessionExtractor())
     registry.register(MarkdownDirExtractor())
+    registry.register(ClaudeArchiveExtractor())
     
     if args.list:
         # List available extractors
@@ -560,6 +561,7 @@ Examples:
   cashew ingest obsidian /path/to/vault # Extract from Obsidian vault
   cashew ingest sessions /path/to/logs  # Extract from session logs
   cashew ingest markdown /path/to/notes # Extract from markdown directory
+  cashew ingest claude_archive /path/to/claude/export/ # Extract from claude.ai archive
   cashew ingest --list                  # Show available extractors
   cashew think                          # Run think cycle
   cashew sleep                          # Run sleep cycle
@@ -608,7 +610,7 @@ Examples:
     
     # ingest command
     ingest_parser = subparsers.add_parser('ingest', help='Ingest knowledge using extractor plugins')
-    ingest_parser.add_argument('extractor', nargs='?', choices=['obsidian', 'sessions', 'markdown'],
+    ingest_parser.add_argument('extractor', nargs='?', choices=['obsidian', 'sessions', 'markdown', 'claude_archive'],
                                help='Extractor type to use')
     ingest_parser.add_argument('path', nargs='?', help='Source path to extract from')
     ingest_parser.add_argument('--list', action='store_true', help='List available extractors')
