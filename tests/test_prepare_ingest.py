@@ -43,7 +43,16 @@ class TestThinkCyclePrepareIngest:
             temp_db_path = Path(tmp_dir) / "test_graph.db"
             shutil.copy2(real_db_path, temp_db_path)
             yield str(temp_db_path)
-    
+
+    @pytest.fixture
+    def empty_db(self):
+        """Create a schema-only brain so diversity gates can't filter against
+        unrelated prior content."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            temp_db_path = Path(tmp_dir) / "test_graph.db"
+            _ensure_schema(str(temp_db_path))
+            yield str(temp_db_path)
+
     def test_think_prepare_only_outputs_valid_json(self, real_db):
         """Test that think --prepare-only outputs valid JSON with required fields"""
         result = subprocess.run([
@@ -87,7 +96,7 @@ class TestThinkCyclePrepareIngest:
         if output["status"] == "ready" and len(output["domains"]) >= 2:
             assert len(output["domains"]) >= 2, "Should select nodes from multiple domains when available"
     
-    def test_think_ingest_creates_nodes_and_edges(self, temp_db):
+    def test_think_ingest_creates_nodes_and_edges(self, empty_db):
         """Test that think --ingest creates nodes and edges correctly"""
         # Create test insights JSON
         test_insights = {
@@ -107,8 +116,8 @@ class TestThinkCyclePrepareIngest:
         }
         
         # Create some source nodes first
-        _ensure_schema(temp_db)
-        conn = _get_connection(temp_db)
+        _ensure_schema(empty_db)
+        conn = _get_connection(empty_db)
         cursor = conn.cursor()
         cursor.execute("INSERT OR IGNORE INTO thought_nodes (id, content, node_type, timestamp, source_file, domain) VALUES (?, ?, ?, datetime('now'), ?, ?)",
                       ("test_node_1", "Test source node 1", "observation", "test", "bunny"))
@@ -127,7 +136,7 @@ class TestThinkCyclePrepareIngest:
             result = subprocess.run([
                 sys.executable,
                 str(cashew_dir / "scripts" / "cashew_context.py"),
-                "think", "--ingest", insights_file, "--db", temp_db
+                "think", "--ingest", insights_file, "--db", empty_db
             ], capture_output=True, text=True, env={**os.environ, "KMP_DUPLICATE_LIB_OK": "TRUE"})
             
             assert result.returncode == 0
@@ -139,7 +148,7 @@ class TestThinkCyclePrepareIngest:
             assert output["new_edges"] > 0
             
             # Verify nodes were created in database
-            conn = _get_connection(temp_db)
+            conn = _get_connection(empty_db)
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM thought_nodes WHERE source_file = 'system_generated'")
             new_count = cursor.fetchone()[0]
