@@ -4,10 +4,13 @@ Shared utilities for cashew extractors.
 """
 
 import fnmatch
+import logging
 import re
 import yaml
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
+logger = logging.getLogger("cashew.extractors.utils")
 
 
 # LLMs tag statements at extraction time with one of the configured node
@@ -45,6 +48,69 @@ TYPE_TAGGING_INSTRUCTION = (
     "When uncertain, use [observation].\n"
     "Output typed statements only, one per line."
 )
+
+# Shared "permanence test" framing. Each extractor appends its own trailing
+# clause (e.g. "Skip pleasantries..." vs "Skip formatting...") since the
+# noise it should reject is source-specific.
+PERMANENCE_INSTRUCTION = (
+    "Before emitting each statement, ask yourself: should this node exist "
+    "in the graph forever? If you would not want future-you to read it, "
+    "drop it. There is no hedging and no padding, either it is worth a "
+    "permanent node or it is not."
+)
+
+
+def extract_typed_nodes_via_llm(
+    prompt: str,
+    model_fn: Callable[[str], str],
+    *,
+    domain: str,
+    source_file: str,
+    debug_label: str = "",
+    referent_time: Optional[str] = None,
+    min_content_length: int = 20,
+    classifier: Optional[Callable[[str], str]] = None,
+    default_type: str = "observation",
+) -> Optional[List[Dict[str, Any]]]:
+    """Run an LLM, parse typed statements, and shape them into node dicts.
+
+    The pattern (model_fn -> parse_extraction_lines -> iterate typed statements
+    -> filter by length -> build node dict) is identical across every
+    extractor that supports an LLM path. This helper owns it.
+
+    Returns the node list on success, or ``None`` on LLM failure so the
+    caller can fall back to a deterministic path. Empty list means the LLM
+    ran but produced no statements that passed the length filter — that is
+    a legitimate result, not a failure.
+    """
+    try:
+        response = model_fn(prompt)
+    except Exception as e:
+        logger.warning(
+            f"LLM extraction failed{f' ({debug_label})' if debug_label else ''}: {e}"
+        )
+        return None
+
+    if debug_label:
+        logger.debug(f"LLM raw ({debug_label}):\n{response}\n---")
+    statements = parse_extraction_lines(response)
+
+    nodes_out: List[Dict[str, Any]] = []
+    for raw in statements:
+        node_type, content = parse_typed_statement(
+            raw, fallback=classifier, default_type=default_type)
+        if len(content) <= min_content_length:
+            continue
+        node: Dict[str, Any] = {
+            "content": content,
+            "type": node_type,
+            "domain": domain,
+            "source_file": source_file,
+        }
+        if referent_time is not None:
+            node["referent_time"] = referent_time
+        nodes_out.append(node)
+    return nodes_out
 
 
 def parse_typed_statement(

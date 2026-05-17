@@ -347,7 +347,7 @@ Another paragraph with useful information.""")
         def mock_model_fn(prompt):
             return "raw obsidian response with enough length here"
 
-        with patch("extractors.obsidian.logger") as mock_logger:
+        with patch("extractors.utils.logger") as mock_logger:
             ObsidianExtractor().extract(str(self.vault_path), mock_model_fn, str(self.db_path))
             debug_calls = " ".join(str(c) for c in mock_logger.debug.call_args_list)
             self.assertIn("raw obsidian response", debug_calls)
@@ -501,7 +501,7 @@ class TestSessionExtractor(unittest.TestCase):
         def mock_model_fn(prompt):
             return "raw session response with enough length here"
 
-        with patch("extractors.sessions.logger") as mock_logger:
+        with patch("extractors.utils.logger") as mock_logger:
             SessionExtractor().extract(str(self.session_dir), mock_model_fn, str(self.db_path))
             debug_calls = " ".join(str(c) for c in mock_logger.debug.call_args_list)
             self.assertIn("raw session response", debug_calls)
@@ -625,7 +625,7 @@ class TestMarkdownDirExtractor(unittest.TestCase):
         def mock_model_fn(prompt):
             return "raw markdown response with enough length here"
 
-        with patch("extractors.markdown_dir.logger") as mock_logger:
+        with patch("extractors.utils.logger") as mock_logger:
             MarkdownDirExtractor().extract(str(self.notes_dir), mock_model_fn, str(self.db_path))
             debug_calls = " ".join(str(c) for c in mock_logger.debug.call_args_list)
             self.assertIn("raw markdown response", debug_calls)
