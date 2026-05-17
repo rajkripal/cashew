@@ -15,6 +15,13 @@ from datetime import datetime, timezone
 from typing import Dict, List
 
 
+def _connect(db_path: str) -> sqlite3.Connection:
+    """Connection factory with busy_timeout to avoid lock contention."""
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
+    return conn
+
+
 def promote_permanent_nodes(db_path: str, access_threshold: int = 10) -> Dict:
     """
     Promote nodes to permanent status based on access count threshold.
@@ -29,7 +36,7 @@ def promote_permanent_nodes(db_path: str, access_threshold: int = 10) -> Dict:
     Returns:
         Dict with promotion statistics
     """
-    conn = sqlite3.connect(db_path)
+    conn = _connect(db_path)
     cursor = conn.cursor()
     
     # Find nodes that should be permanent but aren't yet
@@ -73,7 +80,7 @@ def get_permanence_stats(db_path: str) -> Dict:
     Returns:
         Dict with permanence statistics
     """
-    conn = sqlite3.connect(db_path)
+    conn = _connect(db_path)
     cursor = conn.cursor()
     
     # Count permanent vs non-permanent nodes
@@ -139,7 +146,7 @@ def calculate_recommended_threshold(db_path: str) -> int:
     Returns:
         Recommended access threshold
     """
-    conn = sqlite3.connect(db_path)
+    conn = _connect(db_path)
     cursor = conn.cursor()
     
     # Get access counts of current permanent nodes
@@ -199,7 +206,7 @@ def validate_embeddings_integrity(db_path: str) -> Dict:
     """
     import numpy as np
 
-    conn = sqlite3.connect(db_path)
+    conn = _connect(db_path)
     cursor = conn.cursor()
 
     # Defensive: an embeddings table is optional in some DB layouts (older
@@ -283,7 +290,7 @@ def validate_permanence_integrity(db_path: str) -> Dict:
     Returns:
         Dict with validation results
     """
-    conn = sqlite3.connect(db_path)
+    conn = _connect(db_path)
     cursor = conn.cursor()
     
     # Check for permanent nodes that are marked as decayed (should never happen)

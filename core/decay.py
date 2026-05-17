@@ -22,6 +22,13 @@ from typing import Dict, Set
 from .decay_audit import log_decay_event
 
 
+def _connect(db_path: str) -> sqlite3.Connection:
+    """Connection factory with busy_timeout to avoid lock contention."""
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
+    return conn
+
+
 CASCADE_MIN_AGE_DAYS = 30
 
 
@@ -101,7 +108,7 @@ def cascade_decay(db_path: str, decayed_node_id: str) -> Dict:
     Returns:
         Dict with cascading statistics
     """
-    conn = sqlite3.connect(db_path)
+    conn = _connect(db_path)
     cursor = conn.cursor()
     _ensure_edges_table(cursor)
 
@@ -196,7 +203,7 @@ def auto_decay(db_path: str, min_age_days: int = 14,
     Returns:
         Dict with pruning statistics
     """
-    conn = sqlite3.connect(db_path)
+    conn = _connect(db_path)
     cursor = conn.cursor()
     _ensure_edges_table(cursor)
 
@@ -261,7 +268,7 @@ def auto_decay(db_path: str, min_age_days: int = 14,
 def get_decay_candidates(db_path: str, min_age_days: int = 14,
                         show_cascade_preview: bool = False) -> Dict:
     """Get statistics on nodes eligible for decay without actually decaying them."""
-    conn = sqlite3.connect(db_path)
+    conn = _connect(db_path)
     cursor = conn.cursor()
     _ensure_edges_table(cursor)
 
@@ -310,7 +317,7 @@ def get_decay_candidates(db_path: str, min_age_days: int = 14,
 
 def simulate_cascade_decay(db_path: str, decayed_node_id: str) -> int:
     """Simulate cascading decay without modifying the database."""
-    conn = sqlite3.connect(db_path)
+    conn = _connect(db_path)
     cursor = conn.cursor()
     _ensure_edges_table(cursor)
 
