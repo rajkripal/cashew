@@ -276,7 +276,8 @@ def get_default_service() -> EmbeddingService:
     rather than touching this."""
     global _default_service
     if _default_service is None:
-        _default_service = EmbeddingService()
+        from .config import get_embedding_model
+        _default_service = EmbeddingService(model=get_embedding_model())
     return _default_service
 
 
