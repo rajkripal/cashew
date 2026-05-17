@@ -55,6 +55,7 @@ def detect_mismatch(db_path: str) -> Optional[Dict]:
       - ``configured_model``: model name from current config
     """
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
     try:
         stored = _stored_embedding_dim(conn)
     finally:
@@ -126,6 +127,7 @@ def migrate_embeddings(
 
     t0 = time.time()
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
     _load_vec(conn)
     conn.execute("DELETE FROM embeddings")
     try:
@@ -142,6 +144,7 @@ def migrate_embeddings(
 
     # Confirm post-state
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
     try:
         stored_after = _stored_embedding_dim(conn)
     finally:

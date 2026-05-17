@@ -189,6 +189,7 @@ Before emitting each statement, ask yourself: should this node exist in the grap
 
         try:
             conn = sqlite3.connect(db_path)
+            conn.execute("PRAGMA busy_timeout = 5000")
             cursor = conn.cursor()
 
             # Get existing nodes with their source files
