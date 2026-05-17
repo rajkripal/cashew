@@ -64,7 +64,9 @@ class ThinkResult:
 
 def _get_connection(db_path: str) -> sqlite3.Connection:
     """Get database connection"""
-    return sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout=5000")
+    return conn
 
 # ----- Schema contract ----------------------------------------------------
 # Cashew owns these tables and the columns listed below. See DESIGN.md
