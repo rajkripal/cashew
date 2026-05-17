@@ -8,6 +8,13 @@ import sqlite3
 import logging
 from typing import List, Dict, Tuple
 
+
+def _connect(db_path: str) -> sqlite3.Connection:
+    """Connection factory with busy_timeout to avoid lock contention."""
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
+    return conn
+
 import numpy as np
 
 logger = logging.getLogger("cashew.graph_utils")
@@ -32,7 +39,7 @@ def load_embeddings(db_path: str) -> Tuple[List[str], np.ndarray, Dict[str, Dict
         vectors: numpy array of shape (n_nodes, embedding_dim)
         node_meta: Dict of node_id -> {content, node_type, domain}
     """
-    conn = sqlite3.connect(db_path)
+    conn = _connect(db_path)
     cursor = conn.cursor()
     
     cursor.execute("""

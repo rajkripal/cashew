@@ -68,7 +68,8 @@ def cmd_init(args):
     
     try:
         conn = sqlite3.connect(str(db_path))
-        
+        conn.execute("PRAGMA busy_timeout = 5000")
+
         # Create schema
         conn.execute('''
             CREATE TABLE IF NOT EXISTS thought_nodes (
@@ -456,6 +457,7 @@ def cmd_audit(args):
     if sub == "gc":
         retention = args.retention_days
         conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout = 5000")
         try:
             pruned = gc_decay_audit(conn, retention_days=retention)
             conn.commit()
@@ -466,6 +468,7 @@ def cmd_audit(args):
 
     if sub == "show":
         conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout = 5000")
         try:
             rows = conn.execute(
                 "SELECT decay_timestamp, decay_reason, node_type, source_file, "
