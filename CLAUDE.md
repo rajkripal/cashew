@@ -112,14 +112,66 @@ Before any node is inserted, `check_novelty()` checks if content is too similar 
 
 ## Sleep Cycle
 
-Periodic background consolidation (`core/sleep.py`):
-- **Decay**: Node fitness decays over time. Low-fitness nodes get `decayed=1`.
-- **Cross-linking**: Finds semantically similar nodes across domains, creates edges.
-- **Deduplication**: Merges near-identical nodes.
-- **Core memory promotion**: Frequently accessed nodes get promoted.
-- **Think cycle penalty**: Think-cycle-generated nodes face 1.5x higher decay threshold.
+Periodic background consolidation (`core/sleep.py`). Two code paths:
 
-No hotspot creation, no clustering, no hierarchy maintenance. The graph self-organizes through cross-linking and decay.
+### Vectorized pipeline (recommended, requires `embeddings` table)
+
+The primary entry point is the free function `run_sleep_cycle()`, a 9-phase
+pipeline designed for lifecycle hooks where latency matters:
+
+1. **Node selection** — Work-capped at `limit` (default 2000) nodes, oldest
+   timestamp first.  The O(N²) similarity matrix is bounded to this subset.
+2. **Candidate discovery** — Full pairwise cosine similarity via sklearn,
+   vectorized threshold filtering with `np.triu` + `np.argwhere`.  Bad
+   embedding vectors (NaN, inf, zero) are filtered _before_ the matrix
+   computation.
+3. **Cross-linking** — Batched inserts (`EDGES_PER_BATCH=500`) via
+   `executemany`, with a `MAX_EDGES_PER_CYCLE` cap (100K).  Optional
+   cross-source filtering (skip pairs from the same `source_file`).
+4. **Deduplication** — BFS connected components over the dedup-pair graph;
+   each component merged via read→delete→reinsert edge rewiring.
+5. **Metrics** — Branching factor and cross-link count for every active node.
+6. **Garbage collection** — Random-sample K non-permanent nodes; decay those
+   below fitness threshold.  Config-driven: `gc_mode` (soft/hard/off),
+   `gc_threshold`, `gc_grace_days`, `gc_think_cycle_penalty`.
+7. **Permanence** — Nodes with `access_count >= 10` become permanent.
+8. **Dream generation** — LLM-powered synthesis of the strongest cross-source
+   bridge.  Can run in a **background daemon thread** (`background_dream=True`)
+   so the caller returns promptly while the ~60s LLM call completes
+   asynchronously.
+9. **Orphan embedding** — Active nodes missing from the `embeddings` table
+   get auto-embedded.
+
+### Legacy path (backward compatible)
+
+When the `embeddings` table is absent (test fixtures, fresh databases), the
+`SleepProtocol.run_sleep_cycle()` class method falls back to the original
+per-method orchestration using text-based Jaccard similarity.
+
+### Key parameters (free-function API)
+
+```python
+def run_sleep_cycle(
+    db_path: str = None,
+    limit: int = 2000,           # work cap per cycle
+    model_fn=None,               # LLM callable for dreams
+    background_dream: bool = False,  # async LLM via daemon thread
+    max_edges: int = 100_000,    # cross-link edge cap
+    cross_source_only: bool = True,  # skip same-source pairs
+) -> dict:
+```
+
+### Design properties
+
+- **Work-capped**: the O(N²) similarity matrix is bounded to `limit` nodes.
+- **Batched DB**: edges are collected in batches of 500 and written in a
+  single `executemany()` + commit, not one round-trip per pair.
+- **Cross-source linking**: pairs within the same `source_file` are skipped
+  (counted in `same_source_skipped`) to reduce noise.
+- **Graceful embedding failure**: NaN, inf, and zero vectors are silently
+  filtered so a single bad embedding cannot crash the cycle.
+- **Thread-safe async**: the background dream opens its own SQLite connection;
+  WAL-mode handles concurrent writes with the next session's content.
 
 ## Configuration
 
