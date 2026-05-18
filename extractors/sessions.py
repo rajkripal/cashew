@@ -22,7 +22,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.extractors import BaseExtractor
 from extractors.utils import (
+    PERMANENCE_INSTRUCTION,
     TYPE_TAGGING_INSTRUCTION,
+    extract_typed_nodes_via_llm,
     load_ignore_patterns,
     parse_extraction_lines,
     parse_typed_statement,
@@ -180,43 +182,31 @@ Return distinct knowledge statements that would be valuable to remember. Each sh
 - Actionable or memorable for future reference
 - Written in a clear, standalone format
 
-Before emitting each statement, ask yourself: should this node exist in the graph forever? If you would not want future-you to read it, drop it. There is no hedging and no padding, either it is worth a permanent node or it is not. Skip pleasantries and routine interactions.
+{PERMANENCE_INSTRUCTION} Skip pleasantries and routine interactions.
 
 {TYPE_TAGGING_INSTRUCTION}"""
 
-        try:
-            response = model_fn(prompt)
-            logger.debug(f"LLM raw ({session_id}):\n{response}\n---")
-            statements = parse_extraction_lines(response)
-            
-            # Event clock: use the latest message timestamp in this batch as the
-            # referent_time for extracted nodes. Session extractors already parse
-            # per-message timestamps — pass them through so imported historical
-            # sessions get proper event times (not today's ingest time).
-            batch_referent_time = None
-            for msg in messages:
-                ts = (msg.get('timestamp') or '').strip()
-                if ts:
-                    batch_referent_time = ts  # last non-empty wins
+        # Event clock: use the latest message timestamp in this batch as the
+        # referent_time for extracted nodes. Session extractors already parse
+        # per-message timestamps — pass them through so imported historical
+        # sessions get proper event times (not today's ingest time).
+        batch_referent_time = None
+        for msg in messages:
+            ts = (msg.get('timestamp') or '').strip()
+            if ts:
+                batch_referent_time = ts  # last non-empty wins
 
-            nodes_out = []
-            for raw in statements:
-                node_type, content = parse_typed_statement(
-                    raw, fallback=self._classify_statement)
-                if len(content) <= 20:
-                    continue
-                nodes_out.append({
-                    "content": content,
-                    "type": node_type,
-                    "domain": "conversations",
-                    "source_file": f"extractor:session:{session_id}",
-                    "referent_time": batch_referent_time,
-                })
-            return nodes_out
-            
-        except Exception as e:
-            logger.warning(f"LLM extraction failed for {session_id}: {e}")
+        nodes_out = extract_typed_nodes_via_llm(
+            prompt, model_fn,
+            domain="conversations",
+            source_file=f"extractor:session:{session_id}",
+            debug_label=session_id,
+            referent_time=batch_referent_time,
+            classifier=self._classify_statement,
+        )
+        if nodes_out is None:
             return self._extract_simple(messages, session_id)
+        return nodes_out
 
     def _extract_simple(self, messages: List[Dict[str, Any]], 
                         session_id: str) -> List[Dict[str, Any]]:

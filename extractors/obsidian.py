@@ -24,7 +24,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.extractors import BaseExtractor
 from extractors.utils import (
+    PERMANENCE_INSTRUCTION,
     TYPE_TAGGING_INSTRUCTION,
+    extract_typed_nodes_via_llm,
     parse_frontmatter, extract_wikilinks, load_ignore_patterns,
     should_ignore, split_into_paragraphs, detect_domain_from_path,
     parse_extraction_lines, parse_typed_statement,
@@ -139,36 +141,24 @@ Return a list of distinct knowledge statements. Each should be:
 - Actionable or memorable
 - Free of markdown formatting
 
-Before emitting each statement, ask yourself: should this node exist in the graph forever? If you would not want future-you to read it, drop it. There is no hedging and no padding, either it is worth a permanent node or it is not. Focus on substantive content, not formatting or structure.
+{PERMANENCE_INSTRUCTION} Focus on substantive content, not formatting or structure.
 
 {TYPE_TAGGING_INSTRUCTION}"""
 
-        try:
-            response = model_fn(prompt)
-            logger.debug(f"LLM raw ({source_tag}):\n{response}\n---")
-            statements = parse_extraction_lines(response)
-            
-            nodes_out = []
-            for raw in statements:
-                # Obsidian historically defaulted untagged notes to "insight"
-                # rather than "observation"; preserve that for back-compat
-                # when the LLM does not tag.
-                node_type, content = parse_typed_statement(
-                    raw, default_type="insight")
-                if len(content) <= 20:
-                    continue
-                nodes_out.append({
-                    "content": content,
-                    "type": node_type,
-                    "domain": domain,
-                    "source_file": source_tag,
-                })
-            return nodes_out
-        except Exception as e:
-            logger.warning(f"LLM extraction failed: {e}")
-            # Fallback to paragraph extraction
+        # Obsidian historically defaults untagged notes to "insight" rather
+        # than "observation"; preserve that for back-compat when the LLM
+        # does not tag.
+        nodes_out = extract_typed_nodes_via_llm(
+            prompt, model_fn,
+            domain=domain,
+            source_file=source_tag,
+            debug_label=source_tag,
+            default_type="insight",
+        )
+        if nodes_out is None:
             _, body = parse_frontmatter(content)
             return self._extract_paragraphs(body, domain, source_tag)
+        return nodes_out
 
     def _extract_paragraphs(self, content: str, domain: str, 
                             source_tag: str) -> List[Dict[str, Any]]:

@@ -20,7 +20,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.extractors import BaseExtractor
 from extractors.utils import (
+    PERMANENCE_INSTRUCTION,
     TYPE_TAGGING_INSTRUCTION,
+    extract_typed_nodes_via_llm,
     load_ignore_patterns, should_ignore, split_into_paragraphs,
     detect_domain_from_path, parse_extraction_lines, parse_typed_statement,
 )
@@ -125,33 +127,21 @@ Return distinct knowledge statements that would be valuable to remember. Each sh
 - Free of markdown formatting
 - Focused on substantive content
 
-Before emitting each statement, ask yourself: should this node exist in the graph forever? If you would not want future-you to read it, drop it. There is no hedging and no padding, either it is worth a permanent node or it is not. Skip formatting, navigation, and boilerplate text.
+{PERMANENCE_INSTRUCTION} Skip formatting, navigation, and boilerplate text.
 
 {TYPE_TAGGING_INSTRUCTION}"""
 
-        try:
-            response = model_fn(prompt)
-            logger.debug(f"LLM raw ({source_tag}):\n{response}\n---")
-            statements = parse_extraction_lines(response)
-            
-            nodes_out = []
-            for raw in statements:
-                node_type, content = parse_typed_statement(
-                    raw, fallback=self._classify_content)
-                if len(content) <= 15:
-                    continue
-                nodes_out.append({
-                    "content": content,
-                    "type": node_type,
-                    "domain": domain,
-                    "source_file": source_tag,
-                })
-            return nodes_out
-            
-        except Exception as e:
-            logger.warning(f"LLM extraction failed: {e}")
-            # Fallback to paragraph extraction
+        nodes_out = extract_typed_nodes_via_llm(
+            prompt, model_fn,
+            domain=domain,
+            source_file=source_tag,
+            debug_label=source_tag,
+            min_content_length=15,
+            classifier=self._classify_content,
+        )
+        if nodes_out is None:
             return self._extract_paragraphs(content, domain, source_tag)
+        return nodes_out
 
     def _extract_paragraphs(self, content: str, domain: str, 
                             source_tag: str) -> List[Dict[str, Any]]:

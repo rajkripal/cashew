@@ -40,7 +40,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.extractors import BaseExtractor
 from extractors.utils import (
+    PERMANENCE_INSTRUCTION,
     TYPE_TAGGING_INSTRUCTION,
+    extract_typed_nodes_via_llm,
     load_ignore_patterns,
     parse_extraction_lines,
     parse_typed_statement,
@@ -237,33 +239,21 @@ Return distinct knowledge statements that would be valuable to remember. Each sh
 - Actionable or memorable for future reference
 - Written in a clear, standalone format
 
-Before emitting each statement, ask yourself: should this node exist in the graph forever? If you would not want future-you to read it, drop it. There is no hedging and no padding, either it is worth a permanent node or it is not. Skip pleasantries and routine interactions.
+{PERMANENCE_INSTRUCTION} Skip pleasantries and routine interactions.
 
 {TYPE_TAGGING_INSTRUCTION}"""
 
-        try:
-            response = model_fn(prompt)
-            logger.debug(f"LLM raw ({conv_uuid[:12]}):\n{response}\n---")
-            statements = parse_extraction_lines(response)
-
-            nodes_out = []
-            for raw in statements:
-                node_type, content = parse_typed_statement(
-                    raw, fallback=self._classify_statement)
-                if len(content) <= 20:
-                    continue
-                nodes_out.append({
-                    "content": content,
-                    "type": node_type,
-                    "domain": "claude_conversations",
-                    "source_file": f"extractor:claude_archive:{conv_uuid}",
-                    "referent_time": batch_referent_time,
-                })
-            return nodes_out
-
-        except Exception as e:
-            logger.warning(f"LLM extraction failed for {conv_uuid[:12]}: {e}")
+        nodes_out = extract_typed_nodes_via_llm(
+            prompt, model_fn,
+            domain="claude_conversations",
+            source_file=f"extractor:claude_archive:{conv_uuid}",
+            debug_label=conv_uuid[:12],
+            referent_time=batch_referent_time,
+            classifier=self._classify_statement,
+        )
+        if nodes_out is None:
             return self._extract_simple(turns, conv_uuid, conv_name)
+        return nodes_out
 
     def _extract_simple(self, turns: List[Dict[str, Any]],
                         conv_uuid: str, conv_name: str) -> List[Dict[str, Any]]:
