@@ -18,10 +18,13 @@ from core import daemon as daemon_mod
 from core.embedding_cache import EmbeddingCache
 from core.embedding_service import (
     DaemonBackend,
-    EMBEDDING_DIM,
     EmbeddingService,
     LocalBackend,
+    resolve_embedding_dim,
 )
+
+# Derive expected dimension from the configured embedding model.
+EXPECTED_DIM = resolve_embedding_dim()
 
 
 @pytest.fixture
@@ -58,7 +61,7 @@ class TestDaemonIntegration:
         assert resp is not None and resp["ok"] is True
         vec = resp["result"]
         assert isinstance(vec, list)
-        assert len(vec) == EMBEDDING_DIM
+        assert len(vec) == EXPECTED_DIM
 
     def test_embed_batch_op_returns_per_input_vector(self, running_daemon):
         resp = daemon_mod.client_request(
@@ -69,7 +72,7 @@ class TestDaemonIntegration:
         vectors = resp["result"]
         assert len(vectors) == 3
         for v in vectors:
-            assert len(v) == EMBEDDING_DIM
+            assert len(v) == EXPECTED_DIM
 
     def test_embed_batch_empty_list(self, running_daemon):
         resp = daemon_mod.client_request(
@@ -84,8 +87,8 @@ class TestDaemonIntegration:
         )
         assert resp["ok"] is True
         out = resp["result"]
-        assert out[0] == [0.0] * EMBEDDING_DIM
-        assert out[1] != [0.0] * EMBEDDING_DIM
+        assert out[0] == [0.0] * EXPECTED_DIM
+        assert out[1] != [0.0] * EXPECTED_DIM
 
     def test_service_via_daemon_matches_local(self, running_daemon, tmp_path):
         """The same model loaded in the daemon and in-process must produce
@@ -104,7 +107,7 @@ class TestDaemonIntegration:
 
         class BrokenDaemon:
             def encode(self, texts):
-                return np.zeros((0, EMBEDDING_DIM), dtype=np.float32)
+                return np.zeros((0, EXPECTED_DIM), dtype=np.float32)
 
         in_process = EmbeddingService(
             cache=cache_b, daemon=BrokenDaemon(), local=LocalBackend()
