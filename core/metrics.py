@@ -19,9 +19,16 @@ def is_metrics_enabled() -> bool:
     return os.getenv('CASHEW_METRICS', '0') == '1'
 
 
+def _connect(db_path: str) -> sqlite3.Connection:
+    """Connection factory with busy_timeout to avoid lock contention."""
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
+    return conn
+
+
 def ensure_metrics_table(db_path: str):
     """Ensure the metrics table exists in the database"""
-    conn = sqlite3.connect(db_path)
+    conn = _connect(db_path)
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -53,10 +60,10 @@ def record_metric(db_path: str, metric_type: str, duration_ms: float, **kwargs):
     
     try:
         ensure_metrics_table(db_path)
-        
-        conn = sqlite3.connect(db_path)
+
+        conn = _connect(db_path)
         cursor = conn.cursor()
-        
+
         cursor.execute("""
             INSERT INTO metrics (timestamp, metric_type, duration_ms, metadata)
             VALUES (?, ?, ?, ?)
@@ -66,7 +73,7 @@ def record_metric(db_path: str, metric_type: str, duration_ms: float, **kwargs):
             duration_ms,
             json.dumps(kwargs) if kwargs else None
         ))
-        
+
         conn.commit()
         conn.close()
         
@@ -136,10 +143,10 @@ def get_metrics_summary(db_path: str, hours: int = 24) -> Dict[str, Any]:
     """
     try:
         ensure_metrics_table(db_path)
-        
-        conn = sqlite3.connect(db_path)
+
+        conn = _connect(db_path)
         cursor = conn.cursor()
-        
+
         # Calculate time threshold
         since = (datetime.now() - timedelta(hours=hours)).isoformat()
         
@@ -234,15 +241,15 @@ def get_metrics_timeseries(db_path: str, metric_type: str, hours: int = 24) -> L
     """
     try:
         ensure_metrics_table(db_path)
-        
-        conn = sqlite3.connect(db_path)
+
+        conn = _connect(db_path)
         cursor = conn.cursor()
-        
+
         since = (datetime.now() - timedelta(hours=hours)).isoformat()
-        
+
         cursor.execute("""
             SELECT timestamp, duration_ms, metadata
-            FROM metrics 
+            FROM metrics
             WHERE metric_type = ? AND timestamp >= ?
             ORDER BY timestamp
         """, (metric_type, since))
@@ -285,14 +292,14 @@ def get_retrieval_stats(db_path: str, hours: int = 24) -> Dict[str, Any]:
     """
     try:
         ensure_metrics_table(db_path)
-        
-        conn = sqlite3.connect(db_path)
+
+        conn = _connect(db_path)
         cursor = conn.cursor()
-        
+
         since = (datetime.now() - timedelta(hours=hours)).isoformat()
-        
+
         cursor.execute("""
-            SELECT metadata FROM metrics 
+            SELECT metadata FROM metrics
             WHERE metric_type = 'retrieval' AND timestamp >= ? AND metadata IS NOT NULL
         """, (since,))
         
@@ -366,13 +373,13 @@ def get_recent_metrics(db_path: str, limit: int = 20) -> List[Dict[str, Any]]:
     """
     try:
         ensure_metrics_table(db_path)
-        
-        conn = sqlite3.connect(db_path)
+
+        conn = _connect(db_path)
         cursor = conn.cursor()
-        
+
         cursor.execute("""
             SELECT timestamp, metric_type, duration_ms, metadata
-            FROM metrics 
+            FROM metrics
             ORDER BY id DESC
             LIMIT ?
         """, (limit,))
@@ -407,10 +414,10 @@ def clear_metrics(db_path: str):
     """Clear all metrics from the database"""
     try:
         ensure_metrics_table(db_path)
-        
-        conn = sqlite3.connect(db_path)
+
+        conn = _connect(db_path)
         cursor = conn.cursor()
-        
+
         cursor.execute("DELETE FROM metrics")
         conn.commit()
         conn.close()
