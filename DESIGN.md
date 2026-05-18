@@ -212,16 +212,26 @@ def roots() -> list[ThoughtNode]:
 ```
 
 ### 4.5 Sleep Protocol
-**Self-maintenance through cross-linking, decay, and deduplication**
+**Self-maintenance through cross-linking, decay, deduplication, and incremental consolidation**
+
+The sleep cycle runs as a **work-capped, 9-phase vectorized pipeline**:
+
 ```python
-def run_sleep_cycle():
-    # 1. Cross-link semantically similar nodes across domains (0.7-0.85 similarity)
-    # 2. Decay low-fitness nodes (pure graph signal:
-    #      branching_factor + cross_links * 0.5 + derivation_depth * 0.1)
-    # 3. Deduplicate near-identical content (>0.82 similarity, merge + redirect)
-    # 4. Promote top sqrt(N) nodes by fitness to core_memory + permanent=1
-    # 5. Log all operations for auditability
+def run_sleep_cycle(db_path, limit=2000, model_fn=None, ...):
+    # 0. Select oldest `limit` non-decayed nodes with embeddings
+    # 1. Compute full pairwise cosine similarity matrix (sklearn)
+    # 2. Cross-link pairs with 0.70 ≤ sim < 0.82 (batched inserts, cross-source filter)
+    # 3. Deduplicate pairs with sim ≥ 0.82 (BFS connected components → merge clusters)
+    # 4. Compute node metrics (branching factor + cross-link count)
+    # 5. Garbage collect low-fitness non-permanent nodes (config-driven threshold)
+    # 6. Promote high-access-count nodes to permanent status
+    # 7. Promote top √N nodes by fitness to core_memory + permanent
+    # 8. Generate dream node via LLM synthesis of strongest cross-source bridge
+    # 9. Auto-embed active nodes missing from embeddings table
 ```
+
+A backward-compatible legacy path (text-based Jaccard similarity) is available
+when the `embeddings` table doesn't exist.
 
 ---
 
