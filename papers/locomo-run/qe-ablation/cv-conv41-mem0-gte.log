@@ -1,0 +1,241 @@
+[2026-05-08 18:13:29] state reset
+[2026-05-08 18:13:29] === conv-41: 32 sessions, 193 questions ===
+/opt/homebrew/lib/python3.14/site-packages/mem0/embeddings/fastembed.py:16: UserWarning: The model thenlper/gte-large now uses mean pooling instead of CLS embedding. In order to preserve the previous behaviour, consider either pinning fastembed version to 0.5.1 or using `add_custom_model` functionality.
+  self.dense_model = TextEmbedding(model_name=self.config.model)
+Using Python 3.14.3 environment at: /Users/bunny/.openclaw/workspace/.venv
+Audited 1 package in 20ms
+Failed to load spaCy lemma model: [E050] Can't find model 'en_core_web_sm'. It doesn't seem to be a Python package or a valid path to a data directory.
+Using Python 3.14.3 environment at: /Users/bunny/.openclaw/workspace/.venv
+Audited 1 package in 0.67ms
+Failed to load spaCy full model: [E050] Can't find model 'en_core_web_sm'. It doesn't seem to be a Python package or a valid path to a data directory.
+[38;5;2m✔ Download and installation successful[0m
+You can now load the package via spacy.load('en_core_web_sm')
+[38;5;2m✔ Download and installation successful[0m
+You can now load the package via spacy.load('en_core_web_sm')
+[2026-05-08 18:13:43] ingest conv-41 s1: 16 turns, 12.3s, events=8
+[2026-05-08 18:14:01] ingest conv-41 s2: 28 turns, 17.8s, events=8
+[2026-05-08 18:14:10] ingest conv-41 s3: 17 turns, 9.2s, events=6
+[2026-05-08 18:14:22] ingest conv-41 s4: 26 turns, 11.6s, events=6
+[2026-05-08 18:14:31] ingest conv-41 s5: 16 turns, 9.0s, events=6
+[2026-05-08 18:14:40] ingest conv-41 s6: 22 turns, 9.6s, events=8
+[2026-05-08 18:14:47] ingest conv-41 s7: 17 turns, 6.3s, events=5
+[2026-05-08 18:14:58] ingest conv-41 s8: 26 turns, 11.2s, events=8
+[2026-05-08 18:15:05] ingest conv-41 s9: 18 turns, 7.5s, events=6
+[2026-05-08 18:15:17] ingest conv-41 s10: 18 turns, 11.6s, events=6
+[2026-05-08 18:15:28] ingest conv-41 s11: 21 turns, 10.9s, events=5
+[2026-05-08 18:15:34] ingest conv-41 s12: 23 turns, 6.7s, events=4
+[2026-05-08 18:15:52] ingest conv-41 s13: 37 turns, 18.0s, events=7
+[2026-05-08 18:16:11] ingest conv-41 s14: 23 turns, 18.1s, events=7
+[2026-05-08 18:16:17] ingest conv-41 s15: 19 turns, 6.3s, events=4
+[2026-05-08 18:16:25] ingest conv-41 s16: 19 turns, 7.8s, events=5
+[2026-05-08 18:16:30] ingest conv-41 s17: 16 turns, 5.5s, events=4
+[2026-05-08 18:16:40] ingest conv-41 s18: 23 turns, 9.9s, events=7
+[2026-05-08 18:16:52] ingest conv-41 s19: 26 turns, 12.1s, events=9
+[2026-05-08 18:16:58] ingest conv-41 s20: 18 turns, 6.4s, events=3
+[2026-05-08 18:17:09] ingest conv-41 s21: 29 turns, 11.0s, events=7
+[2026-05-08 18:17:19] ingest conv-41 s22: 21 turns, 9.4s, events=6
+[2026-05-08 18:17:26] ingest conv-41 s23: 14 turns, 6.9s, events=4
+[2026-05-08 18:17:40] ingest conv-41 s24: 17 turns, 13.9s, events=5
+[2026-05-08 18:17:47] ingest conv-41 s25: 20 turns, 7.7s, events=7
+[2026-05-08 18:18:04] ingest conv-41 s26: 17 turns, 16.7s, events=6
+[2026-05-08 18:18:13] ingest conv-41 s27: 16 turns, 9.2s, events=5
+[2026-05-08 18:18:19] ingest conv-41 s28: 19 turns, 6.2s, events=4
+[2026-05-08 18:18:28] ingest conv-41 s29: 18 turns, 8.1s, events=5
+[2026-05-08 18:18:48] ingest conv-41 s30: 23 turns, 20.5s, events=5
+[2026-05-08 18:19:00] ingest conv-41 s31: 23 turns, 11.6s, events=6
+[2026-05-08 18:19:24] ingest conv-41 s32: 17 turns, 23.8s, events=4
+[2026-05-08 18:19:26] conv-41 q0 cat2 F1=0.00 EM=0 hits=20 pred='3 May 2023' gold='her mother'
+[2026-05-08 18:19:28] conv-41 q1 cat2 F1=1.00 EM=1 hits=20 pred='21 December 2022' gold='21 December 2022'
+[2026-05-08 18:19:31] conv-41 q2 cat1 F1=1.00 EM=1 hits=20 pred='Taekwondo and kickboxing.' gold='Kickboxing, Taekwondo'
+[2026-05-08 18:19:33] conv-41 q3 cat1 F1=0.86 EM=0 hits=20 pred='Homeless shelter volunteering.' gold='Volunteering at a homeless shelter'
+[2026-05-08 18:19:35] conv-41 q4 cat2 F1=0.00 EM=0 hits=20 pred='Late December 2022' gold='The week before 1 January 2023'
+[2026-05-08 18:19:37] conv-41 q5 cat2 F1=1.00 EM=1 hits=20 pred='December 2022' gold='December 2022'
+[2026-05-08 18:19:40] conv-41 q6 cat1 F1=0.67 EM=0 hits=20 pred='At the homeless shelter (volunteering) and the gym' gold='homeless shelter, gym, church'
+[2026-05-08 18:19:43] conv-41 q7 cat1 F1=0.33 EM=0 hits=20 pred='A **film camera** (used to take beach photos) and ' gold='A doll, a film camera'
+[2026-05-08 18:19:46] conv-41 q8 cat3 F1=0.00 EM=0 hits=20 pred='Based on the memories, John has experienced **fina' gold='Middle-class or wealthy'
+[2026-05-08 18:19:49] conv-41 q9 cat1 F1=1.00 EM=1 hits=20 pred='Her aunt.' gold='Her aunt'
+[2026-05-08 18:19:51] conv-41 q10 cat2 F1=1.00 EM=1 hits=20 pred='24 February 2023' gold='February 24, 2023'
+[2026-05-08 18:19:55] conv-41 q11 cat1 F1=0.04 EM=0 hits=20 pred='Maria met **David** (a man at a charity event arou' gold='David, Jean, Cindy, Laura'
+[2026-05-08 18:19:58] conv-41 q12 cat1 F1=0.25 EM=0 hits=20 pred='A **military aptitude test** — he failed it in ear' gold='The military aptitude test'
+[2026-05-08 18:20:00] conv-41 q13 cat2 F1=0.22 EM=0 hits=20 pred='Around 27 February 2023.' gold='The week before 6 March 2023'
+[2026-05-08 18:20:04] conv-41 q14 cat3 F1=0.06 EM=0 hits=20 pred='Yes — John has a strong respect for the military, ' gold='Yes'
+[2026-05-08 18:20:06] conv-41 q15 cat1 F1=0.43 EM=0 hits=20 pred='A creative writing class (late February 2023) and ' gold='Poetry, creative writing'
+[2026-05-08 18:20:08] conv-41 q16 cat2 F1=0.25 EM=0 hits=20 pred='Late March 2023' gold='The week before 2 April 2023'
+[2026-05-08 18:20:10] conv-41 q17 cat3 F1=0.00 EM=0 hits=20 pred='Mechanical engineering (inferred from his mechanic' gold='Political science, Public administration, Public a'
+[2026-05-08 18:20:13] conv-41 q18 cat1 F1=0.50 EM=0 hits=20 pred='His colleague Rob.' gold='Rob'
+[2026-05-08 18:20:17] conv-41 q19 cat1 F1=0.43 EM=0 hits=20 pred="John's car broke down on Friday, April 7, 2023." gold='Broken windshield, Car broke down'
+[2026-05-08 18:20:20] conv-41 q20 cat2 F1=1.00 EM=1 hits=20 pred='2022' gold='2022'
+[2026-05-08 18:20:23] conv-41 q21 cat1 F1=0.32 EM=0 hits=20 pred='Pacific Northwest coast, several national parks (2' gold='Pacific northwest, east coast'
+[2026-05-08 18:20:25] conv-41 q22 cat2 F1=1.00 EM=1 hits=20 pred='March 2023' gold='March 2023'
+[2026-05-08 18:20:28] conv-41 q23 cat1 F1=0.25 EM=0 hits=20 pred='Cakes (July 2023), peach cobbler (December 2022), ' gold='Banana split sundae, Peach cobbler'
+[2026-05-08 18:20:30] conv-41 q24 cat2 F1=0.00 EM=0 hits=20 pred='April 2023' gold='April.2023'
+[2026-05-08 18:20:32] conv-41 q25 cat1 F1=0.29 EM=0 hits=20 pred='Spain (2022 solo trip) and England (visited London' gold='Spain, England'
+[2026-05-08 18:20:35] conv-41 q26 cat1 F1=0.62 EM=0 hits=20 pred='Maria bought a cross necklace and joined a nearby ' gold='Join a local church, buy a cross necklace'
+[2026-05-08 18:20:38] conv-41 q27 cat2 F1=0.44 EM=0 hits=20 pred='Around 13 May 2023' gold='The Friday before 20 May 2023'
+[2026-05-08 18:20:40] conv-41 q28 cat1 F1=0.18 EM=0 hits=20 pred='Improving education and infrastructure in his comm' gold='Veterans, schools, infrastructure'
+[2026-05-08 18:20:43] conv-41 q29 cat1 F1=1.00 EM=1 hits=20 pred='A **ring-toss tournament** and a **chili cook-off*' gold='Chili cook-off, ring-toss tournament'
+[2026-05-08 18:20:45] conv-41 q30 cat1 F1=0.89 EM=0 hits=20 pred='A homeless shelter and a local dog shelter.' gold='The homeless shelter, the dog shelter'
+[2026-05-08 18:20:48] conv-41 q31 cat2 F1=0.27 EM=0 hits=20 pred='Approximately June 2013 (about 10 years before Max' gold='In 2013'
+[2026-05-08 18:20:51] conv-41 q32 cat1 F1=0.14 EM=0 hits=20 pred='John went on a **hiking trip** with workmates (May' gold='Hiking, mountaineering'
+[2026-05-08 18:20:54] conv-41 q33 cat1 F1=0.67 EM=0 hits=20 pred='Aerial yoga and kundalini yoga.' gold='Aerial, kundalini'
+[2026-05-08 18:20:59] conv-41 q34 cat2 F1=0.44 EM=0 hits=20 pred='Around 9 June 2023.' gold='The week before 16 June 2023'
+[2026-05-08 18:21:05] conv-41 q35 cat1 F1=1.00 EM=1 hits=20 pred='Florida and Oregon.' gold='Oregon, Florida'
+[2026-05-08 18:21:08] conv-41 q36 cat1 F1=0.31 EM=0 hits=20 pred='John attended a **violin concert** (late February ' gold='Live music event, violin concert'
+[2026-05-08 18:21:11] conv-41 q37 cat1 F1=0.31 EM=0 hits=20 pred='John hosted a small party for veterans, participat' gold='Petition, march, party, visiting veterans hospital'
+[2026-05-08 18:21:13] conv-41 q38 cat2 F1=1.00 EM=1 hits=20 pred='2 July 2023' gold='July 2, 2023'
+[2026-05-08 18:21:16] conv-41 q39 cat3 F1=0.29 EM=0 hits=20 pred='Around **Independence Day** (July 4th) — the accid' gold='Independence Day'
+[2026-05-08 18:21:18] conv-41 q40 cat1 F1=0.57 EM=0 hits=20 pred='Kyle (one-year-old son) and Sara (daughter).' gold='Kyle, Sara'
+[2026-05-08 18:21:21] conv-41 q41 cat3 F1=0.07 EM=0 hits=20 pred='Based on the memories, John lives close to a beach' gold='beach'
+[2026-05-08 18:21:23] conv-41 q42 cat1 F1=0.00 EM=0 hits=20 pred="John's old neighborhood" gold='West County'
+[2026-05-08 18:21:26] conv-41 q43 cat2 F1=0.44 EM=0 hits=20 pred='Around 1 July 2023.' gold='The week before 7 July 2023'
+[2026-05-08 18:21:28] conv-41 q44 cat1 F1=0.27 EM=0 hits=20 pred='Maria has had a picnic, gone hiking, gone camping,' gold='Hiking, picnic, volunteer work'
+[2026-05-08 18:21:39] conv-41 q45 cat3 F1=0.11 EM=0 hits=20 pred='Based on the memory, John is motivated by "a stron' gold='No, he has goals specifically in the U.S. like joi'
+[2026-05-08 18:21:41] conv-41 q46 cat2 F1=0.50 EM=0 hits=20 pred='July 15-16, 2023' gold='The weekend before 22 July 2023'
+[2026-05-08 18:21:44] conv-41 q47 cat1 F1=0.48 EM=0 hits=20 pred='Taekwondo, kickboxing, yoga, weight training, boot' gold='Weight training, Circuit training, Kickboxing, yog'
+[2026-05-08 18:21:46] conv-41 q48 cat2 F1=0.44 EM=0 hits=20 pred='Around 24 July 2023.' gold='The sunday before 3` July 2023'
+[2026-05-08 18:21:48] conv-41 q49 cat1 F1=0.00 EM=0 hits=20 pred='Baked goods.' gold='Cakes'
+[2026-05-08 18:21:51] conv-41 q50 cat3 F1=0.06 EM=0 hits=20 pred='Family-oriented, community-driven, physically acti' gold='Selfless, family-oriented, passionate, rational'
+[2026-05-08 18:21:53] conv-41 q51 cat2 F1=0.00 EM=0 hits=20 pred='Mid-2022' gold='Around August 2022'
+[2026-05-08 18:21:56] conv-41 q52 cat1 F1=1.00 EM=1 hits=20 pred='Cindy and Laura' gold='Cindy, Laura'
+[2026-05-08 18:21:58] conv-41 q53 cat2 F1=0.67 EM=0 hits=20 pred='Approximately 2022' gold='2022'
+[2026-05-08 18:22:00] conv-41 q54 cat2 F1=1.00 EM=1 hits=20 pred='4 August 2023' gold='August 4, 2023'
+[2026-05-08 18:22:02] conv-41 q55 cat2 F1=0.75 EM=0 hits=20 pred='9 August 2023' gold='The week before 9 August 2023'
+[2026-05-08 18:22:04] conv-41 q56 cat2 F1=0.50 EM=0 hits=20 pred='August 5-6, 2023' gold='first weekend of August 2023'
+[2026-05-08 18:22:07] conv-41 q57 cat1 F1=0.41 EM=0 hits=20 pred='Veterans and their families (5K charity run), vict' gold='Toy drive, Community food drive, veterans, domesti'
+[2026-05-08 18:22:09] conv-41 q58 cat2 F1=0.22 EM=0 hits=20 pred='Late July 2023' gold='Two weeks before 11 August 2023'
+[2026-05-08 18:22:11] conv-41 q59 cat2 F1=0.80 EM=0 hits=20 pred='Summer 2022' gold='The summer of 2022'
+[2026-05-08 18:22:14] conv-41 q60 cat1 F1=1.00 EM=1 hits=20 pred='Coco and Shadow.' gold='Coco, Shadow'
+[2026-05-08 18:22:16] conv-41 q61 cat2 F1=0.50 EM=0 hits=20 pred='6 August 2023' gold='The week before 13 August 2023'
+[2026-05-08 18:22:18] conv-41 q62 cat1 F1=0.00 EM=0 hits=20 pred='1 dog — a black puppy named Shadow, adopted around' gold='two'
+[2026-05-08 18:22:21] conv-41 q63 cat2 F1=0.50 EM=0 hits=20 pred='2 weeks' gold='two weeks'
+[2026-05-08 18:22:25] conv-41 q64 cat3 F1=0.04 EM=0 hits=20 pred="Based on the memory, there's no direct mention of " gold='Shelter coordinator, Counselor'
+[2026-05-08 18:22:27] conv-41 q65 cat4 F1=0.67 EM=0 hits=20 pred='Improving education and infrastructure in his comm' gold='Improving education and infrastructure'
+[2026-05-08 18:22:30] conv-41 q66 cat4 F1=0.92 EM=0 hits=20 pred='Growing up seeing how lack of education and crumbl' gold='Seeing how lack of education and crumbling infrast'
+[2026-05-08 18:22:32] conv-41 q67 cat4 F1=0.70 EM=0 hits=20 pred='The funding helped with "repairs and renovations, ' gold='Enabled needed repairs and renovations, making the'
+[2026-05-08 18:22:34] conv-41 q68 cat4 F1=0.00 EM=0 hits=20 pred='No information available.' gold='aerial yoga'
+[2026-05-08 18:22:37] conv-41 q69 cat4 F1=0.22 EM=0 hits=20 pred='No information available.\n\n(The memory shows Maria' gold='old car'
+[2026-05-08 18:22:40] conv-41 q70 cat4 F1=0.67 EM=0 hits=20 pred='Homemade pizzas' gold='pizza'
+[2026-05-08 18:22:43] conv-41 q71 cat4 F1=1.00 EM=1 hits=20 pred='A service-focused online group.' gold='service-focused online group'
+[2026-05-08 18:22:45] conv-41 q72 cat4 F1=0.76 EM=0 hits=20 pred='Volunteered at a homeless shelter to distribute fo' gold='gave out food and supplies at a homeless shelter, '
+[2026-05-08 18:22:47] conv-41 q73 cat4 F1=0.13 EM=0 hits=20 pred="Maria's aunt, who believed in service and helped M" gold='Her aunt'
+[2026-05-08 18:22:49] conv-41 q74 cat4 F1=0.20 EM=0 hits=20 pred='No information available.' gold='The girl seemed sad and had no other family'
+[2026-05-08 18:22:51] conv-41 q75 cat4 F1=1.00 EM=1 hits=20 pred='A divorce, job loss, and homelessness.' gold='divorce, job loss, homelessness'
+[2026-05-08 18:22:54] conv-41 q76 cat4 F1=0.30 EM=0 hits=20 pred='John decided to run for office again because of "t' gold='saw the impact he could make in the community thro'
+[2026-05-08 18:22:56] conv-41 q77 cat4 F1=1.00 EM=1 hits=20 pred="A beginner's yoga class." gold="beginner's yoga class"
+[2026-05-08 18:22:58] conv-41 q78 cat4 F1=1.00 EM=1 hits=20 pred='Kyle' gold='Kyle'
+[2026-05-08 18:23:00] conv-41 q79 cat4 F1=1.00 EM=1 hits=20 pred='A few times a week.' gold='A few times a week'
+[2026-05-08 18:23:03] conv-41 q80 cat4 F1=0.57 EM=0 hits=20 pred='A shadow box featuring a castle image and painted ' gold='painting of a castle on a hill'
+[2026-05-08 18:23:06] conv-41 q81 cat4 F1=0.14 EM=0 hits=20 pred='From her visit to London, England, where she was c' gold='England'
+[2026-05-08 18:23:08] conv-41 q82 cat4 F1=0.00 EM=0 hits=20 pred='No information available.' gold='completion of a university degree'
+[2026-05-08 18:23:14] conv-41 q83 cat4 F1=1.00 EM=1 hits=20 pred='Education and infrastructure.' gold='education and infrastructure'
+[2026-05-08 18:23:17] conv-41 q84 cat4 F1=0.67 EM=0 hits=20 pred='A 5K charity run for a homeless shelter.' gold='a 5K charity run'
+[2026-05-08 18:23:20] conv-41 q85 cat4 F1=0.00 EM=0 hits=20 pred='A community fundraising event (the weekend of Augu' gold='career fair at a local school'
+[2026-05-08 18:23:23] conv-41 q86 cat4 F1=0.38 EM=0 hits=20 pred="John's car broke down on Friday, April 7, 2023, on" gold='His car broke down'
+[2026-05-08 18:23:25] conv-41 q87 cat4 F1=0.50 EM=0 hits=20 pred='The Pacific Northwest coast and several national p' gold='Pacific Northwest'
+[2026-05-08 18:23:27] conv-41 q88 cat4 F1=0.36 EM=0 hits=20 pred='Politics and government, with a focus on education' gold='politics and the government'
+[2026-05-08 18:23:31] conv-41 q89 cat4 F1=0.84 EM=0 hits=20 pred='To raise awareness and start conversations to crea' gold='raise awareness and start conversations to create '
+[2026-05-08 18:23:33] conv-41 q90 cat4 F1=0.62 EM=0 hits=20 pred='Politics and government, with a focus on **educati' gold='education reform and infrastructure development'
+[2026-05-08 18:23:35] conv-41 q91 cat2 F1=0.00 EM=0 hits=20 pred='March 2023' gold='a tech-for-good convention'
+[2026-05-08 18:23:38] conv-41 q92 cat4 F1=1.00 EM=1 hits=20 pred='Three times a week.' gold='Three times a week'
+[2026-05-08 18:23:40] conv-41 q93 cat4 F1=0.71 EM=0 hits=20 pred='The family has noticed gains in energy, strength, ' gold='More energy, gains in strength and endurance'
+[2026-05-08 18:23:42] conv-41 q94 cat4 F1=1.00 EM=1 hits=20 pred='Salads, sandwiches, and homemade desserts.' gold='Salads, sandwiches, homemade desserts'
+[2026-05-08 18:23:45] conv-41 q95 cat4 F1=0.67 EM=0 hits=20 pred='Cooked dinner together.' gold='Made dinner together'
+[2026-05-08 18:23:47] conv-41 q96 cat4 F1=0.30 EM=0 hits=20 pred='Maria joined a nearby church and bought a cross ne' gold='joined a nearby church'
+[2026-05-08 18:23:50] conv-41 q97 cat4 F1=1.00 EM=1 hits=20 pred='To feel closer to a community and her faith.' gold='to feel closer to a community and her faith'
+[2026-05-08 18:23:53] conv-41 q98 cat4 F1=0.50 EM=0 hits=20 pred='A small party where they shared stories, made conn' gold='a small party to share their stories'
+[2026-05-08 18:23:55] conv-41 q99 cat4 F1=0.55 EM=0 hits=20 pred='They shared stories, made connections, and found c' gold='share stories and make connections'
+[2026-05-08 18:23:58] conv-41 q100 cat4 F1=0.17 EM=0 hits=20 pred='John found it **heartwarming** and it reinforced h' gold='heartwarming'
+[2026-05-08 18:24:00] conv-41 q101 cat4 F1=0.50 EM=0 hits=20 pred='A chili cook-off fundraiser.' gold='fundraiser'
+[2026-05-08 18:24:10] conv-41 q102 cat4 F1=0.17 EM=0 hits=20 pred='The memory mentions fundraisers (chili cook-off, r' gold='chili cook-off'
+[2026-05-08 18:24:12] conv-41 q103 cat4 F1=1.00 EM=1 hits=20 pred='Max' gold='Max'
+[2026-05-08 18:24:14] conv-41 q104 cat4 F1=1.00 EM=1 hits=20 pred='10 years' gold='10 years'
+[2026-05-08 18:24:16] conv-41 q105 cat4 F1=0.57 EM=0 hits=20 pred='By adopting a rescue dog to give it a loving home.' gold='By considering adopting a rescue dog'
+[2026-05-08 18:24:18] conv-41 q106 cat4 F1=1.00 EM=1 hits=20 pred='Responsibility and compassion.' gold='Responsibility and compassion'
+[2026-05-08 18:24:20] conv-41 q107 cat4 F1=0.00 EM=0 hits=20 pred='No information available.' gold='volunteering at a local dog shelter once a month'
+[2026-05-08 18:24:22] conv-41 q108 cat4 F1=0.83 EM=0 hits=20 pred='Breath-taking and magical, like being in a fairy t' gold='Like being in a fairy tale'
+[2026-05-08 18:24:25] conv-41 q109 cat4 F1=1.00 EM=1 hits=20 pred='"free and light"' gold='Free and light'
+[2026-05-08 18:24:27] conv-41 q110 cat4 F1=0.00 EM=0 hits=20 pred='No information available.' gold='joined a gym'
+[2026-05-08 18:24:29] conv-41 q111 cat4 F1=1.00 EM=1 hits=20 pred='Kundalini yoga' gold='kundalini yoga'
+[2026-05-08 18:24:31] conv-41 q112 cat4 F1=1.00 EM=1 hits=20 pred='Assistant manager' gold='assistant manager'
+[2026-05-08 18:24:33] conv-41 q113 cat4 F1=0.33 EM=0 hits=20 pred='Technical challenges, workplace difficulties, and ' gold='self-doubt'
+[2026-05-08 18:24:36] conv-41 q114 cat4 F1=0.38 EM=0 hits=20 pred='John credits "family support and personal grit" fo' gold='having support at home and his own grit'
+[2026-05-08 18:24:38] conv-41 q115 cat4 F1=1.00 EM=1 hits=20 pred='A live music event.' gold='live music event'
+[2026-05-08 18:24:40] conv-41 q116 cat4 F1=0.40 EM=0 hits=20 pred="Maria's cousin had to **urgently leave her home** " gold='Her cousin had to leave and find a new place in a '
+[2026-05-08 18:24:43] conv-41 q117 cat4 F1=0.57 EM=0 hits=20 pred="A marching event for veterans' rights." gold='marching event'
+[2026-05-08 18:24:48] conv-41 q118 cat4 F1=0.33 EM=0 hits=20 pred='John found the marching event **inspiring and moti' gold='Respect for the military and the desire to show su'
+[2026-05-08 18:24:50] conv-41 q119 cat4 F1=1.00 EM=1 hits=20 pred='At least once a week.' gold='At least once a week'
+[2026-05-08 18:24:53] conv-41 q120 cat4 F1=0.67 EM=0 hits=20 pred='A severe flood.' gold='Flood'
+[2026-05-08 18:24:56] conv-41 q121 cat4 F1=0.11 EM=0 hits=20 pred='The flood caused **significant damage to many home' gold='Lots of homes were ruined.'
+[2026-05-08 18:24:58] conv-41 q122 cat4 F1=0.55 EM=0 hits=20 pred="A flood that damaged John's old neighborhood." gold="Flood in John's old area"
+[2026-05-08 18:25:00] conv-41 q123 cat4 F1=0.62 EM=0 hits=20 pred='Maria planned to go to dinner with friends from th' gold='have dinner with friends from the gym'
+[2026-05-08 18:25:04] conv-41 q124 cat4 F1=0.50 EM=0 hits=20 pred='Relaxed under trees, played charades and a scaveng' gold='played games like charades and a scavenger hunt'
+[2026-05-08 18:25:08] conv-41 q125 cat4 F1=0.24 EM=0 hits=20 pred='John appreciated meeting inspiring people, includi' gold='the resilience of the veterans and their inspiring'
+[2026-05-08 18:25:11] conv-41 q126 cat4 F1=0.12 EM=0 hits=20 pred="John's visit to the veteran's hospital reinforced " gold='appreciation for giving back'
+[2026-05-08 18:25:14] conv-41 q127 cat4 F1=0.15 EM=0 hits=20 pred='John met an elderly veteran named Samuel whose sto' gold='seeing the resilience of the veterans'
+[2026-05-08 18:25:19] conv-41 q128 cat4 F1=0.18 EM=0 hits=20 pred='Hiking (around July 15-16, 2023) and a picnic (aro' gold='hiking'
+[2026-05-08 18:25:22] conv-41 q129 cat4 F1=0.05 EM=0 hits=20 pred='John described the yoga studio as having "a chill ' gold='Trying new classes is a fun way to switch up the e'
+[2026-05-08 18:25:24] conv-41 q130 cat4 F1=0.40 EM=0 hits=20 pred='Kickboxing and circuit training.' gold='weight training'
+[2026-05-08 18:25:26] conv-41 q131 cat4 F1=0.50 EM=0 hits=20 pred='Baked goods and dropped them off at the homeless s' gold='volunteered at a homeless shelter'
+[2026-05-08 18:25:30] conv-41 q132 cat4 F1=0.60 EM=0 hits=20 pred='Maria started volunteering at the homeless shelter' gold='Witnessed a family struggling on the streets and r'
+[2026-05-08 18:25:33] conv-41 q133 cat4 F1=0.24 EM=0 hits=20 pred='John took his kids to a military memorial around l' gold='Had a meaningful experience at a military memorial'
+[2026-05-08 18:25:35] conv-41 q134 cat4 F1=0.44 EM=0 hits=20 pred='John\'s kids were "awestruck and humbled" by the ex' gold='awestruck and humbled'
+[2026-05-08 18:25:37] conv-41 q135 cat4 F1=0.00 EM=0 hits=20 pred='No information available.' gold='To remember and appreciate those who served'
+[2026-05-08 18:25:39] conv-41 q136 cat4 F1=0.77 EM=0 hits=20 pred='Respecting and appreciating those who served.' gold='Teaching them to respect and appreciate those who '
+[2026-05-08 18:25:42] conv-41 q137 cat4 F1=0.84 EM=0 hits=20 pred='John lost his job at a mechanical engineering comp' gold='John lost his job at the mechanical engineering co'
+[2026-05-08 18:25:44] conv-41 q138 cat4 F1=1.00 EM=1 hits=20 pred='Community work' gold='community work'
+[2026-05-08 18:25:47] conv-41 q139 cat4 F1=0.27 EM=0 hits=20 pred='Renovated a rundown community center, describing i' gold='Helped renovate a rundown community center.'
+[2026-05-08 18:25:49] conv-41 q140 cat4 F1=0.60 EM=0 hits=20 pred='Veterans and their families, and victims of domest' gold='veterans and their families'
+[2026-05-08 18:25:52] conv-41 q141 cat4 F1=1.00 EM=1 hits=20 pred='A local organization.' gold='a local organization'
+[2026-05-08 18:25:54] conv-41 q142 cat4 F1=0.25 EM=0 hits=20 pred='Maria received a medal from the homeless shelter s' gold='a medal for volunteering'
+[2026-05-08 18:25:57] conv-41 q143 cat4 F1=1.00 EM=1 hits=20 pred='Coco' gold='Coco'
+[2026-05-08 18:25:59] conv-41 q144 cat4 F1=0.50 EM=0 hits=20 pred='Hiking, swimming, and camping.' gold='Camping'
+[2026-05-08 18:26:02] conv-41 q145 cat4 F1=0.11 EM=0 hits=20 pred='John described it as "a peaceful, soul-nourishing ' gold='Peaceful and awesome'
+[2026-05-08 18:26:05] conv-41 q146 cat4 F1=0.52 EM=0 hits=20 pred='John has been "going through tough times" and feel' gold='Not feeling like making much of an impact'
+[2026-05-08 18:26:07] conv-41 q147 cat4 F1=1.00 EM=1 hits=20 pred='Shadow' gold='Shadow'
+[2026-05-08 18:26:09] conv-41 q148 cat4 F1=0.33 EM=0 hits=20 pred='Shadow is full of energy, learning commands, and h' gold='doing great - learning commands and house training'
+[2026-05-08 18:26:12] conv-41 q149 cat4 F1=0.27 EM=0 hits=20 pred='Volunteering as a mentor for a local school, and o' gold='mentoring students at a local school'
+[2026-05-08 18:26:14] conv-41 q150 cat4 F1=0.40 EM=0 hits=20 pred='Climbing, sliding, playing games at the playground' gold='going for hikes, hanging out at the park, having p'
+[2026-05-08 18:26:17] conv-41 q151 cat4 F1=0.67 EM=0 hits=20 pred='A brand new fire truck for the local fire station.' gold='a brand new fire truck'
+[2026-05-08 18:26:19] conv-41 q152 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:20] conv-41 q153 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:22] conv-41 q154 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:25] conv-41 q155 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:27] conv-41 q156 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:29] conv-41 q157 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:31] conv-41 q158 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:36] conv-41 q159 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:39] conv-41 q160 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:42] conv-41 q161 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:43] conv-41 q162 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:46] conv-41 q163 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:48] conv-41 q164 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:50] conv-41 q165 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:52] conv-41 q166 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:55] conv-41 q167 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:57] conv-41 q168 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:26:59] conv-41 q169 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:01] conv-41 q170 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:03] conv-41 q171 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:06] conv-41 q172 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:08] conv-41 q173 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:10] conv-41 q174 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:13] conv-41 q175 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:15] conv-41 q176 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:17] conv-41 q177 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:19] conv-41 q178 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:21] conv-41 q179 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:23] conv-41 q180 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:24] conv-41 q181 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:26] conv-41 q182 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:29] conv-41 q183 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:31] conv-41 q184 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:33] conv-41 q185 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:35] conv-41 q186 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:37] conv-41 q187 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:40] conv-41 q188 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:41] conv-41 q189 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:44] conv-41 q190 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:48] conv-41 q191 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:51] conv-41 q192 cat5 F1=1.00 EM=1 hits=20 pred='Not mentioned in the conversation' gold='Not mentioned in the conversation'
+[2026-05-08 18:27:51] === conv-41 COMPLETE: 193 questions answered ===
+[2026-05-08 18:27:51] summary written: /Users/bunny/.openclaw/workspace/cashew/papers/locomo-run/qe-ablation/cv-conv41-mem0-gte/mem0-summary.json

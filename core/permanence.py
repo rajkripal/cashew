@@ -30,13 +30,14 @@ def promote_permanent_nodes(db_path: str, access_threshold: int = 10) -> Dict:
         Dict with promotion statistics
     """
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout=5000")
     cursor = conn.cursor()
-    
+
     # Find nodes that should be permanent but aren't yet
     cursor.execute("""
-        SELECT id, access_count, node_type 
-        FROM thought_nodes 
-        WHERE access_count >= ? 
+        SELECT id, access_count, node_type
+        FROM thought_nodes
+        WHERE access_count >= ?
         AND (permanent IS NULL OR permanent = 0)
         AND (decayed IS NULL OR decayed = 0)
     """, (access_threshold,))
@@ -74,8 +75,9 @@ def get_permanence_stats(db_path: str) -> Dict:
         Dict with permanence statistics
     """
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout=5000")
     cursor = conn.cursor()
-    
+
     # Count permanent vs non-permanent nodes
     cursor.execute("SELECT COUNT(*) FROM thought_nodes WHERE permanent > 0")
     permanent_count = cursor.fetchone()[0]
@@ -140,12 +142,13 @@ def calculate_recommended_threshold(db_path: str) -> int:
         Recommended access threshold
     """
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout=5000")
     cursor = conn.cursor()
-    
+
     # Get access counts of current permanent nodes
     cursor.execute("""
-        SELECT access_count FROM thought_nodes 
-        WHERE permanent > 0 
+        SELECT access_count FROM thought_nodes
+        WHERE permanent > 0
         ORDER BY access_count
     """)
     permanent_access_counts = [row[0] for row in cursor.fetchall()]
@@ -200,6 +203,7 @@ def validate_embeddings_integrity(db_path: str) -> Dict:
     import numpy as np
 
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout=5000")
     cursor = conn.cursor()
 
     # Defensive: an embeddings table is optional in some DB layouts (older
@@ -276,19 +280,20 @@ def validate_embeddings_integrity(db_path: str) -> Dict:
 def validate_permanence_integrity(db_path: str) -> Dict:
     """
     Validate that permanent nodes are properly protected from decay.
-    
+
     Args:
         db_path: Path to the SQLite database
-        
+
     Returns:
         Dict with validation results
     """
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout=5000")
     cursor = conn.cursor()
-    
+
     # Check for permanent nodes that are marked as decayed (should never happen)
     cursor.execute("""
-        SELECT COUNT(*) FROM thought_nodes 
+        SELECT COUNT(*) FROM thought_nodes
         WHERE permanent > 0 AND decayed > 0
     """)
     permanent_but_decayed = cursor.fetchone()[0]

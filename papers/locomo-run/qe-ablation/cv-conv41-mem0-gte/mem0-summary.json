@@ -1,0 +1,50 @@
+{
+  "system": "mem0",
+  "extract_model": "claude-sonnet-4-6",
+  "judge_model": "claude-sonnet-4-6",
+  "completed_at": "2026-05-09T01:27:51.408401+00:00",
+  "n_questions": 193,
+  "mean_f1": 0.6130909721864197,
+  "exact_match_rate": 0.38860103626943004,
+  "mean_retrieval_latency_s": 0.10172856162866781,
+  "mean_answer_latency_s": 2.5250926203060646,
+  "judge_total_input_tokens": 579,
+  "judge_total_output_tokens": 3306,
+  "by_category": {
+    "1": {
+      "n": 31,
+      "mean_f1": 0.4906410472423363,
+      "exact_match_rate": 0.1935483870967742
+    },
+    "2": {
+      "n": 27,
+      "mean_f1": 0.516872427983539,
+      "exact_match_rate": 0.25925925925925924
+    },
+    "3": {
+      "n": 8,
+      "mean_f1": 0.07838468720821662,
+      "exact_match_rate": 0.0
+    },
+    "4": {
+      "n": 86,
+      "mean_f1": 0.5527215362121546,
+      "exact_match_rate": 0.2441860465116279
+    },
+    "5": {
+      "n": 41,
+      "mean_f1": 1.0,
+      "exact_match_rate": 1.0
+    }
+  },
+  "by_conversation": {
+    "conv-41": {
+      "n": 193,
+      "mean_f1": 0.6130909721864197,
+      "exact_match_rate": 0.38860103626943004
+    }
+  },
+  "convs_done": [
+    "conv-41"
+  ]
+}

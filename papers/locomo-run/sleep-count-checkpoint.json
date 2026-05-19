@@ -1,0 +1,14 @@
+{
+  "done_cells": [
+    "conv-26:N0",
+    "conv-26:N1",
+    "conv-26:N3",
+    "conv-26:N5",
+    "conv-30:N0",
+    "conv-30:N1",
+    "conv-30:N3",
+    "conv-30:N5"
+  ],
+  "current": null,
+  "current_q_idx": 0
+}

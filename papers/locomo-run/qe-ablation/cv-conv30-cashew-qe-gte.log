@@ -1,0 +1,118 @@
+[2026-05-09T01:56:19.692073+00:00] copied /Users/bunny/.openclaw/workspace/cashew/papers/locomo-run/dbs-gte-clean/dbs/conv-30-A.db -> /Users/bunny/.openclaw/workspace/cashew/papers/locomo-run/qe-ablation/cv-conv30-cashew-qe-gte/conv-30.db
+[2026-05-09T01:56:19.697464+00:00] conv=conv-30 questions=105 qe=True embed=thenlper/gte-large src=/Users/bunny/.openclaw/workspace/cashew/papers/locomo-run/dbs-gte-clean/dbs/conv-30-A.db
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/391 [00:00<?, ?it/s]Loading weights: 100%|██████████| 391/391 [00:00<00:00, 6344.80it/s]
+[1mBertModel LOAD REPORT[0m from: thenlper/gte-large
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.[0m
+[2026-05-09T01:56:28.991209+00:00] q0 cat2 F1=1.00 EM=1 chars=3327 pred='19 January 2023'
+[2026-05-09T01:56:34.045138+00:00] q1 cat2 F1=1.00 EM=1 chars=3843 pred='January 2023'
+[2026-05-09T01:56:41.279757+00:00] q2 cat4 F1=0.22 EM=0 chars=6654 pred='Both Jon and Gina use **dancing** to destress.'
+[2026-05-09T01:56:46.828408+00:00] q3 cat1 F1=0.17 EM=0 chars=6039 pred='They are both pursuing independent entrepreneurial ventures '
+[2026-05-09T01:56:51.686166+00:00] q4 cat4 F1=0.50 EM=0 chars=4732 pred='Jon decided to start his dance studio after losing his banki'
+[2026-05-09T01:56:58.104751+00:00] q5 cat1 F1=0.26 EM=0 chars=4844 pred='A waterfront location with an inspiring view, quality floors'
+[2026-05-09T01:57:03.336525+00:00] q6 cat2 F1=1.00 EM=1 chars=5028 pred='February 2023'
+[2026-05-09T01:57:08.205916+00:00] q7 cat2 F1=0.67 EM=0 chars=4121 pred='Late January 2023'
+[2026-05-09T01:57:14.501905+00:00] q8 cat2 F1=0.67 EM=0 chars=4447 pred='Late January 2023.'
+[2026-05-09T01:57:19.536951+00:00] q9 cat1 F1=1.00 EM=1 chars=6434 pred='Rome'
+[2026-05-09T01:57:25.830664+00:00] q10 cat2 F1=0.06 EM=0 chars=4399 pred="The memory doesn't specify the exact date Gina teamed up wit"
+[2026-05-09T01:57:31.160804+00:00] q11 cat2 F1=0.60 EM=0 chars=3978 pred='A few years ago (no specific date recorded).'
+[2026-05-09T01:57:36.325512+00:00] q12 cat2 F1=0.57 EM=0 chars=4805 pred='The week of 9 March 2023.'
+[2026-05-09T01:57:41.084032+00:00] q13 cat2 F1=0.80 EM=0 chars=3858 pred='March 2023'
+[2026-05-09T01:57:46.353685+00:00] q14 cat2 F1=0.50 EM=0 chars=5208 pred='May 2023'
+[2026-05-09T01:57:52.912422+00:00] q15 cat2 F1=1.00 EM=1 chars=4037 pred='May 2023'
+[2026-05-09T01:58:00.384081+00:00] q16 cat2 F1=1.00 EM=1 chars=5358 pred='24 April 2023'
+[2026-05-09T01:58:06.280260+00:00] q17 cat1 F1=0.21 EM=0 chars=3981 pred='After losing her job (DoorDash), and she had been dreaming o'
+[2026-05-09T01:58:13.325343+00:00] q18 cat1 F1=0.00 EM=0 chars=6888 pred='Jon pursues a dance studio venture, and both transitioned fr'
+[2026-05-09T01:58:19.250630+00:00] q19 cat2 F1=1.00 EM=1 chars=4734 pred='10 May 2023'
+[2026-05-09T01:58:23.807714+00:00] q20 cat2 F1=0.80 EM=0 chars=4943 pred='May 2023'
+[2026-05-09T01:58:29.112665+00:00] q21 cat2 F1=0.00 EM=0 chars=4508 pred="The memory doesn't include a specific date for when Jon star"
+[2026-05-09T01:58:34.513368+00:00] q22 cat2 F1=0.00 EM=0 chars=4637 pred="The memory excerpts don't include a date for when Gina devel"
+[2026-05-09T01:58:40.299787+00:00] q23 cat1 F1=0.05 EM=0 chars=4400 pred='Gina launched an ad campaign in late January 2023 to grow th'
+[2026-05-09T01:58:47.940162+00:00] q24 cat1 F1=0.25 EM=0 chars=6439 pred='Jon attended **a business fair on 24 April 2023** to promote'
+[2026-05-09T01:58:53.185153+00:00] q25 cat1 F1=0.46 EM=0 chars=4450 pred='Classes, workshops, one-on-one mentoring and training, and a'
+[2026-05-09T01:58:59.270483+00:00] q26 cat2 F1=0.00 EM=0 chars=5763 pred="The memory doesn't contain a specific date for when Jon rece"
+[2026-05-09T01:59:04.552744+00:00] q27 cat1 F1=0.05 EM=0 chars=4374 pred='Jon participated in dance competitions (his crew won first p'
+[2026-05-09T01:59:09.011130+00:00] q28 cat2 F1=0.50 EM=0 chars=5483 pred='Mid-June 2023'
+[2026-05-09T01:59:14.145057+00:00] q29 cat1 F1=0.44 EM=0 chars=5070 pred='Paris (late January 2023) and Rome (mid-June 2023).'
+[2026-05-09T01:59:20.276137+00:00] q30 cat2 F1=1.00 EM=1 chars=4319 pred='20 June 2023'
+[2026-05-09T01:59:26.204789+00:00] q31 cat1 F1=0.10 EM=0 chars=4904 pred='From searching for a location in January 2023 to the grand o'
+[2026-05-09T01:59:32.768344+00:00] q32 cat2 F1=0.57 EM=0 chars=4245 pred='The week before 21 June 2023.'
+[2026-05-09T01:59:40.086191+00:00] q33 cat2 F1=1.00 EM=1 chars=5086 pred='20 June 2023'
+[2026-05-09T01:59:46.932229+00:00] q34 cat2 F1=0.80 EM=0 chars=4965 pred='Early July 2023'
+[2026-05-09T01:59:51.662136+00:00] q35 cat2 F1=0.00 EM=0 chars=5132 pred="The memory doesn't contain a specific date for when Jon star"
+[2026-05-09T01:59:56.615964+00:00] q36 cat2 F1=0.40 EM=0 chars=5175 pred='January 2023'
+[2026-05-09T02:00:01.858154+00:00] q37 cat2 F1=0.00 EM=0 chars=5695 pred='The retrieved memory contains no mention of Shia LaBeouf. I '
+[2026-05-09T02:00:07.638046+00:00] q38 cat2 F1=1.00 EM=1 chars=4548 pred='21 July 2023'
+[2026-05-09T02:00:12.051182+00:00] q39 cat4 F1=1.00 EM=1 chars=3441 pred='Contemporary'
+[2026-05-09T02:00:18.014098+00:00] q40 cat4 F1=1.00 EM=1 chars=4620 pred='Contemporary.'
+[2026-05-09T02:00:23.872717+00:00] q41 cat4 F1=0.00 EM=0 chars=3945 pred='No information available.'
+[2026-05-09T02:00:29.337129+00:00] q42 cat4 F1=0.57 EM=0 chars=4371 pred="A contemporary piece called 'Finding Freedom'."
+[2026-05-09T02:00:36.287022+00:00] q43 cat4 F1=0.00 EM=0 chars=6432 pred='No information available.'
+[2026-05-09T02:00:43.299699+00:00] q44 cat4 F1=0.00 EM=0 chars=3831 pred='No information available.'
+[2026-05-09T02:00:48.805963+00:00] q45 cat4 F1=0.00 EM=0 chars=4452 pred='Jon received compliments on his dance moves at the festival,'
+[2026-05-09T02:00:53.756292+00:00] q46 cat4 F1=1.00 EM=1 chars=4284 pred='Marley flooring'
+[2026-05-09T02:00:59.292653+00:00] q47 cat4 F1=0.00 EM=0 chars=4180 pred='No information available.'
+[2026-05-09T02:01:08.434712+00:00] q48 cat4 F1=0.00 EM=0 chars=5595 pred='Gina personally designed the interior of her clothing store '
+[2026-05-09T02:01:13.711802+00:00] q49 cat4 F1=0.00 EM=0 chars=4664 pred="Like they're in a 'cool oasis' and return repeatedly."
+[2026-05-09T02:01:19.834763+00:00] q50 cat4 F1=0.00 EM=0 chars=5708 pred="Jon credited Gina's support as meaningful and the two active"
+[2026-05-09T02:01:26.434242+00:00] q51 cat4 F1=0.33 EM=0 chars=4830 pred='Gina personally designed the interior to reflect her own sty'
+[2026-05-09T02:01:32.407450+00:00] q52 cat4 F1=0.10 EM=0 chars=5810 pred='Gina, not Jon, spoke about creating a special customer exper'
+[2026-05-09T02:01:39.002645+00:00] q53 cat4 F1=0.22 EM=0 chars=5247 pred="Gina wants shoppers to feel like they're in a 'cool oasis' a"
+[2026-05-09T02:01:44.299740+00:00] q54 cat4 F1=0.00 EM=0 chars=4133 pred="Going well and being 'a wild ride'; she launched promotions "
+[2026-05-09T02:01:50.767295+00:00] q55 cat4 F1=0.29 EM=0 chars=4637 pred='Freedom — specifically dancing without worrying what people '
+[2026-05-09T02:01:55.403591+00:00] q56 cat4 F1=0.00 EM=0 chars=5470 pred='No information available.'
+[2026-05-09T02:02:00.763186+00:00] q57 cat4 F1=0.00 EM=0 chars=5965 pred='No information available.'
+[2026-05-09T02:02:05.827146+00:00] q58 cat4 F1=0.36 EM=0 chars=3937 pred='As a strategic decision to help his business grow.'
+[2026-05-09T02:02:11.577497+00:00] q59 cat4 F1=0.18 EM=0 chars=5370 pred='Gina uses dance as stress relief and fashion as a creative o'
+[2026-05-09T02:02:17.923193+00:00] q60 cat4 F1=0.00 EM=0 chars=4605 pred='Most alive.'
+[2026-05-09T02:02:23.278417+00:00] q61 cat4 F1=1.00 EM=1 chars=3835 pred='A trophy.'
+[2026-05-09T02:02:28.282623+00:00] q62 cat4 F1=0.58 EM=0 chars=5486 pred='By regularly reminding herself of her past successes and pro'
+[2026-05-09T02:02:34.442040+00:00] q63 cat4 F1=0.36 EM=0 chars=5318 pred='A part-time fashion internship in the fashion department of '
+[2026-05-09T02:02:39.419927+00:00] q64 cat4 F1=1.00 EM=1 chars=3924 pred='The fashion department of an international company.'
+[2026-05-09T02:02:44.138050+00:00] q65 cat4 F1=1.00 EM=1 chars=5220 pred="'The Lean Startup'"
+[2026-05-09T02:02:49.308864+00:00] q66 cat4 F1=0.10 EM=0 chars=4992 pred='Mentoring, guidance, and a space to express themselves throu'
+[2026-05-09T02:02:54.702828+00:00] q67 cat4 F1=0.50 EM=0 chars=3678 pred='Jon uses a clipboard/notepad system to stay organized, set g'
+[2026-05-09T02:02:59.858399+00:00] q68 cat4 F1=0.00 EM=0 chars=4747 pred='No information available.'
+[2026-05-09T02:03:04.847308+00:00] q69 cat4 F1=0.62 EM=0 chars=4512 pred='To clear his mind while working on his business.'
+[2026-05-09T02:03:09.319093+00:00] q70 cat4 F1=1.00 EM=1 chars=5510 pred='A dance studio.'
+[2026-05-09T02:03:16.199581+00:00] q71 cat4 F1=0.00 EM=0 chars=5764 pred='No information available.'
+[2026-05-09T02:03:21.475274+00:00] q72 cat4 F1=0.20 EM=0 chars=5015 pred='Jon feels "excited and ready" after "a long, intense prepara'
+[2026-05-09T02:03:26.459541+00:00] q73 cat4 F1=0.00 EM=0 chars=4592 pred='"All her worries vanish as soon as she starts dancing."'
+[2026-05-09T02:03:32.313563+00:00] q74 cat4 F1=0.00 EM=0 chars=3772 pred='No information available.'
+[2026-05-09T02:03:36.650585+00:00] q75 cat4 F1=0.00 EM=0 chars=4289 pred='No information available.'
+[2026-05-09T02:03:41.865541+00:00] q76 cat4 F1=0.25 EM=0 chars=5532 pred='Excited and ready, after a long, intense preparation period.'
+[2026-05-09T02:03:47.526986+00:00] q77 cat4 F1=0.00 EM=0 chars=6256 pred='Clothing'
+[2026-05-09T02:03:53.082974+00:00] q78 cat4 F1=0.00 EM=0 chars=4867 pred='No information available.'
+[2026-05-09T02:03:58.589131+00:00] q79 cat5 F1=1.00 EM=1 chars=4957 pred='Not mentioned in the conversation'
+[2026-05-09T02:04:04.087742+00:00] q80 cat4 F1=0.27 EM=0 chars=4441 pred='Jon is "finalizing a business plan and actively seeking inve'
+[2026-05-09T02:04:09.019361+00:00] q81 cat4 F1=0.58 EM=0 chars=5011 pred='Gina offered to help Jon **create content and manage his soc'
+[2026-05-09T02:04:19.146323+00:00] q82 cat5 F1=1.00 EM=1 chars=4554 pred='Not mentioned in the conversation'
+[2026-05-09T02:04:23.758914+00:00] q83 cat5 F1=1.00 EM=1 chars=4816 pred='Not mentioned in the conversation'
+[2026-05-09T02:04:30.598321+00:00] q84 cat5 F1=1.00 EM=1 chars=4614 pred='Not mentioned in the conversation'
+[2026-05-09T02:04:35.541678+00:00] q85 cat5 F1=1.00 EM=1 chars=5129 pred='Not mentioned in the conversation'
+[2026-05-09T02:04:40.452883+00:00] q86 cat5 F1=1.00 EM=1 chars=5341 pred='Not mentioned in the conversation'
+[2026-05-09T02:04:45.850465+00:00] q87 cat5 F1=1.00 EM=1 chars=5742 pred='Not mentioned in the conversation'
+[2026-05-09T02:04:50.468554+00:00] q88 cat5 F1=1.00 EM=1 chars=4897 pred='Not mentioned in the conversation'
+[2026-05-09T02:05:00.427982+00:00] q89 cat5 F1=1.00 EM=1 chars=6491 pred='Not mentioned in the conversation'
+[2026-05-09T02:05:05.661229+00:00] q90 cat5 F1=1.00 EM=1 chars=5810 pred='Not mentioned in the conversation'
+[2026-05-09T02:05:10.671248+00:00] q91 cat5 F1=1.00 EM=1 chars=5142 pred='Not mentioned in the conversation'
+[2026-05-09T02:05:15.784437+00:00] q92 cat5 F1=1.00 EM=1 chars=5050 pred='Not mentioned in the conversation'
+[2026-05-09T02:05:21.830122+00:00] q93 cat5 F1=1.00 EM=1 chars=4323 pred='Not mentioned in the conversation'
+[2026-05-09T02:05:26.913949+00:00] q94 cat5 F1=1.00 EM=1 chars=5642 pred='Not mentioned in the conversation'
+[2026-05-09T02:05:32.163812+00:00] q95 cat5 F1=1.00 EM=1 chars=3746 pred='Not mentioned in the conversation'
+[2026-05-09T02:05:37.736354+00:00] q96 cat5 F1=1.00 EM=1 chars=6155 pred='Not mentioned in the conversation'
+[2026-05-09T02:05:42.135597+00:00] q97 cat5 F1=1.00 EM=1 chars=3720 pred='Not mentioned in the conversation'
+[2026-05-09T02:05:46.692515+00:00] q98 cat5 F1=1.00 EM=1 chars=5501 pred='Not mentioned in the conversation'
+[2026-05-09T02:05:51.392065+00:00] q99 cat5 F1=1.00 EM=1 chars=4671 pred='Not mentioned in the conversation'
+[2026-05-09T02:05:57.582071+00:00] q100 cat5 F1=1.00 EM=1 chars=4515 pred='Not mentioned in the conversation'
+[2026-05-09T02:06:02.051537+00:00] q101 cat5 F1=1.00 EM=1 chars=4829 pred='Not mentioned in the conversation'
+[2026-05-09T02:06:06.765399+00:00] q102 cat5 F1=1.00 EM=1 chars=5015 pred='Not mentioned in the conversation'
+[2026-05-09T02:06:12.535135+00:00] q103 cat5 F1=1.00 EM=1 chars=4574 pred='Not mentioned in the conversation'
+[2026-05-09T02:06:17.485433+00:00] q104 cat5 F1=1.00 EM=1 chars=6173 pred='Not mentioned in the conversation'
+[2026-05-09T02:06:17.487950+00:00] DONE n=105 F1=0.535 ex5=0.397 wall=598s

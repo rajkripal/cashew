@@ -13,7 +13,9 @@ from typing import Dict, Tuple, Union
 
 def get_connection(db_path: str) -> sqlite3.Connection:
     """Single connection factory for the graph database."""
-    return sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout=5000")
+    return conn
 
 
 def get_active_node_count(cursor: sqlite3.Cursor) -> int:
