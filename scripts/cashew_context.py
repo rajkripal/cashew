@@ -223,16 +223,25 @@ def _cmd_extract_ingest(args):
     if not os.path.exists(ingest_path):
         print(f"❌ Error: Ingest file not found: {ingest_path}")
         return 1
-    
+
     with open(ingest_path, 'r') as f:
         data = json.load(f)
-    
+
+    # Handle both bare JSON array and wrapped dict with "insights" key
+    if isinstance(data, list):
+        insights = data
+    elif isinstance(data, dict):
+        insights = data.get("insights", [])
+    else:
+        print(f"❌ Error: Invalid JSON format (expected array or dict with 'insights' key)")
+        return 1
+
     from core.session import _ensure_schema, _create_node, _get_connection
     _ensure_schema(args.db)
-    
+
     new_nodes = 0
     new_node_ids = []
-    for item in data.get("insights", []):
+    for item in insights:
         content = item.get("content", "")
         node_type = item.get("type", "insight")
         domain = item.get("domain", None)
