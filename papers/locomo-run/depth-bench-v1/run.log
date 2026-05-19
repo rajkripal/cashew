@@ -1,0 +1,160 @@
+/opt/homebrew/lib/python3.14/site-packages/mem0/embeddings/fastembed.py:16: UserWarning: The model thenlper/gte-large now uses mean pooling instead of CLS embedding. In order to preserve the previous behaviour, consider either pinning fastembed version to 0.5.1 or using `add_custom_model` functionality.
+  self.dense_model = TextEmbedding(model_name=self.config.model)
+Using Python 3.14.3 environment at: /Users/bunny/.openclaw/workspace/cashew/.venv
+Audited 1 package in 23ms
+WARNING:mem0.utils.spacy_models:Failed to load spaCy lemma model: [E050] Can't find model 'en_core_web_sm'. It doesn't seem to be a Python package or a valid path to a data directory.
+Using Python 3.14.3 environment at: /Users/bunny/.openclaw/workspace/cashew/.venv
+Audited 1 package in 0.76ms
+WARNING:mem0.utils.spacy_models:Failed to load spaCy full model: [E050] Can't find model 'en_core_web_sm'. It doesn't seem to be a Python package or a valid path to a data directory.
+/opt/homebrew/lib/python3.14/site-packages/mem0/embeddings/fastembed.py:16: UserWarning: The model thenlper/gte-large now uses mean pooling instead of CLS embedding. In order to preserve the previous behaviour, consider either pinning fastembed version to 0.5.1 or using `add_custom_model` functionality.
+  self.dense_model = TextEmbedding(model_name=self.config.model)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+loaded conv-26: 19 sessions, 62880 chars
+[Q1 cashew] cites=5 chars=2528 wall=9.7s
+[38;5;2m✔ Download and installation successful[0m
+You can now load the package via spacy.load('en_core_web_sm')
+[38;5;2m✔ Download and installation successful[0m
+You can now load the package via spacy.load('en_core_web_sm')
+[Q1 mem0] cites=0 chars=5101 wall=14.9s
+[Q2 cashew] cites=4 chars=2002 wall=9.2s
+[Q2 mem0] cites=5 chars=4047 wall=14.8s
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 6385.63it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.[0m
+/opt/homebrew/lib/python3.14/site-packages/mem0/embeddings/fastembed.py:16: UserWarning: The model thenlper/gte-large now uses mean pooling instead of CLS embedding. In order to preserve the previous behaviour, consider either pinning fastembed version to 0.5.1 or using `add_custom_model` functionality.
+  self.dense_model = TextEmbedding(model_name=self.config.model)
+[Q3 cashew] cites=4 chars=2775 wall=12.7s
+[Q3 mem0] cites=5 chars=4998 wall=13.4s
+[Q4 cashew] cites=3 chars=2337 wall=8.0s
+[Q4 mem0] cites=0 chars=4613 wall=13.4s
+[Q5 cashew] cites=4 chars=1797 wall=8.2s
+[Q5 mem0] cites=5 chars=3884 wall=16.2s
+[Q6 cashew] cites=5 chars=2295 wall=8.1s
+[Q6 mem0] cites=5 chars=4907 wall=12.4s
+[Q7 cashew] cites=5 chars=2386 wall=9.2s
+[Q7 mem0] cites=0 chars=4605 wall=16.9s
+[Q8 cashew] cites=4 chars=2521 wall=9.2s
+[Q8 mem0] cites=5 chars=4493 wall=10.3s
+[Q9 cashew] cites=2 chars=2218 wall=7.7s
+[Q9 mem0] cites=4 chars=4927 wall=12.8s
+[Q10 cashew] cites=3 chars=556 wall=8.0s
+[Q10 mem0] cites=4 chars=5132 wall=11.5s
+[judge Q1 cashew c0] sess=-1 -> yes
+[judge Q1 cashew c1] sess=-1 -> yes
+[judge Q1 cashew c2] sess=-1 -> yes
+[judge Q1 cashew c3] sess=-1 -> yes
+[judge Q1 cashew c4] sess=-1 -> yes
+[judge Q2 cashew c0] sess=-1 -> yes
+[judge Q2 cashew c1] sess=-1 -> yes
+[judge Q2 cashew c2] sess=-1 -> yes
+[judge Q2 cashew c3] sess=-1 -> yes
+[judge Q2 mem0 c0] sess=-1 -> no
+[judge Q2 mem0 c1] sess=-1 -> yes
+[judge Q2 mem0 c2] sess=-1 -> yes
+[judge Q2 mem0 c3] sess=-1 -> yes
+[judge Q2 mem0 c4] sess=-1 -> yes
+[judge Q3 cashew c0] sess=-1 -> no
+[judge Q3 cashew c1] sess=-1 -> yes
+[judge Q3 cashew c2] sess=-1 -> yes
+[judge Q3 cashew c3] sess=-1 -> yes
+[judge Q3 mem0 c0] sess=-1 -> yes
+[judge Q3 mem0 c1] sess=-1 -> yes
+[judge Q3 mem0 c2] sess=-1 -> yes
+[judge Q3 mem0 c3] sess=-1 -> yes
+[judge Q3 mem0 c4] sess=-1 -> yes
+[judge Q4 cashew c0] sess=-1 -> yes
+[judge Q4 cashew c1] sess=-1 -> no
+[judge Q4 cashew c2] sess=-1 -> yes
+[judge Q5 cashew c0] sess=-1 -> yes
+[judge Q5 cashew c1] sess=-1 -> yes
+[judge Q5 cashew c2] sess=-1 -> no
+[judge Q5 cashew c3] sess=-1 -> no
+[judge Q5 mem0 c0] sess=-1 -> yes
+[judge Q5 mem0 c1] sess=-1 -> yes
+[judge Q5 mem0 c2] sess=-1 -> no
+[judge Q5 mem0 c3] sess=-1 -> no
+[judge Q5 mem0 c4] sess=-1 -> yes
+[judge Q6 cashew c0] sess=-1 -> yes
+[judge Q6 cashew c1] sess=-1 -> yes
+[judge Q6 cashew c2] sess=-1 -> yes
+[judge Q6 cashew c3] sess=-1 -> yes
+[judge Q6 cashew c4] sess=-1 -> yes
+[judge Q6 mem0 c0] sess=-1 -> yes
+[judge Q6 mem0 c1] sess=-1 -> yes
+[judge Q6 mem0 c2] sess=-1 -> yes
+[judge Q6 mem0 c3] sess=-1 -> yes
+[judge Q6 mem0 c4] sess=-1 -> yes
+[judge Q7 cashew c0] sess=-1 -> yes
+[judge Q7 cashew c1] sess=-1 -> yes
+[judge Q7 cashew c2] sess=-1 -> yes
+[judge Q7 cashew c3] sess=-1 -> no
+[judge Q7 cashew c4] sess=-1 -> yes
+[judge Q8 cashew c0] sess=-1 -> yes
+[judge Q8 cashew c1] sess=-1 -> yes
+[judge Q8 cashew c2] sess=-1 -> yes
+[judge Q8 cashew c3] sess=-1 -> yes
+[judge Q8 mem0 c0] sess=-1 -> yes
+[judge Q8 mem0 c1] sess=-1 -> yes
+[judge Q8 mem0 c2] sess=-1 -> yes
+[judge Q8 mem0 c3] sess=-1 -> yes
+[judge Q8 mem0 c4] sess=-1 -> yes
+[judge Q9 cashew c0] sess=-1 -> yes
+[judge Q9 cashew c1] sess=-1 -> yes
+[judge Q9 mem0 c0] sess=-1 -> no
+[judge Q9 mem0 c1] sess=-1 -> yes
+[judge Q9 mem0 c2] sess=-1 -> yes
+[judge Q9 mem0 c3] sess=-1 -> yes
+[judge Q10 cashew c0] sess=-1 -> no
+[judge Q10 cashew c1] sess=-1 -> yes
+[judge Q10 cashew c2] sess=-1 -> no
+[judge Q10 mem0 c0] sess=-1 -> yes
+[judge Q10 mem0 c1] sess=-1 -> yes
+[judge Q10 mem0 c2] sess=-1 -> yes
+[judge Q10 mem0 c3] sess=-1 -> no
+DONE. Report at /Users/bunny/.openclaw/workspace/cashew/papers/locomo-run/DEPTH-BENCH-V1.md
+{
+  "cashew": {
+    "total_citations": 39,
+    "total_verified": 32,
+    "micro_precision": 0.8205128205128205,
+    "macro_precision": 0.805,
+    "questions_above_0_8": 5,
+    "per_q_precision": {
+      "Q1": 1.0,
+      "Q2": 1.0,
+      "Q3": 0.75,
+      "Q4": 0.6666666666666666,
+      "Q5": 0.5,
+      "Q6": 1.0,
+      "Q7": 0.8,
+      "Q8": 1.0,
+      "Q9": 1.0,
+      "Q10": 0.3333333333333333
+    }
+  },
+  "mem0": {
+    "total_citations": 33,
+    "total_verified": 28,
+    "micro_precision": 0.8484848484848485,
+    "macro_precision": 0.5900000000000001,
+    "questions_above_0_8": 3,
+    "per_q_precision": {
+      "Q1": 0.0,
+      "Q2": 0.8,
+      "Q3": 1.0,
+      "Q4": 0.0,
+      "Q5": 0.6,
+      "Q6": 1.0,
+      "Q7": 0.0,
+      "Q8": 1.0,
+      "Q9": 0.75,
+      "Q10": 0.75
+    }
+  }
+}

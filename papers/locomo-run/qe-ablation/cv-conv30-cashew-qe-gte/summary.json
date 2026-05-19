@@ -1,0 +1,33 @@
+{
+  "conv": "conv-30",
+  "qe_enabled": true,
+  "embed_model": "thenlper/gte-large",
+  "n": 105,
+  "mean_f1_all": 0.5350276824979712,
+  "exact_match_all": 0.3904761904761905,
+  "by_category": {
+    "1": {
+      "n": 11,
+      "mean_f1": 0.27179599310329366,
+      "exact_match_rate": 0.09090909090909091
+    },
+    "2": {
+      "n": 26,
+      "mean_f1": 0.6129537129537129,
+      "exact_match_rate": 0.34615384615384615
+    },
+    "4": {
+      "n": 44,
+      "mean_f1": 0.3011671409398682,
+      "exact_match_rate": 0.1590909090909091
+    },
+    "5": {
+      "n": 24,
+      "mean_f1": 1.0,
+      "exact_match_rate": 1.0
+    }
+  },
+  "wall_seconds": 597.7900171279907,
+  "completed_at": "2026-05-09T02:06:17.487546+00:00",
+  "mean_f1_ex5": 0.39725810694181446
+}

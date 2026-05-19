@@ -1,0 +1,211 @@
+{
+  "conversations_done": [
+    {
+      "conv": "conv-26",
+      "variant": "A"
+    },
+    {
+      "conv": "conv-26",
+      "variant": "B"
+    },
+    {
+      "conv": "conv-30",
+      "variant": "A"
+    },
+    {
+      "conv": "conv-30",
+      "variant": "B"
+    },
+    {
+      "conv": "conv-41",
+      "variant": "A"
+    },
+    {
+      "conv": "conv-41",
+      "variant": "B"
+    },
+    {
+      "conv": "conv-42",
+      "variant": "A"
+    },
+    {
+      "conv": "conv-42",
+      "variant": "B"
+    },
+    {
+      "conv": "conv-43",
+      "variant": "A"
+    },
+    {
+      "conv": "conv-43",
+      "variant": "B"
+    },
+    {
+      "conv": "conv-44",
+      "variant": "A"
+    },
+    {
+      "conv": "conv-44",
+      "variant": "B"
+    },
+    {
+      "conv": "conv-47",
+      "variant": "A"
+    },
+    {
+      "conv": "conv-47",
+      "variant": "B"
+    },
+    {
+      "conv": "conv-48",
+      "variant": "A"
+    },
+    {
+      "conv": "conv-48",
+      "variant": "B"
+    },
+    {
+      "conv": "conv-49",
+      "variant": "A"
+    },
+    {
+      "conv": "conv-49",
+      "variant": "B"
+    },
+    {
+      "conv": "conv-50",
+      "variant": "A"
+    },
+    {
+      "conv": "conv-50",
+      "variant": "B"
+    }
+  ],
+  "conversations_failed": [],
+  "current_conv": null,
+  "current_variant": "A",
+  "current_question_idx": 0,
+  "ingested_sessions": {
+    "conv-26:snapshot": 19,
+    "conv-30:snapshot": 19,
+    "conv-41:snapshot": 32,
+    "conv-42:snapshot": 29,
+    "conv-43:snapshot": 29,
+    "conv-44:snapshot": 28,
+    "conv-47:snapshot": 31,
+    "conv-48:snapshot": 30,
+    "conv-49:snapshot": 25,
+    "conv-50:snapshot": 30
+  },
+  "snapshot_done": [
+    "conv-26",
+    "conv-30",
+    "conv-41",
+    "conv-42",
+    "conv-43",
+    "conv-44",
+    "conv-47",
+    "conv-48",
+    "conv-49",
+    "conv-50"
+  ],
+  "snapshot_copied": [
+    "conv-26:A",
+    "conv-26:B",
+    "conv-30:A",
+    "conv-30:B",
+    "conv-41:A",
+    "conv-41:B",
+    "conv-42:A",
+    "conv-42:B",
+    "conv-43:A",
+    "conv-43:B",
+    "conv-44:A",
+    "conv-44:B",
+    "conv-47:A",
+    "conv-47:B",
+    "conv-48:A",
+    "conv-48:B",
+    "conv-49:A",
+    "conv-49:B",
+    "conv-50:A",
+    "conv-50:B"
+  ],
+  "sleep_think_done": [
+    "conv-26:B",
+    "conv-30:B",
+    "conv-41:B",
+    "conv-42:B",
+    "conv-43:B",
+    "conv-44:B",
+    "conv-47:B",
+    "conv-48:B",
+    "conv-49:B",
+    "conv-50:B"
+  ],
+  "resume_after_iso": null,
+  "batch_size": 100,
+  "started_at": "2026-05-17T05:43:19.568211+00:00",
+  "sleep_think_stats": {
+    "conv-26:B": {
+      "sleep_latency_s": 220.2349898815155,
+      "think_latency_s": 12.021674871444702,
+      "sleep_nodes_delta": -87,
+      "think_new_insights": 4
+    },
+    "conv-30:B": {
+      "sleep_latency_s": 75.93817496299744,
+      "think_latency_s": 14.675673961639404,
+      "sleep_nodes_delta": -35,
+      "think_new_insights": 4
+    },
+    "conv-41:B": {
+      "sleep_latency_s": 71.27676129341125,
+      "think_latency_s": 15.648290872573853,
+      "sleep_nodes_delta": -20,
+      "think_new_insights": 4
+    },
+    "conv-42:B": {
+      "sleep_latency_s": 120.60303783416748,
+      "think_latency_s": 15.23593282699585,
+      "sleep_nodes_delta": -37,
+      "think_new_insights": 3
+    },
+    "conv-43:B": {
+      "sleep_latency_s": 81.25118899345398,
+      "think_latency_s": 14.160511016845703,
+      "sleep_nodes_delta": -20,
+      "think_new_insights": 3
+    },
+    "conv-44:B": {
+      "sleep_latency_s": 118.75016498565674,
+      "think_latency_s": 13.51062297821045,
+      "sleep_nodes_delta": -45,
+      "think_new_insights": 3
+    },
+    "conv-47:B": {
+      "sleep_latency_s": 75.75993299484253,
+      "think_latency_s": 24.334599256515503,
+      "sleep_nodes_delta": -20,
+      "think_new_insights": 4
+    },
+    "conv-48:B": {
+      "sleep_latency_s": 95.06258296966553,
+      "think_latency_s": 14.209816694259644,
+      "sleep_nodes_delta": -36,
+      "think_new_insights": 3
+    },
+    "conv-49:B": {
+      "sleep_latency_s": 9.821630954742432,
+      "think_latency_s": 10.920983076095581,
+      "sleep_nodes_delta": 1,
+      "think_new_insights": 4
+    },
+    "conv-50:B": {
+      "sleep_latency_s": 8.816096782684326,
+      "think_latency_s": 9.635315179824829,
+      "sleep_nodes_delta": 1,
+      "think_new_insights": 3
+    }
+  }
+}

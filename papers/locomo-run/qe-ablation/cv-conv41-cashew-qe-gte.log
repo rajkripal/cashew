@@ -1,0 +1,224 @@
+[2026-05-09T01:56:19.692120+00:00] copied /Users/bunny/.openclaw/workspace/cashew/papers/locomo-run/dbs-gte-clean/dbs/conv-41-A.db -> /Users/bunny/.openclaw/workspace/cashew/papers/locomo-run/qe-ablation/cv-conv41-cashew-qe-gte/conv-41.db
+[2026-05-09T01:56:19.697610+00:00] conv=conv-41 questions=193 qe=True embed=thenlper/gte-large src=/Users/bunny/.openclaw/workspace/cashew/papers/locomo-run/dbs-gte-clean/dbs/conv-41-A.db
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/391 [00:00<?, ?it/s]Loading weights: 100%|██████████| 391/391 [00:00<00:00, 20069.67it/s]
+[1mBertModel LOAD REPORT[0m from: thenlper/gte-large
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.[0m
+[2026-05-09T01:56:29.515627+00:00] q0 cat2 F1=0.00 EM=0 chars=4684 pred='May 2023'
+[2026-05-09T01:56:37.168870+00:00] q1 cat2 F1=0.67 EM=0 chars=5002 pred='20 December 2022'
+[2026-05-09T01:56:44.717759+00:00] q2 cat1 F1=1.00 EM=1 chars=4274 pred='Taekwondo and kickboxing.'
+[2026-05-09T01:56:50.606825+00:00] q3 cat1 F1=0.19 EM=0 chars=4773 pred='Community service / community volunteering, including food d'
+[2026-05-09T01:56:57.179770+00:00] q4 cat2 F1=0.00 EM=0 chars=5218 pred='Late December 2022'
+[2026-05-09T01:57:02.790346+00:00] q5 cat2 F1=1.00 EM=1 chars=4773 pred='December 2022'
+[2026-05-09T01:57:08.564987+00:00] q6 cat1 F1=0.40 EM=0 chars=5534 pred='Through volunteering, her church community, and the gym.'
+[2026-05-09T01:57:13.311662+00:00] q7 cat1 F1=0.86 EM=0 chars=6521 pred='A childhood doll and a film camera.'
+[2026-05-09T01:57:19.322960+00:00] q8 cat3 F1=0.00 EM=0 chars=5479 pred='Strained — his car broke down causing financial strain, and '
+[2026-05-09T01:57:25.364142+00:00] q9 cat1 F1=1.00 EM=1 chars=5380 pred='Her aunt.'
+[2026-05-09T01:57:30.052471+00:00] q10 cat2 F1=0.25 EM=0 chars=5929 pred='The Friday before August 16, 2023.'
+[2026-05-09T01:57:35.935902+00:00] q11 cat1 F1=0.00 EM=0 chars=6278 pred='Maria made a new friend through volunteering, bonding over t'
+[2026-05-09T01:57:41.362805+00:00] q12 cat1 F1=1.00 EM=1 chars=4807 pred='A military aptitude test.'
+[2026-05-09T01:57:46.323986+00:00] q13 cat2 F1=0.50 EM=0 chars=5827 pred='Early March 2023'
+[2026-05-09T01:57:51.827250+00:00] q14 cat3 F1=0.06 EM=0 chars=5910 pred='Yes — John has "strong respect for the military," is "passio'
+[2026-05-09T01:57:56.433488+00:00] q15 cat1 F1=0.55 EM=0 chars=4290 pred='A creative writing class in early 2023, and a poetry class.'
+[2026-05-09T01:58:00.740505+00:00] q16 cat2 F1=0.25 EM=0 chars=6406 pred='Late March 2023'
+[2026-05-09T01:58:05.744218+00:00] q17 cat3 F1=0.00 EM=0 chars=6650 pred='No information available.'
+[2026-05-09T01:58:10.177871+00:00] q18 cat1 F1=0.20 EM=0 chars=4588 pred="John's colleague Rob invited him to a beginner's yoga class."
+[2026-05-09T01:58:15.180105+00:00] q19 cat1 F1=0.62 EM=0 chars=4159 pred='Broken windshield (early January 2023) and car broke down (A'
+[2026-05-09T01:58:20.580655+00:00] q20 cat2 F1=0.67 EM=0 chars=4356 pred='December 2022'
+[2026-05-09T01:58:26.597191+00:00] q21 cat1 F1=0.50 EM=0 chars=6347 pred='West County (old area), Pacific Northwest coast, California,'
+[2026-05-09T01:58:31.697370+00:00] q22 cat2 F1=0.00 EM=0 chars=6010 pred='April 2026'
+[2026-05-09T01:58:36.817495+00:00] q23 cat1 F1=0.27 EM=0 chars=4842 pred='Peach cobbler; cakes (as a hobby); homemade desserts (with h'
+[2026-05-09T01:58:41.377500+00:00] q24 cat2 F1=0.00 EM=0 chars=5178 pred='April 2023'
+[2026-05-09T01:58:46.353343+00:00] q25 cat1 F1=0.40 EM=0 chars=4774 pred='Spain and London (UK).'
+[2026-05-09T01:58:52.426695+00:00] q26 cat1 F1=0.35 EM=0 chars=6042 pred='Maria joined a nearby church in early May 2023 and bought a '
+[2026-05-09T01:58:56.841951+00:00] q27 cat2 F1=0.50 EM=0 chars=5603 pred='19 May 2023'
+[2026-05-09T01:59:01.879938+00:00] q28 cat1 F1=0.25 EM=0 chars=7138 pred='Military veterans and their rights, education and infrastruc'
+[2026-05-09T01:59:07.676807+00:00] q29 cat1 F1=0.42 EM=0 chars=4797 pred='A **ring-toss tournament** (scheduled for later in May 2023)'
+[2026-05-09T01:59:12.830740+00:00] q30 cat1 F1=0.89 EM=0 chars=4062 pred='A homeless shelter and a local dog shelter.'
+[2026-05-09T01:59:17.503946+00:00] q31 cat2 F1=0.00 EM=0 chars=2486 pred='Approximately 10 years before August 2023.'
+[2026-05-09T01:59:22.757817+00:00] q32 cat1 F1=0.40 EM=0 chars=5824 pred='Hiking trip and mountaineering trip (reaching the summit) wi'
+[2026-05-09T01:59:27.807591+00:00] q33 cat1 F1=0.36 EM=0 chars=4457 pred='Aerial yoga; she also wants to try kundalini yoga.'
+[2026-05-09T01:59:32.650565+00:00] q34 cat2 F1=0.29 EM=0 chars=4071 pred='Mid-June 2023'
+[2026-05-09T01:59:37.418474+00:00] q35 cat1 F1=0.50 EM=0 chars=4332 pred='Florida and Oregon (road trip when younger).'
+[2026-05-09T01:59:42.986316+00:00] q36 cat1 F1=0.42 EM=0 chars=5179 pred='John attended a **live music event with family in late June '
+[2026-05-09T01:59:47.944279+00:00] q37 cat1 F1=0.29 EM=0 chars=5028 pred='John hosted a small party for veterans on Friday 19 May 2023'
+[2026-05-09T01:59:53.146557+00:00] q38 cat2 F1=1.00 EM=1 chars=5054 pred='2 July 2023'
+[2026-05-09T01:59:58.322339+00:00] q39 cat3 F1=0.29 EM=0 chars=5611 pred="Independence Day (July 4th) — Maria's accident was on 2 July"
+[2026-05-09T02:00:03.323968+00:00] q40 cat1 F1=1.00 EM=1 chars=5409 pred='Sara and Kyle.'
+[2026-05-09T02:00:09.094582+00:00] q41 cat3 F1=0.00 EM=0 chars=5484 pred='No information available.'
+[2026-05-09T02:00:15.485212+00:00] q42 cat1 F1=0.57 EM=0 chars=5271 pred="John's old area, West County."
+[2026-05-09T02:00:20.972505+00:00] q43 cat2 F1=0.50 EM=0 chars=4745 pred='Early July 2023'
+[2026-05-09T02:00:28.767389+00:00] q44 cat1 F1=0.33 EM=0 chars=4962 pred='Community volunteer work (August 4, 2023), camping (mid-June'
+[2026-05-09T02:00:35.280881+00:00] q45 cat3 F1=0.12 EM=0 chars=6291 pred='No information available.'
+[2026-05-09T02:00:40.728834+00:00] q46 cat2 F1=0.50 EM=0 chars=4580 pred='Late July 2023'
+[2026-05-09T02:00:45.681118+00:00] q47 cat1 F1=0.38 EM=0 chars=5527 pred='Yoga, kickboxing, taekwondo, weight training, family boot ca'
+[2026-05-09T02:00:50.920906+00:00] q48 cat2 F1=0.67 EM=0 chars=4201 pred='Late July 2023 (a Sunday)'
+[2026-05-09T02:00:55.511734+00:00] q49 cat1 F1=0.00 EM=0 chars=5065 pred='Baked food'
+[2026-05-09T02:01:00.775440+00:00] q50 cat3 F1=0.09 EM=0 chars=5866 pred='Family-oriented, militarily experienced, positivity-seeking,'
+[2026-05-09T02:01:06.595917+00:00] q51 cat2 F1=0.40 EM=0 chars=5189 pred='August 2022 (approximately a year before August 2023)'
+[2026-05-09T02:01:11.859097+00:00] q52 cat1 F1=0.13 EM=0 chars=6529 pred='**Cindy** (a shelter resident who wrote Maria a heartfelt no'
+[2026-05-09T02:01:17.050081+00:00] q53 cat2 F1=0.22 EM=0 chars=5321 pred='Approximately August 2022 (approximately a year before Augus'
+[2026-05-09T02:01:22.193526+00:00] q54 cat2 F1=1.00 EM=1 chars=5904 pred='4 August 2023'
+[2026-05-09T02:01:27.968215+00:00] q55 cat2 F1=0.50 EM=0 chars=4731 pred='Early August 2023'
+[2026-05-09T02:01:33.333776+00:00] q56 cat2 F1=0.00 EM=0 chars=5111 pred="The memory doesn't contain a specific date for John's 5K cha"
+[2026-05-09T02:01:38.225337+00:00] q57 cat1 F1=0.33 EM=0 chars=6930 pred='Domestic abuse victims, veterans and their families, and und'
+[2026-05-09T02:01:42.533266+00:00] q58 cat2 F1=0.22 EM=0 chars=5372 pred='28 July 2023'
+[2026-05-09T02:01:47.509190+00:00] q59 cat2 F1=0.80 EM=0 chars=5191 pred='Summer 2022'
+[2026-05-09T02:01:52.227478+00:00] q60 cat1 F1=1.00 EM=1 chars=3426 pred='Shadow and Coco.'
+[2026-05-09T02:01:57.100838+00:00] q61 cat2 F1=0.50 EM=0 chars=4717 pred='Early August 2023'
+[2026-05-09T02:02:04.413342+00:00] q62 cat1 F1=0.00 EM=0 chars=5045 pred='One — Shadow, a black puppy adopted in early August 2023. (C'
+[2026-05-09T02:02:09.271620+00:00] q63 cat2 F1=0.50 EM=0 chars=4650 pred='2 weeks'
+[2026-05-09T02:02:13.982655+00:00] q64 cat3 F1=0.00 EM=0 chars=5674 pred='No information available.'
+[2026-05-09T02:02:19.228598+00:00] q65 cat4 F1=1.00 EM=0 chars=5383 pred='Education and infrastructure improvement.'
+[2026-05-09T02:02:24.213787+00:00] q66 cat4 F1=0.29 EM=0 chars=6034 pred='Attending community meetings and doing local civic involveme'
+[2026-05-09T02:02:30.225821+00:00] q67 cat4 F1=0.00 EM=0 chars=6156 pred='No information available.'
+[2026-05-09T02:02:34.813073+00:00] q68 cat4 F1=0.00 EM=0 chars=4119 pred='No information available.'
+[2026-05-09T02:02:40.443106+00:00] q69 cat4 F1=0.27 EM=0 chars=4757 pred='Her old car (though the memory records this as December 2022'
+[2026-05-09T02:02:46.647304+00:00] q70 cat4 F1=0.67 EM=0 chars=5324 pred='Homemade pizzas'
+[2026-05-09T02:02:51.982181+00:00] q71 cat4 F1=0.38 EM=0 chars=5269 pred='A service-focused online community (late December 2022); als'
+[2026-05-09T02:02:57.726382+00:00] q72 cat4 F1=0.48 EM=0 chars=6542 pred='Volunteered at a homeless shelter, distributing food and sup'
+[2026-05-09T02:03:03.264486+00:00] q73 cat4 F1=0.27 EM=0 chars=5551 pred="Her aunt, who believed in volunteering and helped Maria's fa"
+[2026-05-09T02:03:09.981090+00:00] q74 cat4 F1=0.22 EM=0 chars=6215 pred='The memory does not specify a February 2023 shelter event — '
+[2026-05-09T02:03:16.610147+00:00] q75 cat4 F1=1.00 EM=1 chars=5655 pred='Divorce, job loss, and homelessness.'
+[2026-05-09T02:03:22.376648+00:00] q76 cat4 F1=0.38 EM=0 chars=5571 pred='John decided to run for office again because he "saw the imp'
+[2026-05-09T02:03:27.520274+00:00] q77 cat4 F1=1.00 EM=1 chars=6090 pred="A beginner's yoga class."
+[2026-05-09T02:03:32.762597+00:00] q78 cat4 F1=1.00 EM=1 chars=4313 pred='Kyle'
+[2026-05-09T02:03:37.338340+00:00] q79 cat4 F1=1.00 EM=1 chars=4254 pred='A few times a week.'
+[2026-05-09T02:03:42.307465+00:00] q80 cat4 F1=0.60 EM=0 chars=6379 pred='A shadow box and a painting of a castle.'
+[2026-05-09T02:03:47.561030+00:00] q81 cat4 F1=0.00 EM=0 chars=5148 pred='From her visit to London, where she was captivated by the ca'
+[2026-05-09T02:03:53.087044+00:00] q82 cat4 F1=0.00 EM=0 chars=5798 pred='No information available.'
+[2026-05-09T02:03:59.770929+00:00] q83 cat4 F1=0.44 EM=0 chars=6134 pred='Education and infrastructure improvement (particularly in un'
+[2026-05-09T02:04:05.365489+00:00] q84 cat4 F1=0.67 EM=0 chars=6131 pred='A 5K charity run for a homeless shelter.'
+[2026-05-09T02:04:10.523692+00:00] q85 cat4 F1=0.00 EM=0 chars=6007 pred='No information available.'
+[2026-05-09T02:04:16.016578+00:00] q86 cat4 F1=0.38 EM=0 chars=6750 pred='His car broke down on Friday, April 7, 2023, on his way to w'
+[2026-05-09T02:04:21.129130+00:00] q87 cat4 F1=0.50 EM=0 chars=4771 pred='The Pacific Northwest coast and visited national parks.'
+[2026-05-09T02:04:26.665016+00:00] q88 cat4 F1=0.40 EM=0 chars=5540 pred='Politics and government, focusing on education reform and in'
+[2026-05-09T02:04:31.781395+00:00] q89 cat4 F1=0.25 EM=0 chars=5125 pred='To make a positive impact and serve his country and communit'
+[2026-05-09T02:04:42.872631+00:00] q90 cat4 F1=0.67 EM=0 chars=5946 pred='Politics and government, focusing on education reform and in'
+[2026-05-09T02:04:48.339537+00:00] q91 cat2 F1=0.00 EM=0 chars=5860 pred='March 2023'
+[2026-05-09T02:04:53.110906+00:00] q92 cat4 F1=1.00 EM=1 chars=6080 pred='Three times a week.'
+[2026-05-09T02:04:59.887911+00:00] q93 cat4 F1=0.30 EM=0 chars=4616 pred='John\'s family reported "increased energy, strength, and endu'
+[2026-05-09T02:05:05.938010+00:00] q94 cat4 F1=1.00 EM=1 chars=5625 pred='Salads, sandwiches, and homemade desserts.'
+[2026-05-09T02:05:10.702230+00:00] q95 cat4 F1=0.36 EM=0 chars=6338 pred='Cooked dinner together, including salads, sandwiches, and ho'
+[2026-05-09T02:05:16.201774+00:00] q96 cat4 F1=0.30 EM=0 chars=5552 pred='Maria joined a nearby church in early May 2023 and bought a '
+[2026-05-09T02:05:21.306983+00:00] q97 cat4 F1=0.93 EM=0 chars=4469 pred='To feel closer to a community and deepen her faith.'
+[2026-05-09T02:05:26.539728+00:00] q98 cat4 F1=0.63 EM=0 chars=5634 pred='A small party inviting veterans to share their stories and m'
+[2026-05-09T02:05:31.653092+00:00] q99 cat4 F1=0.46 EM=0 chars=4288 pred='They shared their stories and made connections with each oth'
+[2026-05-09T02:05:37.167116+00:00] q100 cat4 F1=0.15 EM=0 chars=5471 pred='John found it "heartwarming" and said seeing new friendships'
+[2026-05-09T02:05:42.247713+00:00] q101 cat4 F1=0.50 EM=0 chars=4573 pred='A ring-toss tournament fundraiser.'
+[2026-05-09T02:05:50.407977+00:00] q102 cat4 F1=0.00 EM=0 chars=4749 pred='The **ring-toss tournament fundraiser** for the homeless she'
+[2026-05-09T02:05:56.622793+00:00] q103 cat4 F1=1.00 EM=1 chars=3555 pred='Max'
+[2026-05-09T02:06:02.251483+00:00] q104 cat4 F1=1.00 EM=1 chars=4597 pred='10 years.'
+[2026-05-09T02:06:08.590407+00:00] q105 cat4 F1=0.67 EM=0 chars=4552 pred='By finding comfort in good memories and considering adopting'
+[2026-05-09T02:06:16.407343+00:00] q106 cat4 F1=0.57 EM=0 chars=6369 pred='Unconditional love, loyalty, responsibility, and compassion.'
+[2026-05-09T02:06:23.959198+00:00] q107 cat4 F1=0.00 EM=0 chars=5219 pred='Aerial yoga.'
+[2026-05-09T02:06:28.792284+00:00] q108 cat4 F1=0.00 EM=0 chars=4989 pred='No information available.'
+[2026-05-09T02:06:34.330688+00:00] q109 cat4 F1=1.00 EM=1 chars=3702 pred='Free and light.'
+[2026-05-09T02:06:39.371817+00:00] q110 cat4 F1=0.00 EM=0 chars=5528 pred='No information available.'
+[2026-05-09T02:06:44.746409+00:00] q111 cat4 F1=0.50 EM=0 chars=4107 pred='Aerial yoga'
+[2026-05-09T02:06:49.763396+00:00] q112 cat4 F1=1.00 EM=1 chars=5615 pred='Assistant manager'
+[2026-05-09T02:06:55.761812+00:00] q113 cat4 F1=1.00 EM=1 chars=5262 pred='Self-doubt.'
+[2026-05-09T02:07:02.399263+00:00] q114 cat4 F1=0.36 EM=0 chars=6249 pred='"family support and personal grit"'
+[2026-05-09T02:07:08.337651+00:00] q115 cat4 F1=1.00 EM=1 chars=5978 pred='A live music event.'
+[2026-05-09T02:07:13.881800+00:00] q116 cat4 F1=0.50 EM=0 chars=5519 pred="Maria's cousin had to leave her home urgently around July 20"
+[2026-05-09T02:07:23.000861+00:00] q117 cat4 F1=0.40 EM=0 chars=4804 pred="A marching event for veterans' rights around July 2023."
+[2026-05-09T02:07:29.438662+00:00] q118 cat4 F1=0.00 EM=0 chars=4039 pred='No information available.'
+[2026-05-09T02:07:34.594008+00:00] q119 cat4 F1=1.00 EM=1 chars=5579 pred='At least once a week.'
+[2026-05-09T02:07:42.703110+00:00] q120 cat4 F1=0.67 EM=0 chars=5236 pred='A severe flood.'
+[2026-05-09T02:07:47.965884+00:00] q121 cat4 F1=0.31 EM=0 chars=5183 pred='The flood caused significant infrastructure damage and ruine'
+[2026-05-09T02:07:57.792009+00:00] q122 cat4 F1=0.00 EM=0 chars=4484 pred='No information available.'
+[2026-05-09T02:08:03.278211+00:00] q123 cat4 F1=0.92 EM=0 chars=4918 pred='Have dinner with friends from her gym.'
+[2026-05-09T02:08:09.984536+00:00] q124 cat4 F1=0.73 EM=0 chars=4745 pred='Playing charades and a scavenger hunt outdoors.'
+[2026-05-09T02:08:16.151523+00:00] q125 cat4 F1=0.28 EM=0 chars=4941 pred="Visiting the veteran's hospital reminded John of his own mot"
+[2026-05-09T02:08:21.708300+00:00] q126 cat4 F1=0.00 EM=0 chars=5137 pred="Visiting the veteran's hospital reminded John of his own mot"
+[2026-05-09T02:08:28.048180+00:00] q127 cat4 F1=0.13 EM=0 chars=5088 pred="Visiting the veteran's hospital reminded John of his own mot"
+[2026-05-09T02:08:34.621300+00:00] q128 cat4 F1=0.00 EM=0 chars=4728 pred='Maria and her church friends had a picnic in mid-July 2023, '
+[2026-05-09T02:08:40.778457+00:00] q129 cat4 F1=0.27 EM=0 chars=3996 pred='John is interested in trying new fitness classes at a studio'
+[2026-05-09T02:08:47.898333+00:00] q130 cat4 F1=0.40 EM=0 chars=3779 pred='Kickboxing and circuit training.'
+[2026-05-09T02:08:53.223689+00:00] q131 cat4 F1=0.00 EM=0 chars=5847 pred='No information available.'
+[2026-05-09T02:08:57.795158+00:00] q132 cat4 F1=0.67 EM=0 chars=4778 pred='After witnessing a family struggling on the streets.'
+[2026-05-09T02:09:03.125633+00:00] q133 cat4 F1=0.00 EM=0 chars=5358 pred='No information available.'
+[2026-05-09T02:09:08.950387+00:00] q134 cat4 F1=0.00 EM=0 chars=5059 pred='"awe and humility"'
+[2026-05-09T02:09:14.568719+00:00] q135 cat4 F1=0.00 EM=0 chars=5605 pred='No information available.'
+[2026-05-09T02:09:24.054103+00:00] q136 cat4 F1=0.53 EM=0 chars=5659 pred='Teaching children to respect and appreciate military veteran'
+[2026-05-09T02:09:28.850328+00:00] q137 cat4 F1=0.80 EM=0 chars=5308 pred='John lost his job at a mechanical engineering company when t'
+[2026-05-09T02:09:34.227088+00:00] q138 cat4 F1=0.80 EM=0 chars=4531 pred='Community volunteer work.'
+[2026-05-09T02:09:39.511037+00:00] q139 cat4 F1=0.77 EM=0 chars=6408 pred='Helped renovate a rundown community center in his hometown.'
+[2026-05-09T02:09:46.453944+00:00] q140 cat4 F1=0.67 EM=0 chars=6417 pred='Raising funds for veterans and their families.'
+[2026-05-09T02:09:52.468588+00:00] q141 cat4 F1=0.40 EM=0 chars=5761 pred='A local organization that helps victims of domestic abuse.'
+[2026-05-09T02:09:57.863471+00:00] q142 cat4 F1=0.31 EM=0 chars=5374 pred='Maria received a medal for her service in early August 2023.'
+[2026-05-09T02:10:02.945182+00:00] q143 cat4 F1=1.00 EM=1 chars=3959 pred='Coco'
+[2026-05-09T02:10:11.298360+00:00] q144 cat4 F1=0.20 EM=0 chars=5229 pred='Camping trip where they hiked, swam, and sat by a campfire.'
+[2026-05-09T02:10:16.695236+00:00] q145 cat4 F1=0.00 EM=0 chars=4096 pred='John describes the camping trip with Max as his "best memory'
+[2026-05-09T02:10:23.677248+00:00] q146 cat4 F1=0.10 EM=0 chars=6574 pred='John feels stuck and unable to channel his passion to positi'
+[2026-05-09T02:10:28.140127+00:00] q147 cat4 F1=1.00 EM=1 chars=3472 pred='Shadow'
+[2026-05-09T02:10:33.361727+00:00] q148 cat4 F1=0.00 EM=0 chars=3347 pred='Shadow and Coco "get along well," and having a dog "brighten'
+[2026-05-09T02:10:38.235417+00:00] q149 cat4 F1=0.89 EM=0 chars=5993 pred='Mentoring at a local school.'
+[2026-05-09T02:10:44.643676+00:00] q150 cat4 F1=0.39 EM=0 chars=4771 pred='Outdoor activities (hikes, park, picnics), indoor activities'
+[2026-05-09T02:10:50.566301+00:00] q151 cat4 F1=0.67 EM=0 chars=6053 pred='A brand new fire truck for the local fire station.'
+[2026-05-09T02:10:56.162258+00:00] q152 cat5 F1=1.00 EM=1 chars=5850 pred='Not mentioned in the conversation'
+[2026-05-09T02:11:00.900095+00:00] q153 cat5 F1=1.00 EM=1 chars=5906 pred='Not mentioned in the conversation'
+[2026-05-09T02:11:11.662902+00:00] q154 cat5 F1=1.00 EM=1 chars=5520 pred='Not mentioned in the conversation'
+[2026-05-09T02:11:17.733157+00:00] q155 cat5 F1=1.00 EM=1 chars=6409 pred='Not mentioned in the conversation'
+[2026-05-09T02:11:22.578920+00:00] q156 cat5 F1=1.00 EM=1 chars=6330 pred='Not mentioned in the conversation'
+[2026-05-09T02:11:27.116678+00:00] q157 cat5 F1=1.00 EM=1 chars=6155 pred='Not mentioned in the conversation'
+[2026-05-09T02:11:31.948891+00:00] q158 cat5 F1=1.00 EM=1 chars=5515 pred='Not mentioned in the conversation'
+[2026-05-09T02:11:36.731120+00:00] q159 cat5 F1=1.00 EM=1 chars=6591 pred='Not mentioned in the conversation'
+[2026-05-09T02:11:41.938470+00:00] q160 cat5 F1=1.00 EM=1 chars=6205 pred='Not mentioned in the conversation'
+[2026-05-09T02:11:46.296026+00:00] q161 cat5 F1=1.00 EM=1 chars=4649 pred='Not mentioned in the conversation'
+[2026-05-09T02:11:50.898365+00:00] q162 cat5 F1=1.00 EM=1 chars=6693 pred='Not mentioned in the conversation'
+[2026-05-09T02:11:55.720248+00:00] q163 cat5 F1=1.00 EM=1 chars=4751 pred='Not mentioned in the conversation'
+[2026-05-09T02:12:00.035584+00:00] q164 cat5 F1=1.00 EM=1 chars=4575 pred='Not mentioned in the conversation'
+[2026-05-09T02:12:03.858048+00:00] q165 cat5 F1=1.00 EM=1 chars=6065 pred='Not mentioned in the conversation'
+[2026-05-09T02:12:09.273341+00:00] q166 cat5 F1=1.00 EM=1 chars=6422 pred='Not mentioned in the conversation'
+[2026-05-09T02:12:15.997051+00:00] q167 cat5 F1=1.00 EM=1 chars=5831 pred='Not mentioned in the conversation'
+[2026-05-09T02:12:20.842358+00:00] q168 cat5 F1=1.00 EM=1 chars=7259 pred='Not mentioned in the conversation'
+[2026-05-09T02:12:30.235898+00:00] q169 cat5 F1=1.00 EM=1 chars=6650 pred='Not mentioned in the conversation'
+[2026-05-09T02:12:35.575843+00:00] q170 cat5 F1=1.00 EM=1 chars=6519 pred='Not mentioned in the conversation'
+[2026-05-09T02:12:41.131031+00:00] q171 cat5 F1=1.00 EM=1 chars=5354 pred='Not mentioned in the conversation'
+[2026-05-09T02:12:46.534596+00:00] q172 cat5 F1=1.00 EM=1 chars=6342 pred='Not mentioned in the conversation'
+[2026-05-09T02:12:51.509538+00:00] q173 cat5 F1=1.00 EM=1 chars=5190 pred='Not mentioned in the conversation'
+[2026-05-09T02:12:57.052861+00:00] q174 cat5 F1=1.00 EM=1 chars=3367 pred='Not mentioned in the conversation'
+[2026-05-09T02:13:00.991453+00:00] answer fail q175: RateLimitError('17ffa0","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"e68c3cb7-7e72-4d2d-9da7-8bc0775908b3"}\n\n')
+[2026-05-09T02:13:00.992118+00:00] q175 cat5 F1=0.00 EM=0 chars=4765 pred=''
+[2026-05-09T02:13:03.049003+00:00] answer fail q176: RateLimitError('5205bb","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"f4a9e134-c573-4c7d-91b2-2da472d0a6ca"}\n\n')
+[2026-05-09T02:13:03.049577+00:00] q176 cat5 F1=0.00 EM=0 chars=1909 pred=''
+[2026-05-09T02:13:05.175277+00:00] answer fail q177: RateLimitError('8ddc94","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"3304febf-f96e-4560-92f2-8d4a7365ac2b"}\n\n')
+[2026-05-09T02:13:05.175702+00:00] q177 cat5 F1=0.00 EM=0 chars=1884 pred=''
+[2026-05-09T02:13:07.251101+00:00] answer fail q178: RateLimitError('4103dc","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"a7980776-5401-4a5e-8b48-9f40681997c3"}\n\n')
+[2026-05-09T02:13:07.251792+00:00] q178 cat5 F1=0.00 EM=0 chars=1819 pred=''
+[2026-05-09T02:13:09.348482+00:00] answer fail q179: RateLimitError('cedb60","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"57a942aa-62b2-42fd-b4aa-77c763ea8356"}\n\n')
+[2026-05-09T02:13:09.349095+00:00] q179 cat5 F1=0.00 EM=0 chars=2061 pred=''
+[2026-05-09T02:13:11.446891+00:00] answer fail q180: RateLimitError('0a20f4","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"15a062d7-1a37-4207-9dc9-d4f66d71ea16"}\n\n')
+[2026-05-09T02:13:11.447553+00:00] q180 cat5 F1=0.00 EM=0 chars=1898 pred=''
+[2026-05-09T02:13:13.288001+00:00] answer fail q181: RateLimitError('e2ba0d","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"2d5f861a-3b55-454a-9053-110761757c74"}\n\n')
+[2026-05-09T02:13:13.288349+00:00] q181 cat5 F1=0.00 EM=0 chars=1649 pred=''
+[2026-05-09T02:13:15.352654+00:00] answer fail q182: RateLimitError('ae2b9a","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"42950fd6-0d53-4ee4-b7c2-86233a0b864d"}\n\n')
+[2026-05-09T02:13:15.353261+00:00] q182 cat5 F1=0.00 EM=0 chars=1877 pred=''
+[2026-05-09T02:13:17.446722+00:00] answer fail q183: RateLimitError('b6fdaa","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"c0f99eb7-e4ba-403f-877c-187577d7d8f5"}\n\n')
+[2026-05-09T02:13:17.447262+00:00] q183 cat5 F1=0.00 EM=0 chars=1787 pred=''
+[2026-05-09T02:13:19.646426+00:00] answer fail q184: RateLimitError('4aca5f","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"e752595b-a6f2-4c2d-a595-6078fc214419"}\n\n')
+[2026-05-09T02:13:19.646929+00:00] q184 cat5 F1=0.00 EM=0 chars=1895 pred=''
+[2026-05-09T02:13:21.720551+00:00] answer fail q185: RateLimitError('39e9cc","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"dc48e0f1-6857-4e24-b5d4-552a0e689030"}\n\n')
+[2026-05-09T02:13:21.721035+00:00] q185 cat5 F1=0.00 EM=0 chars=1785 pred=''
+[2026-05-09T02:13:25.073492+00:00] answer fail q186: RateLimitError('cefb72","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"8d943cc6-7da6-41c5-bf84-3edb15238415"}\n\n')
+[2026-05-09T02:13:25.074335+00:00] q186 cat5 F1=0.00 EM=0 chars=1811 pred=''
+[2026-05-09T02:13:27.308758+00:00] answer fail q187: RateLimitError('3be2df","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"6882024c-22ec-45f6-9174-8dea536bb482"}\n\n')
+[2026-05-09T02:13:27.309376+00:00] q187 cat5 F1=0.00 EM=0 chars=1800 pred=''
+[2026-05-09T02:13:29.275397+00:00] answer fail q188: RateLimitError('c0cbea","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"95491bd0-fc1e-4d8f-91a2-bce4c75ec391"}\n\n')
+[2026-05-09T02:13:29.276035+00:00] q188 cat5 F1=0.00 EM=0 chars=2040 pred=''
+[2026-05-09T02:13:31.366695+00:00] answer fail q189: RateLimitError('249439","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"c1fe43d7-9d90-480e-95a2-87ec91ef503a"}\n\n')
+[2026-05-09T02:13:31.367513+00:00] q189 cat5 F1=0.00 EM=0 chars=1603 pred=''
+[2026-05-09T02:13:33.357999+00:00] answer fail q190: RateLimitError('a78c40","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"b9dcc30b-b354-47f5-bdff-f36ca96bc9e3"}\n\n')
+[2026-05-09T02:13:33.358559+00:00] q190 cat5 F1=0.00 EM=0 chars=1830 pred=''
+[2026-05-09T02:13:35.734455+00:00] answer fail q191: RateLimitError('615abd","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"fc7f39c7-2ab4-4339-baed-cd18234ab405"}\n\n')
+[2026-05-09T02:13:35.735048+00:00] q191 cat5 F1=0.00 EM=0 chars=1710 pred=''
+[2026-05-09T02:13:37.767938+00:00] answer fail q192: RateLimitError('0a53da","total_cost_usd":0,"usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"35765a93-033e-4e03-8cd8-8a91b43826d5"}\n\n')
+[2026-05-09T02:13:37.768424+00:00] q192 cat5 F1=0.00 EM=0 chars=1599 pred=''
+[2026-05-09T02:13:37.770083+00:00] DONE n=193 F1=0.464 ex5=0.437 wall=1038s

@@ -101,6 +101,7 @@ def _warn_on_dim_mismatch(db_path: str) -> None:
         return
     try:
         conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout=5000")
         row = conn.execute(
             "SELECT LENGTH(vector) FROM embeddings WHERE vector IS NOT NULL LIMIT 1"
         ).fetchone()
@@ -134,8 +135,9 @@ def _warn_on_dim_mismatch(db_path: str) -> None:
 def _ensure_embeddings_table(db_path: str):
     """Ensure the embeddings table exists with the correct schema"""
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout=5000")
     cursor = conn.cursor()
-    
+
     # Check if table exists
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='embeddings'")
     if cursor.fetchone() is None:
@@ -233,9 +235,10 @@ def embed_nodes(db_path: str, batch_size: int = 100) -> dict:
     _warn_on_dim_mismatch(db_path)
 
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout=5000")
     _load_vec(conn)
     cursor = conn.cursor()
-    
+
     # Get nodes that need embedding (not decayed, non-empty content).
     # Empty content would produce a zero-norm vector, which poisons sqlite-vec
     # cosine distance (returns NULL) and corrupts nearest-neighbor queries.
@@ -351,12 +354,13 @@ def search(db_path: str, query: str, top_k: int = 10) -> List[Tuple[str, float]]
     used_vec = False
     
     _ensure_embeddings_table(db_path)
-    
+
     # Embed the query
     query_embedding = np.array(embed_text(query), dtype=np.float32)
-    
+
     conn = sqlite3.connect(db_path)
-    
+    conn.execute("PRAGMA busy_timeout=5000")
+
     # Try sqlite-vec first (O(log N)). Skip when the vec table's dim doesn't
     # match the query embedding (legacy 384-dim table under a 1024-dim model,
     # etc.) — that case falls through to brute force on the raw embeddings.
@@ -438,9 +442,10 @@ NOVELTY_THRESHOLD = 0.82  # reject if nearest neighbor similarity > this
 def load_all_embeddings(db_path: str) -> Dict[str, np.ndarray]:
     """Load all non-decayed node embeddings from DB. Call once, pass to check_novelty."""
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout=5000")
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT e.node_id, e.vector 
+        SELECT e.node_id, e.vector
         FROM embeddings e
         JOIN thought_nodes tn ON e.node_id = tn.id
         WHERE tn.decayed IS NULL OR tn.decayed = 0
@@ -469,10 +474,11 @@ def check_novelty(db_path: str, content: str, threshold: float = NOVELTY_THRESHO
     except Exception as e:
         logging.warning(f"Failed to embed candidate for novelty check: {e}")
         return True, 0.0, None  # fail open
-    
+
     # Fast path: sqlite-vec nearest neighbor
     if preloaded_embeddings is None:
         conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout=5000")
         if (
             _vec_available
             and _has_vec_table(conn)
@@ -521,13 +527,14 @@ def backfill_vec_index(db_path: str) -> dict:
     """
     if not _vec_available:
         return {"error": "sqlite-vec not installed"}
-    
+
     _ensure_embeddings_table(db_path)
-    
+
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout=5000")
     _load_vec(conn)
     cursor = conn.cursor()
-    
+
     if not _has_vec_table(conn):
         conn.close()
         return {"error": "vec_embeddings table not found"}
@@ -646,15 +653,16 @@ def main():
         
         print(f"🔍 Searching for: {args.query}")
         results = search(args.db, args.query, args.top_k)
-        
+
         if not results:
             print("No results found")
             return 0
-        
+
         # Load node details for display
         conn = sqlite3.connect(args.db)
+        conn.execute("PRAGMA busy_timeout=5000")
         cursor = conn.cursor()
-        
+
         print(f"\nTop {len(results)} results:")
         for i, (node_id, score) in enumerate(results):
             cursor.execute("SELECT content, node_type FROM thought_nodes WHERE id = ?", (node_id,))

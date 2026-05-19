@@ -1,0 +1,16 @@
+{
+  "started_at": "2026-05-08T15:43:40.776773+00:00",
+  "ingested": {
+    "conv-26": 19,
+    "conv-30": 19
+  },
+  "questions_done": {
+    "conv-26": 199,
+    "conv-30": 105
+  },
+  "convs_done": [
+    "conv-26",
+    "conv-30"
+  ],
+  "resume_after_iso": null
+}

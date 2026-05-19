@@ -33,10 +33,11 @@ def load_embeddings(db_path: str) -> Tuple[List[str], np.ndarray, Dict[str, Dict
         node_meta: Dict of node_id -> {content, node_type, domain}
     """
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout=5000")
     cursor = conn.cursor()
-    
+
     cursor.execute("""
-        SELECT e.node_id, e.vector, tn.content, tn.node_type, 
+        SELECT e.node_id, e.vector, tn.content, tn.node_type,
                COALESCE(tn.domain, 'unknown') as domain
         FROM embeddings e
         JOIN thought_nodes tn ON e.node_id = tn.id

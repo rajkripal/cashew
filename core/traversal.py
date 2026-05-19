@@ -49,7 +49,9 @@ class TraversalEngine:
     
     def _get_connection(self) -> sqlite3.Connection:
         """Get database connection"""
-        return sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path)
+        conn.execute("PRAGMA busy_timeout=5000")
+        return conn
     
     def _load_node(self, node_id: str) -> Optional[ThoughtNode]:
         """Load a single node from database"""
