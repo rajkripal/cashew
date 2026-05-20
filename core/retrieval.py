@@ -400,12 +400,22 @@ def retrieve_recursive_bfs(db_path: str, query: str, top_k: int = 10, n_seeds: i
     conn = _get_connection(db_path)
     cursor = conn.cursor()
 
-    # Preload adjacency list (both directions)
-    neighbors = defaultdict(set)
-    cursor.execute("SELECT parent_id, child_id FROM derivation_edges")
-    for parent, child in cursor.fetchall():
-        neighbors[parent].add(child)
-        neighbors[child].add(parent)
+    # Lazy-load adjacency list during BFS traversal instead of upfront.
+    # This reduces O(14.5M edges) to O(explored_nodes + their_neighbors).
+    # Neighbors are fetched on-demand when a node is visited.
+    _neighbor_cache = {}
+
+    def get_neighbors(node_id: str) -> set:
+        """Lazily load neighbors for a node. Both parent->child and child->parent edges."""
+        if node_id not in _neighbor_cache:
+            cursor.execute("""
+                SELECT child_id FROM derivation_edges WHERE parent_id = ?
+                UNION
+                SELECT parent_id FROM derivation_edges WHERE child_id = ?
+            """, (node_id, node_id))
+            nbrs = {row[0] for row in cursor.fetchall()}
+            _neighbor_cache[node_id] = nbrs
+        return _neighbor_cache[node_id]
 
     # Cache for embeddings loaded on-demand during BFS
     _vec_cache = {}
@@ -437,7 +447,7 @@ def retrieve_recursive_bfs(db_path: str, query: str, top_k: int = 10, n_seeds: i
     for _depth in range(max_depth):
         next_frontier = []
         for node_id in frontier:
-            nbrs = neighbors.get(node_id, set())
+            nbrs = get_neighbors(node_id)
             if not nbrs:
                 continue
             scored = [(nid, cosine_sim(nid)) for nid in nbrs if nid not in candidates]
@@ -537,11 +547,23 @@ def retrieve_bfs_streaming(db_path: str, query: str, n_seeds: int = 5,
 
     conn = _get_connection(db_path)
     cursor = conn.cursor()
-    neighbors = defaultdict(set)
-    cursor.execute("SELECT parent_id, child_id FROM derivation_edges")
-    for parent, child in cursor.fetchall():
-        neighbors[parent].add(child)
-        neighbors[child].add(parent)
+
+    # Lazy-load adjacency list during BFS traversal instead of upfront.
+    # This reduces O(14.5M edges) to O(explored_nodes + their_neighbors).
+    # Neighbors are fetched on-demand when a node is visited.
+    _neighbor_cache = {}
+
+    def get_neighbors(node_id: str) -> set:
+        """Lazily load neighbors for a node. Both parent->child and child->parent edges."""
+        if node_id not in _neighbor_cache:
+            cursor.execute("""
+                SELECT child_id FROM derivation_edges WHERE parent_id = ?
+                UNION
+                SELECT parent_id FROM derivation_edges WHERE child_id = ?
+            """, (node_id, node_id))
+            nbrs = {row[0] for row in cursor.fetchall()}
+            _neighbor_cache[node_id] = nbrs
+        return _neighbor_cache[node_id]
 
     _vec_cache = {}
     def cosine_sim(node_id: str) -> float:
@@ -568,7 +590,7 @@ def retrieve_bfs_streaming(db_path: str, query: str, n_seeds: int = 5,
         next_frontier = []
         hop_nodes = []
         for node_id in frontier:
-            nbrs = neighbors.get(node_id, set())
+            nbrs = get_neighbors(node_id)
             if not nbrs:
                 continue
             scored = [(nid, cosine_sim(nid)) for nid in nbrs if nid not in candidates]
