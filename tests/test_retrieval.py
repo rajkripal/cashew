@@ -409,3 +409,66 @@ class TestRetrieval:
         for result in results:
             assert isinstance(result, RetrievalResult)
             assert 0.0 <= result.score <= 1.0
+
+
+def test_graph_walk_excludes_decayed_nodes():
+    """Test that _graph_walk() excludes decayed nodes even when they have edges.
+    
+    The JOIN-based query in _graph_walk filters decayed=1 nodes from the
+    adjacency list. A decayed node with an edge to an active node should NOT
+    appear in walk results from that active node.
+    """
+    fd, db_path = tempfile.mkstemp(suffix='.db')
+    os.close(fd)
+    
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+    c.execute("""
+        CREATE TABLE thought_nodes (
+            id TEXT PRIMARY KEY,
+            content TEXT NOT NULL,
+            node_type TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            decayed INTEGER DEFAULT 0
+        )
+    """)
+    c.execute("""
+        CREATE TABLE derivation_edges (
+            parent_id TEXT NOT NULL,
+            child_id TEXT NOT NULL,
+            weight REAL DEFAULT 0.8,
+            reasoning TEXT DEFAULT '',
+            PRIMARY KEY (parent_id, child_id),
+            FOREIGN KEY (parent_id) REFERENCES thought_nodes(id),
+            FOREIGN KEY (child_id) REFERENCES thought_nodes(id)
+        )
+    """)
+    
+    # Seed: one active node, one decayed node, edge connecting them
+    c.execute("INSERT INTO thought_nodes (id, content, node_type, timestamp, decayed) VALUES ('active1', 'I am active', 'observation', '2025-01-01T00:00:00', 0)")
+    c.execute("INSERT INTO thought_nodes (id, content, node_type, timestamp, decayed) VALUES ('decayed_active', 'I should appear in results', 'observation', '2025-01-01T00:00:00', 0)")
+    c.execute("INSERT INTO thought_nodes (id, content, node_type, timestamp, decayed) VALUES ('decayed_dark', 'I should NOT appear in results', 'observation', '2025-01-01T00:00:00', 1)")
+    
+    # Edge from active1 to decayed_dark (the decayed node IS connected)
+    c.execute("INSERT INTO derivation_edges (parent_id, child_id, weight, reasoning) VALUES ('active1', 'decayed_dark', 0.8, 'test')")
+    # Edge from active1 to decayed_active (a non-decayed neighbor)
+    c.execute("INSERT INTO derivation_edges (parent_id, child_id, weight, reasoning) VALUES ('active1', 'decayed_active', 0.8, 'test')")
+    conn.commit()
+    conn.close()
+    
+    # Walk from active1 at depth 2
+    walked = _graph_walk(db_path, ['active1'], walk_depth=2)
+    
+    # Active node and its non-decayed neighbor should be reachable
+    assert 'active1' in walked
+    assert 'decayed_active' in walked
+    
+    # The decayed node has an edge from active1 but should be excluded
+    # by the JOIN filter in _graph_walk
+    assert 'decayed_dark' not in walked, (
+        "Decayed node 'decayed_dark' was found in graph walk results even "
+        "though its decayed=1. The JOIN filter should exclude it."
+    )
+    
+    # Cleanup
+    os.unlink(db_path)
