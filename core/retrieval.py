@@ -203,13 +203,14 @@ def _graph_walk(db_path: str, entry_points: List[str], walk_depth: int = 2) -> D
     cursor = conn.cursor()
     
     # Build adjacency lists for both directions
+    # JOIN is used instead of IN-subqueries because at scale (~50K edges across
+    # ~220K nodes) the IN-subquery path causes SQLite to generate bloom filters
+    # that fail to complete within practical timeouts (~60s+). The JOIN equivalent
+    # executes in under 1s on the same graph.
     cursor.execute("""
-        SELECT parent_id, child_id FROM derivation_edges
-        WHERE parent_id IN (
-            SELECT id FROM thought_nodes WHERE decayed IS NULL OR decayed = 0
-        ) AND child_id IN (
-            SELECT id FROM thought_nodes WHERE decayed IS NULL OR decayed = 0
-        )
+        SELECT e.parent_id, e.child_id FROM derivation_edges e
+        JOIN thought_nodes p ON e.parent_id = p.id AND (p.decayed IS NULL OR p.decayed = 0)
+        JOIN thought_nodes c ON e.child_id = c.id AND (c.decayed IS NULL OR c.decayed = 0)
     """)
     
     # Graph as adjacency lists (both directions)
