@@ -11,7 +11,6 @@ import argparse
 import subprocess
 import json
 import shutil
-import requests
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
