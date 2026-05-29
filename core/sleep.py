@@ -270,7 +270,7 @@ def _batch_cross_links(
     return stats
 
 
-# ── Phase 3: dedup via connected-components merge ────────────────────────
+# ── Phase 3: dedup via Bron-Kerbosch maximal cliques ───────────────────
 
 
 def _merge_cluster(
@@ -352,23 +352,36 @@ def _run_dedup(
         adj[n1].add(n2)
         adj[n2].add(n1)
 
-    # BFS connected components
-    visited: Set[str] = set()
+    # Bron-Kerbosch maximal clique enumeration
+    # Connected-components clustering is deliberately avoided here —
+    # cosine similarity is not transitive: sim(A,B) > θ and sim(B,C) > θ
+    # does not imply sim(A,C) > θ.  Bron-Kerbosch enumerates strict
+    # cliques where every pair is above the dedup threshold.
+    cliques: List[Set[str]] = []
+
+    def bron_kerbosch(R: Set[str], P: Set[str], X: Set[str]):
+        if not P and not X:
+            if len(R) >= 2:
+                cliques.append(set(R))
+            return
+        for v in list(P):
+            neighbors = adj[v]
+            bron_kerbosch(R | {v}, P & neighbors, X & neighbors)
+            P = P - {v}
+            X = X | {v}
+
+    bron_kerbosch(set(), set(adj.keys()), set())
+
+    # Greedy cluster assignment: largest clique first, disallow reuse
+    cliques.sort(key=len, reverse=True)
+    used: Set[str] = set()
     components: List[List[str]] = []
-    for node in adj:
-        if node not in visited:
-            queue = [node]
-            visited.add(node)
-            component = [node]
-            while queue:
-                cur = queue.pop(0)
-                for neighbor in adj[cur]:
-                    if neighbor not in visited:
-                        visited.add(neighbor)
-                        queue.append(neighbor)
-                        component.append(neighbor)
-            if len(component) >= 2:
-                components.append(component)
+    for cl in cliques:
+        remaining = [n for n in cl if n not in used]
+        if len(remaining) < 2:
+            continue
+        components.append(remaining)
+        used.update(remaining)
 
     logger.info("sleep: %d dedup components to merge", len(components))
 
@@ -790,11 +803,11 @@ def _run_dream_async(
 
 def run_sleep_cycle(
     db_path: str = None,
-    limit: int = MAX_NODES_PER_CYCLE,
+    limit: Optional[int] = None,
     model_fn=None,
     background_dream: bool = False,
     max_edges: int = MAX_EDGES_PER_CYCLE,
-    cross_source_only: bool = True,
+    cross_source_only: bool = False,
 ) -> dict:
     """Run one complete refactored sleep cycle.
 
@@ -806,8 +819,11 @@ def run_sleep_cycle(
     ----------
     db_path : str or None
         Path to Cashew SQLite database.  Uses config default when ``None``.
-    limit : int
+    limit : Optional[int]
         Max nodes to process this cycle (oldest-first ordering).
+        ``None`` (default) = process all active nodes in one full pass.
+        Pass an int (e.g. ``2000``) to work-cap for bounded-latency
+        lifecycle hooks.
     model_fn : callable or None
         LLM callable for dream generation.  ``None`` = skip dreams.
     background_dream : bool
@@ -841,17 +857,25 @@ def run_sleep_cycle(
         return {"error": "no embeddings table", "nodes_selected": 0}
 
     # ── Select nodes for this cycle (oldest-first) ──
-    rows = conn.execute(
-        "SELECT e.node_id FROM embeddings e "
-        "JOIN thought_nodes tn ON e.node_id = tn.id "
-        "WHERE (tn.decayed IS NULL OR tn.decayed = 0) "
-        "ORDER BY tn.timestamp ASC "
-        "LIMIT ?",
-        (limit,),
-    ).fetchall()
+    if limit is None:
+        rows = conn.execute(
+            "SELECT e.node_id FROM embeddings e "
+            "JOIN thought_nodes tn ON e.node_id = tn.id "
+            "WHERE (tn.decayed IS NULL OR tn.decayed = 0) "
+            "ORDER BY tn.timestamp ASC"
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT e.node_id FROM embeddings e "
+            "JOIN thought_nodes tn ON e.node_id = tn.id "
+            "WHERE (tn.decayed IS NULL OR tn.decayed = 0) "
+            "ORDER BY tn.timestamp ASC "
+            "LIMIT ?",
+            (limit,),
+        ).fetchall()
 
     ids = [r[0] for r in rows]
-    logger.info("sleep: selected %d nodes (limit=%d)", len(ids), limit)
+    logger.info("sleep: selected %d nodes (limit=%s)", len(ids), limit)
 
     valid_ids, matrix = _load_embedding_matrix(conn, ids)
     if len(valid_ids) < 2:
@@ -2008,7 +2032,7 @@ class SleepProtocol:
             model_fn=model_fn,
             background_dream=kwargs.get("background_dream", False),
             max_edges=kwargs.get("max_edges", MAX_EDGES_PER_CYCLE),
-            cross_source_only=kwargs.get("cross_source_only", True),
+            cross_source_only=kwargs.get("cross_source_only", False),
         )
 
         # Map vectorized result back to old-style summary keys for compat
@@ -2060,8 +2084,8 @@ def main():
     parser.add_argument("command", choices=["run", "status"], help="Command to run")
     parser.add_argument("--frequency", type=int, default=10, help="Sleep every N thoughts")
     parser.add_argument("--gc-nodes", type=int, default=20, help="Nodes to consider for GC")
-    parser.add_argument("--limit", type=int, default=MAX_NODES_PER_CYCLE,
-                        help="Max nodes to process (work cap)")
+    parser.add_argument("--limit", type=int, default=None,
+                        help="Max nodes to process (work cap). Default: process all.")
     parser.add_argument("--background-dream", action="store_true",
                         help="Run dream phase in daemon thread")
 
