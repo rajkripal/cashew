@@ -41,8 +41,13 @@ from .decay_audit import log_decay_event, gc_decay_audit
 
 # ── module-level defaults (tunable) ──────────────────────────────────────
 
-CROSS_LINK_THRESHOLD = 0.70   # cosine ≥ this → cross-link edge
-DEDUP_THRESHOLD       = 0.82   # cosine ≥ this → dedup candidate
+# Calibrated for thenlper/gte-large (1024-dim), whose unrelated-pair cosine
+# centers at ~0.765 (P95 ~0.83). The old 0.70/0.82 values were tuned for
+# all-MiniLM-L6-v2 (mean ~0.13) and saturated the graph after the gte-large
+# migration: at 0.70, 96% of ALL pairs cleared the bar. These tail values keep
+# cross-links sparse (only ~0.1% of pairs clear 0.90).
+CROSS_LINK_THRESHOLD = 0.90   # cosine ≥ this → cross-link edge
+DEDUP_THRESHOLD       = 0.94   # cosine ≥ this → dedup candidate
 MAX_NODES_PER_CYCLE   = 2000   # work cap: process at most N oldest nodes
 MAX_EDGES_PER_CYCLE   = 100_000  # hard cap on cross-links per cycle
 EDGES_PER_BATCH       = 500    # commit watermark for batched inserts
