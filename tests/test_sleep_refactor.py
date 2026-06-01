@@ -153,14 +153,15 @@ def db_with_embeddings():
 
     # Insert embeddings — controlled similarity values:
     # v1 (nodes 0,2,6): identical → dedup  (sim = 1.0)
-    # v2 (nodes 1,3,7): 0.75 * v1 + 0.66 * orth → cross-link with v1  (sim ≈ 0.75)
+    # v2 (nodes 1,3,7): mixed vector with sim ≈ 0.92 → cross-link with v1
+    #   (in the [CROSS_LINK_THRESHOLD, DEDUP_THRESHOLD) = [0.90, 0.94) band)
     # v3 (nodes 4,5,8,9): random → low or no similarity
     ref_vec = _make_embedding(0)
     orth = _make_embedding(999)
     # Make orth orthogonal to ref_vec
     orth = orth - np.dot(orth, ref_vec) * ref_vec
     orth = orth / np.linalg.norm(orth)
-    mixed = 0.75 * ref_vec + np.sqrt(1 - 0.75**2) * orth
+    mixed = 0.92 * ref_vec + np.sqrt(1 - 0.92**2) * orth
     random_vec = _make_embedding(42)
 
     vecs_by_group = [

@@ -430,9 +430,13 @@ def search(db_path: str, query: str, top_k: int = 10) -> List[Tuple[str, float]]
     
     return final_results
 
-# Quality gate parameters
-# MiniLM-L6 cosine similarity distribution: mean ~0.13, P99 ~0.49, true dupes peak ~0.85-0.90
-NOVELTY_THRESHOLD = 0.82  # reject if nearest neighbor similarity > this
+# Quality gate parameter. Model-specific: resolves from the active embedding
+# model's calibrated profile (core/model_profiles.py). At the old hardcoded
+# 0.82, gte-large (whose distinct nodes have a nearest-neighbor cosine median
+# of ~0.91) rejected ~96% of genuinely-new nodes as "duplicates".
+from .model_profiles import get_active_profile as _get_active_profile
+
+NOVELTY_THRESHOLD = _get_active_profile().novelty_threshold  # reject if nearest neighbor similarity >= this
 
 
 def load_all_embeddings(db_path: str) -> Dict[str, np.ndarray]:

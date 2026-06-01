@@ -220,8 +220,8 @@ The sleep cycle runs as a **work-capped, 9-phase vectorized pipeline**:
 def run_sleep_cycle(db_path, limit=2000, model_fn=None, ...):
     # 0. Select oldest `limit` non-decayed nodes with embeddings
     # 1. Compute full pairwise cosine similarity matrix (sklearn)
-    # 2. Cross-link pairs with 0.70 ≤ sim < 0.82 (batched inserts, cross-source filter)
-    # 3. Deduplicate pairs with sim ≥ 0.82 (BFS connected components → merge clusters)
+    # 2. Cross-link pairs with 0.90 ≤ sim < 0.94 (batched inserts, cross-source filter)
+    # 3. Deduplicate pairs with sim ≥ 0.94 (Bron-Kerbosch maximal cliques → merge clusters)
     # 4. Compute node metrics (branching factor + cross-link count)
     # 5. Garbage collect low-fitness non-permanent nodes (config-driven threshold)
     # 6. Promote high-access-count nodes to permanent status
@@ -403,7 +403,7 @@ Connect isolated thought chains, deduplicate, garbage collect, and consolidate. 
 
 1. **Cross-linking:** Find semantically similar nodes across domains (0.7-0.85 similarity range). Create edges between related but previously disconnected knowledge. Preserves diversity by not over-connecting highly similar nodes.
 2. **Fitness-based decay:** Pure graph-signal scoring (`branching_factor + cross_links * 0.5 + derivation_depth * 0.1`, see `core/sleep.py::calculate_node_metrics`). Below `gc_threshold` → `decayed=1`. Think-cycle outputs face a `gc_think_cycle_penalty` (1.5x by default) on the threshold. Permanent nodes (seeds, core_memory) skip GC entirely.
-3. **Deduplication:** Merge near-identical nodes (>0.82 similarity), redirect edges to canonical version, preserve derivation links.
+3. **Deduplication:** Merge near-identical nodes (≥0.94 similarity), redirect edges to canonical version, preserve derivation links.
 4. **Core memory promotion:** Top sqrt(total_nodes) by composite fitness get `node_type='core_memory'` and `permanent=1`. (Seed and core_memory ingest also sets `permanent=1` directly; promotion is the runtime path that adds new ones.)
 5. **Logging:** Every operation logged for analysis and auditability.
 

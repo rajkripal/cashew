@@ -41,8 +41,15 @@ from .decay_audit import log_decay_event, gc_decay_audit
 
 # ── module-level defaults (tunable) ──────────────────────────────────────
 
-CROSS_LINK_THRESHOLD = 0.70   # cosine ≥ this → cross-link edge
-DEDUP_THRESHOLD       = 0.82   # cosine ≥ this → dedup candidate
+# Similarity thresholds are model-specific and resolve from the active embedding
+# model's calibrated profile (see core/model_profiles.py). Hardcoding them broke
+# after the all-MiniLM -> gte-large migration: the old 0.70 cross-link threshold
+# matched 96% of all pairs and saturated the graph with ~15.6M edges.
+from .model_profiles import get_active_profile as _get_active_profile
+
+_profile = _get_active_profile()
+CROSS_LINK_THRESHOLD = _profile.cross_link_threshold  # cosine ≥ this → cross-link edge
+DEDUP_THRESHOLD       = _profile.dedup_threshold       # cosine ≥ this → dedup candidate
 MAX_NODES_PER_CYCLE   = 2000   # work cap: process at most N oldest nodes
 MAX_EDGES_PER_CYCLE   = 100_000  # hard cap on cross-links per cycle
 EDGES_PER_BATCH       = 500    # commit watermark for batched inserts

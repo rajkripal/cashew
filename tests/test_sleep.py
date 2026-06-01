@@ -137,16 +137,16 @@ class TestSleepProtocol:
         assert sim4 == 1.0  # Should be identical
     
     def test_default_dedup_threshold_matches_design(self, sleep_protocol):
-        """Test that dedup_threshold default matches DESIGN.md (>0.82)"""
-        assert sleep_protocol.dedup_threshold == 0.82
+        """Test that dedup_threshold default matches the gte-large calibration"""
+        assert sleep_protocol.dedup_threshold == 0.94
 
     def test_high_similarity_routes_to_dedup_not_cross_link(self, sleep_protocol):
-        """Test that similarity in 0.82-0.89 band routes to dedup, not cross-link"""
-        with patch.object(sleep_protocol, '_text_similarity', return_value=0.85):
+        """Test that similarity at/above the dedup threshold routes to dedup, not cross-link"""
+        with patch.object(sleep_protocol, '_text_similarity', return_value=0.95):
             candidates = sleep_protocol._find_cross_link_candidates_text_fallback()
 
         assert any(c.action == "dedup" for c in candidates)
-        assert not any(c.action == "cross_link" and c.similarity == 0.85 for c in candidates)
+        assert not any(c.action == "cross_link" and c.similarity == 0.95 for c in candidates)
 
     def test_find_cross_link_candidates(self, sleep_protocol):
         """Test finding cross-link candidates"""
