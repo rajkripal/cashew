@@ -23,6 +23,12 @@ DEFAULT_SIMILARITY_THRESHOLD = 0.3
 DEFAULT_USER_DOMAIN = "user"
 DEFAULT_AI_DOMAIN = "ai"
 
+
+def _default_novelty_threshold() -> float:
+    """Novelty threshold for the configured embedding model (model-specific)."""
+    from .model_profiles import get_active_profile
+    return get_active_profile(DEFAULT_EMBEDDING_MODEL).novelty_threshold
+
 def _expand_env_vars(value: Any) -> Any:
     """Recursively expand environment variables in configuration values"""
     if isinstance(value, str):
@@ -148,7 +154,7 @@ class CashewConfig:
                 'temporal_weight': DEFAULT_TEMPORAL_WEIGHT,
                 'think_cycle_nodes': DEFAULT_THINK_CYCLE_NODES,
                 'clustering_eps': 0.35,
-                'novelty_threshold': 0.82,
+                'novelty_threshold': _default_novelty_threshold(),
                 'max_think_iterations': 3
             },
             'integration': {},
@@ -214,7 +220,7 @@ class CashewConfig:
         self.temporal_weight = float(os.environ.get('CASHEW_TEMPORAL_WEIGHT', perf['temporal_weight']))
         self.think_cycle_nodes = int(perf['think_cycle_nodes'])
         self.clustering_eps = float(perf.get('clustering_eps', 0.35))
-        self.novelty_threshold = float(perf.get('novelty_threshold', 0.82))
+        self.novelty_threshold = float(perf.get('novelty_threshold', _default_novelty_threshold()))
         
         # Model configuration (env var override)
         self.embedding_model = os.environ.get('CASHEW_EMBEDDING_MODEL', self._raw_config['models']['embedding']['name'])
