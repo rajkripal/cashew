@@ -159,6 +159,15 @@ def _load_embedding_matrix(
         logger.warning("sleep: skipped %d bad embeddings", bad)
     if not vectors:
         return [], np.array([])
+    # Filter to modal dimension so stale embeddings from old models don't crash np.array()
+    from collections import Counter
+    modal_dim = Counter(len(v) for v in vectors).most_common(1)[0][0]
+    dim_filtered = [(nid, v) for nid, v in zip(valid_ids, vectors) if len(v) == modal_dim]
+    dropped = len(vectors) - len(dim_filtered)
+    if dropped:
+        logger.warning("sleep: dropped %d embeddings with non-modal dimension (modal=%d)", dropped, modal_dim)
+    valid_ids = [nid for nid, _ in dim_filtered]
+    vectors = [v for _, v in dim_filtered]
     return valid_ids, np.array(vectors)
 
 
