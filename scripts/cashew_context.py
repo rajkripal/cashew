@@ -95,7 +95,7 @@ def cmd_context(args):
         except Exception as e:
             logger.debug(f"daemon unavailable, falling back: {e}")
 
-    if context is None:
+    if not context:
         context = generate_session_context(args.db, hints, tags=tags, exclude_tags=exclude)
     elapsed = time.time() - t0
     
