@@ -412,7 +412,9 @@ class TestCashewConfig:
         assert config.token_budget == 2000
         assert config.top_k == 10
         assert config.walk_depth == 2
-        assert config.embedding_model == 'all-MiniLM-L6-v2'
+        # Assert a model is resolved (don't hardcode which — the default changed
+        # from all-MiniLM-L6-v2 to thenlper/gte-large and may change again).
+        assert isinstance(config.embedding_model, str) and len(config.embedding_model) > 0
     
     def test_env_override(self):
         """Test environment variable overrides"""

@@ -18,10 +18,13 @@ from core import daemon as daemon_mod
 from core.embedding_cache import EmbeddingCache
 from core.embedding_service import (
     DaemonBackend,
-    EMBEDDING_DIM,
     EmbeddingService,
     LocalBackend,
+    resolve_embedding_dim,
 )
+
+# Derive expected dimension from the configured embedding model.
+EMBEDDING_DIM = resolve_embedding_dim()
 
 
 @pytest.fixture
