@@ -38,7 +38,9 @@ class RetrievalResult:
 
 def _get_connection(db_path: str) -> sqlite3.Connection:
     """Get database connection"""
-    return sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
+    return conn
 
 def _load_node_details(db_path: str, node_ids: List[str], domain_filter: Optional[str] = None, tag_filter: Optional[List[str]] = None, exclude_tags: Optional[List[str]] = None) -> Dict[str, Dict]:
     """Load node details for multiple node IDs with optional domain, tag, and exclusion filtering"""
