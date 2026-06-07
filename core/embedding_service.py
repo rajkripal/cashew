@@ -103,7 +103,7 @@ class LocalBackend:
         the dim isn't known a priori."""
         if self._dim is None:
             self._ensure_model()
-            self._dim = self._model.get_sentence_embedding_dimension()
+            self._dim = self._model.get_embedding_dimension()
         return self._dim
 
     def _ensure_model(self) -> None:
@@ -116,7 +116,7 @@ class LocalBackend:
             return np.zeros((0, self.dim), dtype=np.float32)
         self._ensure_model()
         # Update dim from the actual loaded model (authoritative).
-        self._dim = self._model.get_sentence_embedding_dimension()
+        self._dim = self._model.get_embedding_dimension()
         return self._model.encode(texts, convert_to_numpy=True).astype(np.float32)
 
 
