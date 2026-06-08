@@ -789,6 +789,7 @@ def _run_dream_async(
     def _task():
         try:
             conn = sqlite3.connect(db_path)
+            conn.execute("PRAGMA busy_timeout = 5000")
             _set_wal(conn)
             dream_id = _generate_dream(conn, cross_link_tuples, model_fn=model_fn)
             orphans = _embed_orphans(conn)
@@ -852,6 +853,7 @@ def run_sleep_cycle(
 
     t_start = time.perf_counter()
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
     _set_wal(conn)
 
     # Check if embeddings table exists — required for vectorized pipeline
@@ -975,6 +977,7 @@ def run_sleep_cycle(
     # Decay-audit GC (one-shot per cycle)
     try:
         audit_conn = sqlite3.connect(db_path)
+        audit_conn.execute("PRAGMA busy_timeout = 5000")
         audit_pruned = gc_decay_audit(audit_conn, retention_days=7)
         audit_conn.commit()
         audit_conn.close()
@@ -1082,7 +1085,9 @@ class SleepProtocol:
     # ── internal helpers ──────────────────────────────────────────────────
 
     def _get_connection(self) -> sqlite3.Connection:
-        return sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path)
+        conn.execute("PRAGMA busy_timeout = 5000")
+        return conn
 
     def _log_event(self, event_type: str, details: dict):
         event = SleepEvent(
