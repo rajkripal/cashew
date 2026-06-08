@@ -33,6 +33,7 @@ def load_embeddings(db_path: str) -> Tuple[List[str], np.ndarray, Dict[str, Dict
         node_meta: Dict of node_id -> {content, node_type, domain}
     """
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
     cursor = conn.cursor()
     
     cursor.execute("""

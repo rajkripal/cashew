@@ -171,6 +171,7 @@ class ExtractorRegistry:
         import sqlite3
         
         conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout = 5000")
         cursor = conn.cursor()
         # Ensure referent_time column is present on older DBs.
         try:

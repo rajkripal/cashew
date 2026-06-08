@@ -22,6 +22,7 @@ def is_metrics_enabled() -> bool:
 def ensure_metrics_table(db_path: str):
     """Ensure the metrics table exists in the database"""
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -55,6 +56,7 @@ def record_metric(db_path: str, metric_type: str, duration_ms: float, **kwargs):
         ensure_metrics_table(db_path)
         
         conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout = 5000")
         cursor = conn.cursor()
         
         cursor.execute("""
@@ -138,6 +140,7 @@ def get_metrics_summary(db_path: str, hours: int = 24) -> Dict[str, Any]:
         ensure_metrics_table(db_path)
         
         conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout = 5000")
         cursor = conn.cursor()
         
         # Calculate time threshold
@@ -236,6 +239,7 @@ def get_metrics_timeseries(db_path: str, metric_type: str, hours: int = 24) -> L
         ensure_metrics_table(db_path)
         
         conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout = 5000")
         cursor = conn.cursor()
         
         since = (datetime.now() - timedelta(hours=hours)).isoformat()
@@ -287,6 +291,7 @@ def get_retrieval_stats(db_path: str, hours: int = 24) -> Dict[str, Any]:
         ensure_metrics_table(db_path)
         
         conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout = 5000")
         cursor = conn.cursor()
         
         since = (datetime.now() - timedelta(hours=hours)).isoformat()
@@ -368,6 +373,7 @@ def get_recent_metrics(db_path: str, limit: int = 20) -> List[Dict[str, Any]]:
         ensure_metrics_table(db_path)
         
         conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout = 5000")
         cursor = conn.cursor()
         
         cursor.execute("""
@@ -409,6 +415,7 @@ def clear_metrics(db_path: str):
         ensure_metrics_table(db_path)
         
         conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout = 5000")
         cursor = conn.cursor()
         
         cursor.execute("DELETE FROM metrics")

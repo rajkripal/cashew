@@ -101,6 +101,7 @@ def _warn_on_dim_mismatch(db_path: str) -> None:
         return
     try:
         conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout = 5000")
         row = conn.execute(
             "SELECT LENGTH(vector) FROM embeddings WHERE vector IS NOT NULL LIMIT 1"
         ).fetchone()
@@ -134,6 +135,7 @@ def _warn_on_dim_mismatch(db_path: str) -> None:
 def _ensure_embeddings_table(db_path: str):
     """Ensure the embeddings table exists with the correct schema"""
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
     cursor = conn.cursor()
     
     # Check if table exists
@@ -233,6 +235,7 @@ def embed_nodes(db_path: str, batch_size: int = 100) -> dict:
     _warn_on_dim_mismatch(db_path)
 
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
     _load_vec(conn)
     cursor = conn.cursor()
     
@@ -356,6 +359,7 @@ def search(db_path: str, query: str, top_k: int = 10) -> List[Tuple[str, float]]
     query_embedding = np.array(embed_text(query), dtype=np.float32)
     
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
     
     # Try sqlite-vec first (O(log N)). Skip when the vec table's dim doesn't
     # match the query embedding (legacy 384-dim table under a 1024-dim model,
@@ -442,6 +446,7 @@ NOVELTY_THRESHOLD = _get_active_profile().novelty_threshold  # reject if nearest
 def load_all_embeddings(db_path: str) -> Dict[str, np.ndarray]:
     """Load all non-decayed node embeddings from DB. Call once, pass to check_novelty."""
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
     cursor = conn.cursor()
     cursor.execute("""
         SELECT e.node_id, e.vector 
@@ -477,6 +482,7 @@ def check_novelty(db_path: str, content: str, threshold: float = NOVELTY_THRESHO
     # Fast path: sqlite-vec nearest neighbor
     if preloaded_embeddings is None:
         conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout = 5000")
         if (
             _vec_available
             and _has_vec_table(conn)
@@ -529,6 +535,7 @@ def backfill_vec_index(db_path: str) -> dict:
     _ensure_embeddings_table(db_path)
     
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
     _load_vec(conn)
     cursor = conn.cursor()
     
@@ -657,6 +664,7 @@ def main():
         
         # Load node details for display
         conn = sqlite3.connect(args.db)
+        conn.execute("PRAGMA busy_timeout = 5000")
         cursor = conn.cursor()
         
         print(f"\nTop {len(results)} results:")
