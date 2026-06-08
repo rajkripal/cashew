@@ -737,7 +737,9 @@ def _embed_orphans(conn: sqlite3.Connection) -> int:
     logger.info("sleep: embedding %d orphaned nodes…", len(rows))
 
     from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    from .embedding_service import _resolve_default_model
+    _model_name = _resolve_default_model()
+    model = SentenceTransformer(_model_name)
 
     embedded = 0
     for nid, content in rows:
@@ -749,7 +751,7 @@ def _embed_orphans(conn: sqlite3.Connection) -> int:
                     "INSERT OR REPLACE INTO embeddings "
                     "(node_id, vector, model, updated_at) "
                     "VALUES (?, ?, ?, datetime('now'))",
-                    (nid, blob, "all-MiniLM-L6-v2"),
+                    (nid, blob, _model_name),
                 )
             except sqlite3.OperationalError:
                 conn.execute(
