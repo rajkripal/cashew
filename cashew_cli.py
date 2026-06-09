@@ -388,7 +388,7 @@ def cmd_ingest(args):
     
     # Initialize registry and register extractors
     data_dir = str(Path(db_path).parent)
-    registry = ExtractorRegistry(data_dir=data_dir)
+    registry = ExtractorRegistry(data_dir=data_dir, db_path=db_path)
     registry.register(ObsidianExtractor())
     registry.register(SessionExtractor())
     registry.register(MarkdownDirExtractor())

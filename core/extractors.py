@@ -70,15 +70,18 @@ class BaseExtractor(ABC):
 
 class ExtractorRegistry:
     """Registry for extractor plugins.
-    
+
     Extractors register themselves, then the orchestrator can
     discover and run them.
     """
 
-    def __init__(self, data_dir: str = "./data"):
+    def __init__(self, data_dir: str = "./data", db_path: Optional[str] = None):
         self._extractors: Dict[str, BaseExtractor] = {}
         self._state_dir = os.path.join(data_dir, "extractor_state")
         os.makedirs(self._state_dir, exist_ok=True)
+        self._db_path = db_path
+        if db_path:
+            self._ensure_state_table(db_path)
 
     def register(self, extractor: BaseExtractor):
         """Register an extractor plugin."""
@@ -240,13 +243,46 @@ class ExtractorRegistry:
         conn.close()
         return created
 
+    def _ensure_state_table(self, db_path: str):
+        """Create extractor_state table if it doesn't exist."""
+        import sqlite3
+        try:
+            conn = sqlite3.connect(db_path)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS extractor_state (
+                    extractor_name TEXT PRIMARY KEY,
+                    state_json TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Failed to create extractor_state table: {e}")
+
     def _state_path(self, name: str) -> str:
         return os.path.join(self._state_dir, f"{name}.json")
 
     def _save_state(self, name: str, state: Dict[str, Any]):
-        """Persist extractor state to JSON."""
+        """Persist extractor state. Uses DB when available, JSON otherwise."""
         if not state:
             return
+        if self._db_path:
+            import sqlite3
+            try:
+                conn = sqlite3.connect(self._db_path)
+                conn.execute("""
+                    INSERT OR REPLACE INTO extractor_state
+                        (extractor_name, state_json, updated_at)
+                    VALUES (?, ?, ?)
+                """, (name, json.dumps(state), datetime.now().isoformat()))
+                conn.commit()
+                conn.close()
+                return
+            except Exception as e:
+                logger.error(f"Failed to save state for '{name}' to DB: {e}")
+                # Fall through to JSON fallback
+        # JSON fallback (no db_path configured)
         try:
             with open(self._state_path(name), 'w') as f:
                 json.dump(state, f, indent=2)
@@ -254,7 +290,45 @@ class ExtractorRegistry:
             logger.error(f"Failed to save state for '{name}': {e}")
 
     def _load_state(self, name: str) -> Optional[Dict[str, Any]]:
-        """Load persisted extractor state."""
+        """Load persisted extractor state.
+
+        Priority order:
+          1. DB row (if db_path is configured)
+          2. Legacy JSON file shim (imported on first load, then discarded)
+        """
+        if self._db_path:
+            import sqlite3
+            try:
+                self._ensure_state_table(self._db_path)
+                conn = sqlite3.connect(self._db_path)
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT state_json FROM extractor_state WHERE extractor_name = ?",
+                    (name,)
+                )
+                row = cursor.fetchone()
+                conn.close()
+                if row:
+                    try:
+                        return json.loads(row[0])
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Corrupt DB state for '{name}': {e}")
+                        return None
+                # No DB row yet — check for legacy JSON file and import it
+                legacy_state = self._load_legacy_json_state(name)
+                if legacy_state:
+                    logger.info(
+                        f"Importing legacy JSON state for '{name}' into DB"
+                    )
+                    self._save_state(name, legacy_state)
+                return legacy_state
+            except Exception as e:
+                logger.error(f"Failed to load state for '{name}' from DB: {e}")
+                # Fall through to JSON fallback
+        return self._load_legacy_json_state(name)
+
+    def _load_legacy_json_state(self, name: str) -> Optional[Dict[str, Any]]:
+        """Load state from legacy JSON file (backwards-compat shim)."""
         path = self._state_path(name)
         if not os.path.exists(path):
             return None
@@ -262,5 +336,5 @@ class ExtractorRegistry:
             with open(path, 'r') as f:
                 return json.load(f)
         except (IOError, json.JSONDecodeError) as e:
-            logger.error(f"Failed to load state for '{name}': {e}")
+            logger.error(f"Failed to load legacy JSON state for '{name}': {e}")
             return None
