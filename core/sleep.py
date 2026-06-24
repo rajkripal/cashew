@@ -736,20 +736,21 @@ def _embed_orphans(conn: sqlite3.Connection) -> int:
 
     logger.info("sleep: embedding %d orphaned nodes…", len(rows))
 
-    from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    from .embedding_service import EmbeddingService
+    svc = EmbeddingService()
+    model_name = svc.model
 
     embedded = 0
     for nid, content in rows:
         try:
-            vec = model.encode(content, normalize_embeddings=True)
-            blob = vec.astype(np.float32).tobytes()
+            vec = np.array(svc.embed(content), dtype=np.float32)
+            blob = vec.tobytes()
             try:
                 conn.execute(
                     "INSERT OR REPLACE INTO embeddings "
                     "(node_id, vector, model, updated_at) "
                     "VALUES (?, ?, ?, datetime('now'))",
-                    (nid, blob, "all-MiniLM-L6-v2"),
+                    (nid, blob, model_name),
                 )
             except sqlite3.OperationalError:
                 conn.execute(
@@ -760,7 +761,7 @@ def _embed_orphans(conn: sqlite3.Connection) -> int:
                 conn.execute(
                     "INSERT OR REPLACE INTO vec_embeddings "
                     "(node_id, embedding) VALUES (?, ?)",
-                    (nid, vec.astype(np.float32).tolist()),
+                    (nid, vec.tolist()),
                 )
             except sqlite3.OperationalError:
                 pass
