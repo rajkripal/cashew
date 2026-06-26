@@ -89,7 +89,11 @@ def cmd_context(args):
                 "exclude_tags": exclude,
             })
             if resp and resp.get("ok"):
-                context = resp.get("result")
+                result = resp.get("result")
+                if result:  # non-empty string means daemon succeeded
+                    context = result
+                else:
+                    logger.debug("daemon returned empty context, falling back to in-process")
             elif resp and not resp.get("ok"):
                 logger.warning(f"daemon error, falling back: {resp.get('error')}")
         except Exception as e:
