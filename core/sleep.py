@@ -36,7 +36,7 @@ import numpy as np
 
 logger = logging.getLogger("cashew.sleep")
 
-from .config import get_db_path, config
+from .config import get_db_path, config, DEFAULT_EMBEDDING_MODEL
 from .decay_audit import log_decay_event, gc_decay_audit
 
 # ── module-level defaults (tunable) ──────────────────────────────────────
@@ -737,7 +737,7 @@ def _embed_orphans(conn: sqlite3.Connection) -> int:
     logger.info("sleep: embedding %d orphaned nodes…", len(rows))
 
     from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    model = SentenceTransformer(DEFAULT_EMBEDDING_MODEL)
 
     embedded = 0
     for nid, content in rows:
@@ -749,7 +749,7 @@ def _embed_orphans(conn: sqlite3.Connection) -> int:
                     "INSERT OR REPLACE INTO embeddings "
                     "(node_id, vector, model, updated_at) "
                     "VALUES (?, ?, ?, datetime('now'))",
-                    (nid, blob, "all-MiniLM-L6-v2"),
+                    (nid, blob, DEFAULT_EMBEDDING_MODEL),
                 )
             except sqlite3.OperationalError:
                 conn.execute(
