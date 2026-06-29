@@ -120,13 +120,26 @@ def _set_wal(conn: sqlite3.Connection) -> None:
         conn.execute("PRAGMA journal_mode=WAL")
 
 
+def _resolve_expected_dim() -> int:
+    """Configured embedding model's dim, with a MiniLM fallback if the
+    embedding service cannot be constructed (e.g. in CI without the model
+    cached)."""
+    try:
+        from .embedding_service import get_default_service
+        return get_default_service().dim
+    except Exception:
+        return 384
+
+
 def _load_embedding_matrix(
     conn: sqlite3.Connection, node_ids: List[str],
 ) -> Tuple[List[str], np.ndarray]:
     """Load embeddings for *node_ids* from the ``embeddings`` table.
 
     Returns (valid_ids, matrix) where *matrix* has shape (N, embedding_dim).
-    Filters NaN, inf, and zero vectors.
+    Filters NaN, inf, zero, and wrong-dim vectors. Wrong-dim filtering is
+    keyed off the configured model's dim so a partially-migrated brain
+    cannot crash sleep at the ``np.array(vectors)`` call.
     """
     if not node_ids:
         return [], np.array([])
@@ -138,9 +151,12 @@ def _load_embedding_matrix(
         node_ids,
     ).fetchall()
 
+    expected_dim = _resolve_expected_dim()
+
     vectors: List[np.ndarray] = []
     valid_ids: List[str] = []
     bad = 0
+    wrong_dim = 0
     for nid, blob in rows:
         try:
             vec = np.frombuffer(blob, dtype=np.float32)
@@ -150,6 +166,9 @@ def _load_embedding_matrix(
             if np.allclose(vec, 0):
                 bad += 1
                 continue
+            if len(vec) != expected_dim:
+                wrong_dim += 1
+                continue
             valid_ids.append(nid)
             vectors.append(vec)
         except Exception:
@@ -157,6 +176,12 @@ def _load_embedding_matrix(
 
     if bad:
         logger.warning("sleep: skipped %d bad embeddings", bad)
+    if wrong_dim:
+        logger.warning(
+            "sleep: skipped %d embeddings with dim != %d (configured model). "
+            "Run `cashew migrate-embeddings -y` to re-embed under the current model.",
+            wrong_dim, expected_dim,
+        )
     if not vectors:
         return [], np.array([])
     return valid_ids, np.array(vectors)
