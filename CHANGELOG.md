@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-06-29
+
+### Fixed
+- `'SentenceTransformer' object has no attribute 'get_embedding_dimension'` crash on every embed and extract call when installed against sentence-transformers < 5.5. v1.2.0 pre-emptively migrated to the new API name (#88) but sentence-transformers wasn't pinned, so existing installs broke. `core/embedding_service.py` now resolves the dim through a `_model_dim` shim that tries `get_embedding_dimension` first and falls back to the deprecated `get_sentence_embedding_dimension`, supporting both API generations.
+
 ## [1.2.0] - 2026-06-28
 
 This release pairs a major embedding upgrade with a substantial sleep-cycle reshape. Default embeddings move from MiniLM-384 to gte-large-1024; the sleep cycle is now work-capped and vectorized with batched DB writes; per-model similarity thresholds replace the previously hardcoded MiniLM-calibrated constants. A smooth-upgrade path (`cashew migrate-embeddings` + dim-mismatch warning) lets existing brains migrate cleanly. SQLite concurrency is hardened across every connection site with `PRAGMA busy_timeout`. New `ClaudeArchiveExtractor` ingests claude.ai conversation archives.
@@ -114,7 +119,8 @@ First public release on PyPI. `pip install cashew-brain` now works.
 - CLI entry point (`cashew`).
 - PyPI trusted-publishing release workflow (OIDC, no API tokens).
 
-[Unreleased]: https://github.com/rajkripal/cashew/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/rajkripal/cashew/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/rajkripal/cashew/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/rajkripal/cashew/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/rajkripal/cashew/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/rajkripal/cashew/releases/tag/v1.0.1

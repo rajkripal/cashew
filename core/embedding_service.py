@@ -89,6 +89,20 @@ class Backend(Protocol):
     def encode(self, texts: List[str]) -> np.ndarray: ...
 
 
+def _model_dim(model) -> int:
+    """Resolve embedding dim from a SentenceTransformer instance, supporting
+    both the new (sentence-transformers >= 5.5) and deprecated APIs."""
+    fn = getattr(model, "get_embedding_dimension", None) \
+        or getattr(model, "get_sentence_embedding_dimension", None)
+    if fn is None:
+        raise AttributeError(
+            "SentenceTransformer exposes neither get_embedding_dimension nor "
+            "get_sentence_embedding_dimension; sentence-transformers version "
+            "is unsupported."
+        )
+    return fn()
+
+
 class LocalBackend:
     """In-process sentence-transformer. Lazy-loads to keep import cheap."""
 
@@ -103,7 +117,7 @@ class LocalBackend:
         the dim isn't known a priori."""
         if self._dim is None:
             self._ensure_model()
-            self._dim = self._model.get_embedding_dimension()
+            self._dim = _model_dim(self._model)
         return self._dim
 
     def _ensure_model(self) -> None:
@@ -116,7 +130,7 @@ class LocalBackend:
             return np.zeros((0, self.dim), dtype=np.float32)
         self._ensure_model()
         # Update dim from the actual loaded model (authoritative).
-        self._dim = self._model.get_embedding_dimension()
+        self._dim = _model_dim(self._model)
         return self._model.encode(texts, convert_to_numpy=True).astype(np.float32)
 
 
