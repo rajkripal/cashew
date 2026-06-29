@@ -144,3 +144,52 @@ class TestEmbeddingService:
         svc, *_ = service_with_fakes
         arr = svc.embed_np([])
         assert arr.shape == (0, EMBEDDING_DIM)
+
+
+# ── _model_dim shim (sentence-transformers <5.5 vs >=5.5) ────────────────
+
+
+class _ModelNewApi:
+    def get_embedding_dimension(self):
+        return 1024
+
+
+class _ModelOldApi:
+    def get_sentence_embedding_dimension(self):
+        return 384
+
+
+class _ModelBothApis:
+    def get_embedding_dimension(self):
+        return 1024
+
+    def get_sentence_embedding_dimension(self):
+        return 999  # should NOT be picked when new API exists
+
+
+class _ModelNoApi:
+    pass
+
+
+class TestModelDimShim:
+    """The shim must support both the new sentence-transformers >=5.5 API
+    (`get_embedding_dimension`) and the deprecated pre-5.5 API
+    (`get_sentence_embedding_dimension`). v1.2.0 shipped a call to the
+    new method without pinning the dep, breaking every install on <5.5."""
+
+    def test_uses_new_api_when_available(self):
+        from core.embedding_service import _model_dim
+        assert _model_dim(_ModelNewApi()) == 1024
+
+    def test_falls_back_to_deprecated_api(self):
+        from core.embedding_service import _model_dim
+        assert _model_dim(_ModelOldApi()) == 384
+
+    def test_prefers_new_api_when_both_exist(self):
+        from core.embedding_service import _model_dim
+        assert _model_dim(_ModelBothApis()) == 1024
+
+    def test_raises_when_neither_api_exists(self):
+        from core.embedding_service import _model_dim
+        with pytest.raises(AttributeError, match="get_embedding_dimension"):
+            _model_dim(_ModelNoApi())

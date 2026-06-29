@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cashew-brain"
-version = "1.2.0"
+version = "1.2.1"
 description = "Persistent thought-graph memory for AI agents. Provides context generation, knowledge extraction, and autonomous think cycles."
 authors = [{name = "rajkripal"}]
 license = {text = "MIT"}
@@ -27,7 +27,7 @@ dependencies = [
     # anthropic removed - LLM access is external via model_fn parameter
     "numpy",
     "scikit-learn",
-    "sentence-transformers",  # for embedding model
+    "sentence-transformers>=2.0",  # works on both pre-5.5 and 5.5+ via runtime shim in core/embedding_service.py
     "PyYAML",  # for config file support
 ]
 
