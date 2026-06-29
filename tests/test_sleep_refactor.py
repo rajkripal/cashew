@@ -129,6 +129,15 @@ def _make_test_db(with_embeddings=True) -> str:
 # ── Fixture ──────────────────────────────────────────────────────────────
 
 
+@pytest.fixture(autouse=True)
+def _pin_expected_dim_to_384():
+    """All test embeddings in this file are 384-dim. Pin
+    `_resolve_expected_dim` so tests pass regardless of the host's
+    configured default embedding model."""
+    with patch("core.sleep._resolve_expected_dim", return_value=384):
+        yield
+
+
 @pytest.fixture
 def db_with_embeddings():
     """Database with ~10 embedding-bearing nodes for pipeline testing."""
@@ -255,11 +264,64 @@ def test_load_embedding_matrix_filters_bad_vectors():
         )
         conn.commit()
 
-        ids, matrix = _load_embedding_matrix(conn, ["good", "nan_vec", "inf_vec", "zero_vec"])
+        with patch("core.sleep._resolve_expected_dim", return_value=384):
+            ids, matrix = _load_embedding_matrix(
+                conn, ["good", "nan_vec", "inf_vec", "zero_vec"],
+            )
         conn.close()
 
         assert len(ids) == 1
         assert ids == ["good"]
+        assert matrix.shape == (1, 384)
+    finally:
+        os.unlink(path)
+
+
+def test_load_embedding_matrix_filters_wrong_dim_against_configured_model():
+    """A partially-migrated brain with mixed dims should keep only the rows
+    matching the configured model's dim. Filtering is keyed off the
+    configured model dim (not first-seen), so iteration order cannot wipe
+    out the majority dim."""
+    path = _make_test_db(with_embeddings=True)
+    try:
+        conn = sqlite3.connect(path)
+        _insert_node(conn, "old_384", "stale MiniLM row")
+        _insert_node(conn, "new_1024_a", "current gte-large row a")
+        _insert_node(conn, "new_1024_b", "current gte-large row b")
+
+        old_blob = _make_embedding(1, dim=384).tobytes()
+        new_blob_a = _make_embedding(2, dim=1024).tobytes()
+        new_blob_b = _make_embedding(3, dim=1024).tobytes()
+        conn.executemany(
+            "INSERT INTO embeddings (node_id, vector, model, updated_at) "
+            "VALUES (?, ?, 'test', datetime('now'))",
+            [
+                ("old_384", old_blob),
+                ("new_1024_a", new_blob_a),
+                ("new_1024_b", new_blob_b),
+            ],
+        )
+        conn.commit()
+
+        # Force the configured dim to 1024 regardless of host env.
+        with patch("core.sleep._resolve_expected_dim", return_value=1024):
+            ids, matrix = _load_embedding_matrix(
+                conn, ["old_384", "new_1024_a", "new_1024_b"],
+            )
+        conn.close()
+
+        assert set(ids) == {"new_1024_a", "new_1024_b"}
+        assert matrix.shape == (2, 1024)
+
+        # And the reverse: configured dim 384 keeps only the legacy row.
+        conn = sqlite3.connect(path)
+        with patch("core.sleep._resolve_expected_dim", return_value=384):
+            ids, matrix = _load_embedding_matrix(
+                conn, ["old_384", "new_1024_a", "new_1024_b"],
+            )
+        conn.close()
+
+        assert ids == ["old_384"]
         assert matrix.shape == (1, 384)
     finally:
         os.unlink(path)
