@@ -1637,6 +1637,21 @@ def main():
     init_parser.add_argument("--db", dest="sub_db", default=None, help="Database path (can also be specified before subcommand)")
     init_parser.set_defaults(func=cmd_init)
     
+    # Repair embeddings command
+    repair_emb_parser = subparsers.add_parser(
+        "repair-embeddings",
+        help="Detect and delete null/empty-vector rows so sleep protocol can re-embed them"
+    )
+    repair_emb_parser.add_argument(
+        "--dry-run", action="store_true", default=True,
+        help="Report affected nodes without deleting (default)"
+    )
+    repair_emb_parser.add_argument(
+        "--apply", dest="dry_run", action="store_false",
+        help="Actually delete the empty embedding rows"
+    )
+    repair_emb_parser.set_defaults(func=cmd_repair_embeddings)
+
     # Migrate files command
     migrate_files_parser = subparsers.add_parser("migrate-files", help="Migrate markdown files to cashew database")
     migrate_files_parser.add_argument("--dir", required=True, help="Directory containing markdown files")
@@ -1674,6 +1689,38 @@ def main():
         print(f"🔧 Command: {args.command}", file=sys.stderr)
     
     return args.func(args) or 0
+
+
+def cmd_repair_embeddings(args):
+    """Detect and optionally delete null/empty-vector rows in the embeddings table."""
+    import core.db as cdb
+    conn = cdb.connect(args.db)
+    rows = conn.execute(
+        "SELECT node_id FROM embeddings WHERE vector IS NULL OR vector = ''"
+    ).fetchall()
+    node_ids = [r[0] for r in rows]
+    count = len(node_ids)
+
+    if count == 0:
+        print("No null/empty embeddings found.")
+        conn.close()
+        return 0
+
+    print(f"Found {count} node(s) with null/empty embeddings:")
+    for nid in node_ids:
+        print(f"  {nid}")
+
+    if args.dry_run:
+        print(f"\nDry-run: {count} row(s) would be deleted. Pass --apply to execute.")
+    else:
+        conn.execute(
+            "DELETE FROM embeddings WHERE vector IS NULL OR vector = ''"
+        )
+        conn.commit()
+        print(f"\nDeleted {count} row(s). Sleep protocol will re-embed on next run.")
+
+    conn.close()
+    return 0
 
 
 def cmd_list_tags(args):
