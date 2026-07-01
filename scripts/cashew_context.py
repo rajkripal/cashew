@@ -1692,34 +1692,89 @@ def main():
 
 
 def cmd_repair_embeddings(args):
-    """Detect and optionally delete null/empty-vector rows in the embeddings table."""
-    import core.db as cdb
-    conn = cdb.connect(args.db)
-    rows = conn.execute(
-        "SELECT node_id FROM embeddings WHERE vector IS NULL OR vector = ''"
-    ).fetchall()
-    node_ids = [r[0] for r in rows]
-    count = len(node_ids)
+    """Detect and re-embed null/empty-vector rows in-place.
 
-    if count == 0:
+    Modern code paths never insert NULL/empty vectors; the 13 rows we
+    routinely find in prod are legacy artifacts (best guess: killed
+    process mid-INSERT before the vector bytes landed, or a pre-refactor
+    embed path that has since been removed). Fixing them is a one-shot
+    inline re-embed: pull node content from thought_nodes, embed via the
+    default service, UPDATE the row in place. No wait for sleep needed.
+    """
+    import sqlite3
+    import numpy as np
+    from datetime import datetime
+
+    conn = sqlite3.connect(args.db)
+    conn.execute("PRAGMA busy_timeout = 5000")
+
+    rows = conn.execute(
+        "SELECT e.node_id, tn.content "
+        "FROM embeddings e "
+        "LEFT JOIN thought_nodes tn ON tn.id = e.node_id "
+        "WHERE e.vector IS NULL OR e.vector = ''"
+    ).fetchall()
+
+    if not rows:
         print("No null/empty embeddings found.")
         conn.close()
         return 0
 
-    print(f"Found {count} node(s) with null/empty embeddings:")
-    for nid in node_ids:
-        print(f"  {nid}")
+    orphaned = [nid for nid, content in rows if content is None]
+    fixable = [(nid, content) for nid, content in rows if content is not None]
+
+    print(f"Found {len(rows)} node(s) with null/empty embeddings:")
+    for nid, content in rows:
+        marker = "  (no thought_node — will delete row)" if content is None else ""
+        print(f"  {nid}{marker}")
 
     if args.dry_run:
-        print(f"\nDry-run: {count} row(s) would be deleted. Pass --apply to execute.")
-    else:
-        conn.execute(
-            "DELETE FROM embeddings WHERE vector IS NULL OR vector = ''"
+        print(
+            f"\nDry-run: {len(fixable)} row(s) would be re-embedded in place, "
+            f"{len(orphaned)} orphan row(s) would be deleted. Pass --apply to execute."
         )
-        conn.commit()
-        print(f"\nDeleted {count} row(s). Sleep protocol will re-embed on next run.")
+        conn.close()
+        return 0
 
+    # Delete orphan rows (no matching thought_node — nothing to embed).
+    if orphaned:
+        placeholders = ",".join("?" * len(orphaned))
+        conn.execute(
+            f"DELETE FROM embeddings WHERE node_id IN ({placeholders})",
+            orphaned,
+        )
+
+    # Re-embed the fixable ones in place.
+    embedded = 0
+    if fixable:
+        from core.embedding_service import get_default_service
+        service = get_default_service()
+        texts = [content for _, content in fixable]
+        vectors = service.embed_np(texts)
+        if len(vectors) != len(fixable):
+            print(
+                f"⚠ embedding service returned {len(vectors)} vectors for "
+                f"{len(fixable)} inputs — aborting to avoid mismatched writes."
+            )
+            conn.close()
+            return 1
+        now = datetime.now().isoformat()
+        for (nid, _), vec in zip(fixable, vectors):
+            blob = vec.astype(np.float32).tobytes()
+            conn.execute(
+                "UPDATE embeddings SET vector = ?, model = ?, updated_at = ? "
+                "WHERE node_id = ?",
+                (blob, service.model, now, nid),
+            )
+            embedded += 1
+
+    conn.commit()
     conn.close()
+
+    print(
+        f"\nRepaired: {embedded} row(s) re-embedded in place, "
+        f"{len(orphaned)} orphan row(s) deleted."
+    )
     return 0
 
 
