@@ -769,6 +769,13 @@ def _embed_orphans(conn: sqlite3.Connection) -> int:
         try:
             vec = model.encode(content, normalize_embeddings=True)
             blob = vec.astype(np.float32).tobytes()
+
+            if not blob:
+                logger.warning(
+                    "sleep: skipping node %s — embedding produced empty bytes", nid[:8]
+                )
+                continue
+
             try:
                 conn.execute(
                     "INSERT OR REPLACE INTO embeddings "
