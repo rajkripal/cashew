@@ -286,7 +286,13 @@ def embed_nodes(db_path: str, batch_size: int = 100) -> dict:
             )
             for j, (node_id, content) in enumerate(batch):
                 vector_bytes = embeddings[j].astype(np.float32).tobytes()
-                
+
+                if not vector_bytes:
+                    logging.warning(
+                        f"embed_nodes: skipping node {node_id} — embedding produced empty bytes"
+                    )
+                    continue
+
                 cursor.execute("""
                     INSERT OR REPLACE INTO embeddings
                     (node_id, vector, model, updated_at)
