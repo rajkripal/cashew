@@ -8,7 +8,6 @@ import os
 import json
 import tempfile
 import sqlite3
-import shutil
 from pathlib import Path
 import pytest
 import subprocess
@@ -21,28 +20,57 @@ from core.session import _ensure_schema, _create_node, _get_connection
 from core.embeddings import embed_nodes
 
 
+# A small, deterministic synthetic brain used in place of the real graph.db.
+# Two domains, a mix of node types, a few system_generated rows — enough for
+# think --prepare-only to run and for the saturated-themes helper to have
+# material, without depending on (or copying) the production brain. Keeping
+# integration tests off the real db is what makes them hermetic and portable.
+_SAMPLE_NODES = [
+    ("Raj is optimizing a Redis data structure for lower tail latency at Meta", "fact", "raj", "test"),
+    ("Raj prefers direct, no-fluff communication and systems-level thinking", "insight", "raj", "test"),
+    ("Raj is tracking an E5 promotion and tends to go quiet when overloaded", "observation", "raj", "test"),
+    ("Raj chose SQLite over Postgres for a side project to keep ops simple", "decision", "raj", "test"),
+    ("Raj values empirical verification over vibes when judging results", "belief", "raj", "test"),
+    ("Raj lives in Bothell and works in Pacific time", "fact", "raj", "test"),
+    ("Bunny should query the brain before replying to substantive messages", "insight", "bunny", "system_generated"),
+    ("Bunny runs a watchdog that restarts the Telegram bridge on crash", "fact", "bunny", "test"),
+    ("Bunny extracts commitments as TODO nodes during conversation", "observation", "bunny", "system_generated"),
+    ("Bunny keeps a dumb graph and a smart reasoning layer separate", "belief", "bunny", "test"),
+    ("Bunny avoids sycophancy and pressure-tests positive claims", "insight", "bunny", "system_generated"),
+    ("Bunny delegates heavy execution to sub-agents and verifies output", "decision", "bunny", "test"),
+]
+
+
+def _build_synthetic_brain(path: str) -> str:
+    """Populate a schema-complete brain with embedded sample nodes."""
+    _ensure_schema(path)
+    conn = _get_connection(path)
+    cursor = conn.cursor()
+    for i, (content, node_type, domain, source_file) in enumerate(_SAMPLE_NODES):
+        cursor.execute(
+            "INSERT OR IGNORE INTO thought_nodes "
+            "(id, content, node_type, timestamp, source_file, domain) "
+            "VALUES (?, ?, ?, datetime('now'), ?, ?)",
+            (f"syn{i:02d}", content, node_type, source_file, domain),
+        )
+    conn.commit()
+    conn.close()
+    embed_nodes(path)
+    return path
+
+
 class TestThinkCyclePrepareIngest:
     """Tests for think cycle prepare-only and ingest patterns"""
-    
+
     @pytest.fixture
-    def real_db(self):
-        """Use real graph.db for read-only tests"""
-        db_path = cashew_dir / "data" / "graph.db"
-        if not db_path.exists():
-            pytest.skip(f"Real database not found at {db_path}")
-        return str(db_path)
-    
+    def real_db(self, tmp_path):
+        """Synthetic brain for read-only tests (was the real graph.db)."""
+        return _build_synthetic_brain(str(tmp_path / "brain.db"))
+
     @pytest.fixture
-    def temp_db(self):
-        """Create a temp copy of the real database for write tests"""
-        real_db_path = cashew_dir / "data" / "graph.db"
-        if not real_db_path.exists():
-            pytest.skip(f"Real database not found at {real_db_path}")
-        
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            temp_db_path = Path(tmp_dir) / "test_graph.db"
-            shutil.copy2(real_db_path, temp_db_path)
-            yield str(temp_db_path)
+    def temp_db(self, tmp_path):
+        """Synthetic brain for write tests (was a copy of the real graph.db)."""
+        return _build_synthetic_brain(str(tmp_path / "brain.db"))
 
     @pytest.fixture
     def empty_db(self):
@@ -203,17 +231,10 @@ class TestExtractPrepareIngest:
     """Tests for extract prepare-only and ingest patterns"""
     
     @pytest.fixture
-    def temp_db(self):
-        """Create a temp copy of the real database for write tests"""
-        real_db_path = cashew_dir / "data" / "graph.db"
-        if not real_db_path.exists():
-            pytest.skip(f"Real database not found at {real_db_path}")
-        
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            temp_db_path = Path(tmp_dir) / "test_graph.db"
-            shutil.copy2(real_db_path, temp_db_path)
-            yield str(temp_db_path)
-    
+    def temp_db(self, tmp_path):
+        """Synthetic brain for write tests (was a copy of the real graph.db)."""
+        return _build_synthetic_brain(str(tmp_path / "brain.db"))
+
     @pytest.fixture
     def sample_conversation(self):
         """Sample conversation text for testing"""
@@ -309,13 +330,10 @@ class TestSaturatedThemesHelper:
     """Test the saturated themes helper function"""
     
     @pytest.fixture
-    def real_db(self):
-        """Use real graph.db for tests"""
-        db_path = cashew_dir / "data" / "graph.db"
-        if not db_path.exists():
-            pytest.skip(f"Real database not found at {db_path}")
-        return str(db_path)
-    
+    def real_db(self, tmp_path):
+        """Synthetic brain for read-only tests (was the real graph.db)."""
+        return _build_synthetic_brain(str(tmp_path / "brain.db"))
+
     def test_saturated_themes_returns_recent_system_generated_content(self, real_db):
         """Test that _get_saturated_themes returns recent system_generated content"""
         from core.session import _get_saturated_themes
