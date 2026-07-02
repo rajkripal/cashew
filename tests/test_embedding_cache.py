@@ -90,3 +90,42 @@ class TestEmbeddingCache:
     def test_empty_put_many_is_noop(self, cache):
         assert cache.put_many("m", []) == 0
         assert cache.size() == 0
+
+    def test_operations_do_not_leak_connections(self, cache, monkeypatch):
+        """Every cache call must close its connection.
+
+        Regression for the daemon fd leak: the old ``_connect`` returned a bare
+        connection and relied on ``with conn:`` (commit-only, never closes), so
+        a long-lived process leaked one fd per call until it hit the fd cap and
+        every open failed with "unable to open database file".
+        """
+        import sqlite3
+
+        open_count = 0
+        close_count = 0
+        real_connect = sqlite3.connect
+
+        class _TrackedConn(sqlite3.Connection):
+            def close(self):
+                nonlocal close_count
+                close_count += 1
+                super().close()
+
+        def _tracked(*args, **kwargs):
+            nonlocal open_count
+            open_count += 1
+            kwargs["factory"] = _TrackedConn
+            return real_connect(*args, **kwargs)
+
+        monkeypatch.setattr(sqlite3, "connect", _tracked)
+
+        for i in range(25):
+            cache.put("m", f"text-{i}", _vec(i))
+            cache.get("m", f"text-{i}")
+            cache.get_many("m", [f"text-{i}", "miss"])
+            cache.size()
+
+        assert open_count > 0
+        assert close_count == open_count, (
+            f"leaked {open_count - close_count} connections across {open_count} opens"
+        )

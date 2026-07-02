@@ -16,8 +16,9 @@ from __future__ import annotations
 import hashlib
 import os
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, Iterator, List, Optional, Tuple
 
 import numpy as np
 
@@ -61,11 +62,25 @@ class EmbeddingCache:
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         self._init_schema()
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
+        """Open a connection, wrap the body in a transaction, and always close.
+
+        ``sqlite3.Connection`` as a context manager commits/rolls back but does
+        not close the handle. Relying on that leaked a file descriptor per call
+        in the long-lived daemon until it hit the process fd cap, at which point
+        every ``connect()`` failed with "unable to open database file" and the
+        warm path fell back to the slow in-process one silently. Closing in a
+        ``finally`` is the fix.
+        """
         conn = sqlite3.connect(self.path)
-        conn.execute("PRAGMA busy_timeout = 5000")
-        conn.execute("PRAGMA journal_mode=WAL")
-        return conn
+        try:
+            conn.execute("PRAGMA busy_timeout = 5000")
+            conn.execute("PRAGMA journal_mode=WAL")
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def _init_schema(self) -> None:
         with self._connect() as conn:
