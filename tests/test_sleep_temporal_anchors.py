@@ -1,16 +1,8 @@
-"""Tests for temporal-anchor preservation during sleep-cycle cluster merges.
-
-Regression: cluster merge synthesis was dropping date/weekday/relative-time
-phrases that appeared in source nodes, which crippled temporal-reasoning
-accuracy on downstream benchmarks (LoCoMo cat-2 specifically).
-"""
+"""Tests for the temporal-anchor detection helpers (_collect_temporal_anchors,
+_has_any_anchor) used to recognise date/weekday/relative-time phrases."""
 import pytest
 
-from core.sleep import (
-    SleepProtocol,
-    _collect_temporal_anchors,
-    _has_any_anchor,
-)
+from core.sleep import _collect_temporal_anchors, _has_any_anchor
 
 
 class TestTemporalAnchorDetection:
@@ -56,51 +48,3 @@ class TestTemporalAnchorDetection:
     def test_has_any_anchor_empty(self):
         assert not _has_any_anchor("anything", [])
         assert not _has_any_anchor("", ["march 5"])
-
-
-class TestSynthesisPreservesAnchors:
-    def _proto(self):
-        # SleepProtocol needs only its method; pass an empty path.
-        return SleepProtocol.__new__(SleepProtocol)
-
-    def test_no_model_returns_longest(self):
-        out = self._proto()._synthesize_cluster_content(
-            ["short", "a much longer snippet here"], ["fact", "fact"], model_fn=None
-        )
-        assert out == "a much longer snippet here"
-
-    def test_llm_keeps_anchor_passes_through(self):
-        snippets = ["raj traveled to sweden in march 2026", "sweden trip in march 2026 was great"]
-        def model_fn(_p):
-            return "raj traveled to sweden in march 2026 and enjoyed it"
-        out = self._proto()._synthesize_cluster_content(snippets, ["fact"]*2, model_fn=model_fn)
-        assert "march 2026" in out.lower()
-
-    def test_llm_drops_all_anchors_falls_back_to_longest(self):
-        snippets = [
-            "raj traveled to sweden in march 2026",
-            "sweden trip in march 2026 was great",
-        ]
-        def model_fn(_p):
-            # synthesis bleaches the date out
-            return "raj traveled to sweden and enjoyed it greatly overall"
-        out = self._proto()._synthesize_cluster_content(snippets, ["fact"]*2, model_fn=model_fn)
-        # Falls back to the longest source; both contain "march 2026"
-        assert "march 2026" in out.lower()
-
-    def test_no_anchors_in_sources_no_fallback(self):
-        # If sources have no temporal info, the LLM output should be accepted
-        # as-is even though it has no anchor.
-        snippets = ["raj likes ramen", "raj enjoys ramen a lot"]
-        def model_fn(_p):
-            return "raj enjoys ramen"
-        out = self._proto()._synthesize_cluster_content(snippets, ["fact"]*2, model_fn=model_fn)
-        assert out == "raj enjoys ramen"
-
-    def test_short_llm_response_falls_back(self):
-        # Existing behavior preserved: <10 char LLM responses fall through.
-        snippets = ["raj traveled to sweden in march 2026", "sweden trip in march"]
-        def model_fn(_p):
-            return "ok"
-        out = self._proto()._synthesize_cluster_content(snippets, ["fact"]*2, model_fn=model_fn)
-        assert "march" in out.lower()

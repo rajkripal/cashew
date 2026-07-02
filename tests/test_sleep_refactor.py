@@ -741,3 +741,333 @@ def test_run_sleep_cycle_empty_graph():
         assert "error" in result or result["total_nodes"] >= 0
     finally:
         os.unlink(path)
+
+
+
+
+# ── Safety: permanence guard, GC protections, decay audit ────────────────
+#
+# These pin the safety properties the vectorized rewrite originally dropped
+# and the legacy path alone tested: permanent nodes are never decayed, the
+# tz-aware grace period actually works, frequently-accessed orphans survive,
+# and every decay is written to decay_audit.
+#
+# The db carries more nodes than `sample_k` so the small-graph guard doesn't
+# fire, but only a designated handful get zero fitness, so those candidates
+# (minus any that are protected) are collected deterministically.
+
+from datetime import datetime, timedelta, timezone
+
+from core.sleep import _parse_ts, GC_ACCESS_FLOOR
+
+
+_DECAY_AUDIT_DDL = """
+CREATE TABLE IF NOT EXISTS decay_audit (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id TEXT NOT NULL,
+    content_summary TEXT,
+    decay_reason TEXT,
+    confidence_at_decay REAL,
+    access_count_at_decay INTEGER,
+    last_access_date TEXT,
+    related_nodes TEXT,
+    source_file TEXT,
+    domain TEXT,
+    node_type TEXT,
+    decay_timestamp TEXT,
+    metadata TEXT
+);
+"""
+
+_SAMPLE_K = 40  # < total node count so the small-graph guard passes
+
+
+def _gc_db(with_audit=True, n=60):
+    """DB with n old, zero-edge nodes (n > _SAMPLE_K)."""
+    path = _make_test_db(with_embeddings=True)
+    conn = sqlite3.connect(path)
+    if with_audit:
+        conn.executescript(_DECAY_AUDIT_DDL)
+    old = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    for i in range(n):
+        conn.execute(
+            "INSERT INTO thought_nodes "
+            "(id, content, node_type, timestamp, last_accessed, access_count, "
+            " source_file, decayed, permanent) "
+            "VALUES (?,?,?,?,?,?,?,0,0)",
+            (f"n{i:02d}", f"node {i}", "observation", old, old, 0, "test"),
+        )
+    conn.commit()
+    conn.close()
+    return path
+
+
+def _metrics(path, low_ids):
+    """Zero fitness for low_ids (collectable), safely high for everyone else."""
+    conn = sqlite3.connect(path)
+    ids = [r[0] for r in conn.execute(
+        "SELECT id FROM thought_nodes WHERE decayed IS NULL OR decayed=0"
+    ).fetchall()]
+    conn.close()
+    low = set(low_ids)
+    return {
+        nid: {"branching_factor": 0, "cross_links": 0,
+              "fitness": 0.0 if nid in low else 5.0}
+        for nid in ids
+    }
+
+
+class TestGCSafety:
+    def test_permanent_node_never_collected(self):
+        path = _gc_db()
+        try:
+            conn = sqlite3.connect(path)
+            conn.execute("UPDATE thought_nodes SET permanent=1 WHERE id='n05'")
+            conn.commit()
+            metrics = _metrics(path, ["n05", "n06", "n07"])
+            collected = _garbage_collect(conn, metrics, threshold=0.05,
+                                         sample_k=_SAMPLE_K, grace_days=7, mode="soft")
+            conn.close()
+            assert "n05" not in collected
+            assert {"n06", "n07"} <= set(collected)  # GC actually ran
+        finally:
+            os.unlink(path)
+
+    def test_access_floor_protects_frequently_used_orphan(self):
+        path = _gc_db()
+        try:
+            conn = sqlite3.connect(path)
+            conn.execute("UPDATE thought_nodes SET access_count=? WHERE id='n07'",
+                         (GC_ACCESS_FLOOR,))
+            conn.commit()
+            metrics = _metrics(path, ["n07", "n08", "n09"])
+            collected = _garbage_collect(conn, metrics, threshold=0.05,
+                                         sample_k=_SAMPLE_K, grace_days=7, mode="soft")
+            conn.close()
+            assert "n07" not in collected
+            assert {"n08", "n09"} <= set(collected)
+        finally:
+            os.unlink(path)
+
+    def test_tz_aware_last_accessed_grace_protects(self):
+        # Core regression: naive now() minus tz-aware last_accessed raised
+        # TypeError, was swallowed, and the node got decayed anyway.
+        path = _gc_db()
+        try:
+            conn = sqlite3.connect(path)
+            recent = datetime.now(timezone.utc).isoformat()  # tz-aware
+            conn.execute("UPDATE thought_nodes SET last_accessed=? WHERE id='n09'",
+                         (recent,))
+            conn.commit()
+            metrics = _metrics(path, ["n09", "n10", "n11"])
+            collected = _garbage_collect(conn, metrics, threshold=0.05,
+                                         sample_k=_SAMPLE_K, grace_days=7, mode="soft")
+            conn.close()
+            assert "n09" not in collected
+            assert {"n10", "n11"} <= set(collected)
+        finally:
+            os.unlink(path)
+
+    def test_naive_last_accessed_also_protected(self):
+        path = _gc_db()
+        try:
+            conn = sqlite3.connect(path)
+            recent_naive = datetime.now().isoformat()  # no tzinfo (legacy rows)
+            conn.execute("UPDATE thought_nodes SET last_accessed=? WHERE id='n11'",
+                         (recent_naive,))
+            conn.commit()
+            metrics = _metrics(path, ["n11", "n12"])
+            collected = _garbage_collect(conn, metrics, threshold=0.05,
+                                         sample_k=_SAMPLE_K, grace_days=7, mode="soft")
+            conn.close()
+            assert "n11" not in collected
+            assert "n12" in collected
+        finally:
+            os.unlink(path)
+
+    def test_mode_off_collects_nothing(self):
+        path = _gc_db()
+        try:
+            conn = sqlite3.connect(path)
+            collected = _garbage_collect(conn, _metrics(path, ["n00", "n01"]),
+                                         mode="off")
+            conn.close()
+            assert collected == []
+        finally:
+            os.unlink(path)
+
+    def test_soft_sets_decayed_hard_deletes(self):
+        for mode in ("soft", "hard"):
+            path = _gc_db()
+            try:
+                conn = sqlite3.connect(path)
+                collected = _garbage_collect(conn, _metrics(path, ["n00", "n01"]),
+                                             threshold=0.05, sample_k=_SAMPLE_K,
+                                             grace_days=0, mode=mode)
+                assert collected
+                row = conn.execute(
+                    "SELECT decayed FROM thought_nodes WHERE id=?", (collected[0],)
+                ).fetchone()
+                if mode == "soft":
+                    assert row[0] == 1
+                else:
+                    assert row is None
+                conn.close()
+            finally:
+                os.unlink(path)
+
+    def test_small_graph_is_not_collected(self):
+        path = _make_test_db(with_embeddings=True)
+        try:
+            conn = sqlite3.connect(path)
+            for i in range(3):
+                _insert_node(conn, f"s{i}", f"small {i}")
+            conn.commit()
+            collected = _garbage_collect(conn, _metrics(path, ["s0", "s1", "s2"]),
+                                         threshold=0.05, sample_k=GC_K_NODES,
+                                         grace_days=0, mode="soft")
+            conn.close()
+            assert collected == []
+        finally:
+            os.unlink(path)
+
+    def test_gc_writes_decay_audit_rows(self):
+        path = _gc_db(with_audit=True)
+        try:
+            conn = sqlite3.connect(path)
+            collected = _garbage_collect(conn, _metrics(path, ["n00", "n01", "n02"]),
+                                         threshold=0.05, sample_k=_SAMPLE_K,
+                                         grace_days=0, mode="soft")
+            assert collected
+            audited = {r[0] for r in conn.execute(
+                "SELECT node_id FROM decay_audit WHERE decay_reason='gc_fitness'"
+            ).fetchall()}
+            conn.close()
+            assert set(collected) <= audited
+        finally:
+            os.unlink(path)
+
+
+class TestMergeSafety:
+    def _dup_db(self, with_audit=True):
+        path = _make_test_db(with_embeddings=True)
+        conn = sqlite3.connect(path)
+        if with_audit:
+            conn.executescript(_DECAY_AUDIT_DDL)
+        conn.commit()
+        conn.close()
+        return path
+
+    def test_permanent_node_wins_keeper_even_with_lower_access(self):
+        # A permanent node is the winner of its cluster regardless of access,
+        # so non-permanent duplicates collapse into it (no dupes left over).
+        path = self._dup_db()
+        try:
+            conn = sqlite3.connect(path)
+            _insert_node(conn, "perm", "duplicate concept", access_count=1,
+                         permanent=True)
+            _insert_node(conn, "hi", "duplicate concept", access_count=10)
+            _insert_node(conn, "mid", "duplicate concept", access_count=5)
+            conn.commit()
+            keeper = _merge_cluster(conn, ["perm", "hi", "mid"])
+            conn.commit()
+            assert keeper == "perm"
+            assert conn.execute(
+                "SELECT decayed FROM thought_nodes WHERE id='perm'"
+            ).fetchone()[0] in (0, None)
+            for loser in ("hi", "mid"):
+                assert conn.execute(
+                    "SELECT decayed FROM thought_nodes WHERE id=?", (loser,)
+                ).fetchone()[0] == 1
+            conn.close()
+        finally:
+            os.unlink(path)
+
+    def test_two_permanent_dupes_absorbed_without_integrity_violation(self):
+        # Option B: one permanent survives as keeper, the other is absorbed
+        # (permanent flag cleared, then decayed). No permanent-but-decayed row,
+        # no duplicate left to branch retrieval.
+        path = self._dup_db(with_audit=True)
+        try:
+            conn = sqlite3.connect(path)
+            _insert_node(conn, "p1", "same idea", access_count=10, permanent=True)
+            _insert_node(conn, "p2", "same idea", access_count=1, permanent=True)
+            conn.commit()
+            keeper = _merge_cluster(conn, ["p1", "p2"])
+            conn.commit()
+            assert keeper == "p1"
+            assert conn.execute(
+                "SELECT permanent, decayed FROM thought_nodes WHERE id='p1'"
+            ).fetchone() == (1, 0)          # keeper stays permanent, alive
+            assert conn.execute(
+                "SELECT permanent, decayed FROM thought_nodes WHERE id='p2'"
+            ).fetchone() == (0, 1)          # loser: flag cleared, decayed
+            assert conn.execute(
+                "SELECT COUNT(*) FROM thought_nodes WHERE permanent>=1 AND decayed=1"
+            ).fetchone()[0] == 0
+            row = conn.execute(
+                "SELECT metadata FROM decay_audit WHERE node_id='p2'"
+            ).fetchone()
+            assert row is not None and "absorbed_permanent" in row[0]
+            conn.close()
+        finally:
+            os.unlink(path)
+
+    def test_merge_decays_loser_and_audits(self):
+        path = self._dup_db(with_audit=True)
+        try:
+            conn = sqlite3.connect(path)
+            _insert_node(conn, "keep", "dup", access_count=10)
+            _insert_node(conn, "lose", "dup", access_count=1)
+            conn.commit()
+            keeper = _merge_cluster(conn, ["keep", "lose"])
+            conn.commit()
+            assert keeper == "keep"
+            assert conn.execute(
+                "SELECT decayed FROM thought_nodes WHERE id='lose'"
+            ).fetchone()[0] == 1
+            row = conn.execute(
+                "SELECT related_nodes FROM decay_audit "
+                "WHERE node_id='lose' AND decay_reason='dedup_loser'"
+            ).fetchone()
+            assert row is not None and "keep" in row[0]
+            conn.close()
+        finally:
+            os.unlink(path)
+
+    def test_merge_rewires_loser_edges_to_keeper(self):
+        path = self._dup_db()
+        try:
+            conn = sqlite3.connect(path)
+            _insert_node(conn, "keep", "dup", access_count=10)
+            _insert_node(conn, "lose", "dup", access_count=1)
+            _insert_node(conn, "child", "downstream")
+            conn.execute(
+                "INSERT INTO derivation_edges (parent_id, child_id, weight) "
+                "VALUES ('lose','child',1.0)"
+            )
+            conn.commit()
+            _merge_cluster(conn, ["keep", "lose"])
+            conn.commit()
+            parents = conn.execute(
+                "SELECT parent_id FROM derivation_edges WHERE child_id='child'"
+            ).fetchall()
+            conn.close()
+            assert ("keep",) in parents
+            assert ("lose",) not in parents
+        finally:
+            os.unlink(path)
+
+
+class TestParseTs:
+    def test_naive_becomes_utc(self):
+        dt = _parse_ts("2026-01-01T00:00:00")
+        assert dt is not None and dt.tzinfo is not None
+
+    def test_aware_passthrough(self):
+        dt = _parse_ts("2026-01-01T00:00:00+00:00")
+        assert dt is not None and dt.tzinfo is not None
+
+    def test_garbage_returns_none(self):
+        assert _parse_ts("not-a-date") is None
+        assert _parse_ts(None) is None
