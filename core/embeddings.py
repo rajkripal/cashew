@@ -59,6 +59,57 @@ def _has_vec_table(conn: sqlite3.Connection) -> bool:
         return False
 
 
+# The vec index isn't pruned when a node decays (decay/GC touch thought_nodes,
+# not vec_embeddings), so the fast ANN path would otherwise surface forgotten
+# nodes and push live ones out of top_k. Over-fetch by this factor, then drop
+# decayed/missing ids before truncating. 3x survives a ~66%-stale index.
+_VEC_OVERFETCH = 3
+_VEC_NOVELTY_FETCH = 12  # nearest-live cushion for the single-neighbor novelty check
+
+
+def _live_node_ids(conn: sqlite3.Connection, node_ids: List[str]) -> set:
+    """Subset of node_ids that are live: present in thought_nodes and not decayed."""
+    if not node_ids:
+        return set()
+    placeholders = ",".join("?" * len(node_ids))
+    rows = conn.execute(
+        f"SELECT id FROM thought_nodes "
+        f"WHERE id IN ({placeholders}) AND (decayed IS NULL OR decayed = 0)",
+        node_ids,
+    ).fetchall()
+    return {r[0] for r in rows}
+
+
+def compact_vec_index(db_path: str) -> int:
+    """Delete vec_embeddings rows whose node is decayed or gone.
+
+    Decay is the forgetting mechanism, but it never touched the vec index, so
+    stale rows accumulated (a third of the index at the time this was added).
+    Run this from the sleep cycle to keep the index in sync with the live
+    graph; the read paths also filter defensively between compactions.
+    Returns the number of rows deleted.
+    """
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA busy_timeout = 5000")
+    try:
+        if not (_vec_available and _has_vec_table(conn)):
+            return 0
+        _load_vec(conn)
+        stale = [
+            r[0] for r in conn.execute(
+                "SELECT v.node_id FROM vec_embeddings v "
+                "LEFT JOIN thought_nodes t ON v.node_id = t.id "
+                "WHERE t.id IS NULL OR t.decayed = 1"
+            ).fetchall()
+        ]
+        for nid in stale:
+            conn.execute("DELETE FROM vec_embeddings WHERE node_id = ?", (nid,))
+        conn.commit()
+        return len(stale)
+    finally:
+        conn.close()
+
+
 def _vec_table_dim(conn: sqlite3.Connection) -> Optional[int]:
     """Parse the dim out of an existing vec_embeddings table's CREATE SQL.
     Returns None if the table doesn't exist or the dim can't be parsed."""
@@ -382,14 +433,23 @@ def search(db_path: str, query: str, top_k: int = 10) -> List[Tuple[str, float]]
             
             # sqlite-vec returns cosine distance (0 = identical, 2 = opposite)
             # Convert to similarity: sim = 1 - distance
+            # Over-fetch, then drop decayed/missing nodes. The vec index isn't
+            # pruned on decay, so a raw top_k would return forgotten nodes and
+            # crowd out live ones — the brute-force path below already filters
+            # decayed, and the two must agree.
+            overfetch = max(top_k * _VEC_OVERFETCH, top_k + 20)
             rows = cursor.execute("""
-                SELECT node_id, distance FROM vec_embeddings 
+                SELECT node_id, distance FROM vec_embeddings
                 WHERE embedding MATCH ?
                 ORDER BY distance LIMIT ?
-            """, (query_bytes, top_k)).fetchall()
-            
+            """, (query_bytes, overfetch)).fetchall()
+
+            live = _live_node_ids(conn, [r[0] for r in rows])
             conn.close()
-            results = [(node_id, 1.0 - distance) for node_id, distance in rows]
+            results = [
+                (node_id, 1.0 - distance)
+                for node_id, distance in rows if node_id in live
+            ][:top_k]
             used_vec = True
             
             # Record metrics
@@ -496,14 +556,18 @@ def check_novelty(db_path: str, content: str, threshold: float = NOVELTY_THRESHO
         ):
             try:
                 _load_vec(conn)
-                row = conn.execute(
-                    "SELECT node_id, distance FROM vec_embeddings WHERE embedding MATCH ? ORDER BY distance LIMIT 1",
-                    (candidate_embedding.tobytes(),)
-                ).fetchone()
+                # Nearest *live* neighbour: over-fetch and skip decayed rows,
+                # else a forgotten near-duplicate could veto a genuinely new node.
+                rows = conn.execute(
+                    "SELECT node_id, distance FROM vec_embeddings WHERE embedding MATCH ? ORDER BY distance LIMIT ?",
+                    (candidate_embedding.tobytes(), _VEC_NOVELTY_FETCH)
+                ).fetchall()
+                live = _live_node_ids(conn, [r[0] for r in rows])
                 conn.close()
-                if row:
-                    max_sim = 1.0 - row[1]  # cosine distance → similarity
-                    return max_sim < threshold, max_sim, row[0]
+                for nid, distance in rows:
+                    if nid in live:
+                        max_sim = 1.0 - distance  # cosine distance → similarity
+                        return max_sim < threshold, max_sim, nid
                 return True, 0.0, None
             except Exception:
                 pass

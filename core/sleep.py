@@ -1068,6 +1068,18 @@ def run_sleep_cycle(
     except Exception as e:
         logger.warning("sleep: decay-audit GC failed: %s", e)
 
+    # Vec-index compaction (one-shot per cycle): decay never touched the vec
+    # index, so prune rows for nodes decayed this cycle (and any backlog) to
+    # keep the fast search path in sync with the live graph.
+    vec_compacted = 0
+    try:
+        from .embeddings import compact_vec_index
+        vec_compacted = compact_vec_index(db_path)
+        if vec_compacted:
+            logger.info("sleep: vec-index compaction pruned %d stale rows", vec_compacted)
+    except Exception as e:
+        logger.warning("sleep: vec-index compaction failed: %s", e)
+
     summary = {
         "nodes_selected": len(ids),
         "nodes_with_embeddings": len(valid_ids),
@@ -1080,6 +1092,7 @@ def run_sleep_cycle(
         "dedup_components": dedup_stats["components"],
         "dedup_nodes_merged": dedup_stats["nodes_merged"],
         "nodes_gc_decayed": gc_count,
+        "vec_rows_compacted": vec_compacted,
         "nodes_made_permanent": perm_stats.get("nodes_promoted", 0),
         "core_promoted": core_stats.get("promoted", 0),
         "core_demoted": core_stats.get("demoted", 0),

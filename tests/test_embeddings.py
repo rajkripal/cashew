@@ -13,8 +13,26 @@ from typing import List
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from core.embeddings import embed_text, embed_nodes, search, get_embedding_stats
+from core.embeddings import (
+    embed_text, embed_nodes, search, get_embedding_stats,
+    check_novelty, compact_vec_index, _live_node_ids, _has_vec_table,
+)
 from core.embedding_service import resolve_embedding_dim
+
+
+def _vec_row_exists(db_path: str, node_id: str) -> bool:
+    conn = sqlite3.connect(db_path)
+    try:
+        if not _has_vec_table(conn):
+            return False
+        from core.embeddings import _load_vec
+        _load_vec(conn)
+        row = conn.execute(
+            "SELECT 1 FROM vec_embeddings WHERE node_id = ?", (node_id,)
+        ).fetchone()
+        return row is not None
+    finally:
+        conn.close()
 
 # Derive the expected dimension from whatever embedding model is configured,
 # so tests stay correct if the default model changes.
@@ -313,3 +331,99 @@ class TestEmbeddings:
         for i in range(len(results1)):
             assert results1[i][0] == results2[i][0]  # Same node IDs
             assert abs(results1[i][1] - results2[i][1]) < 1e-5  # Same scores (within precision)
+
+class TestVecDecayFilter:
+    """The vec index isn't pruned when a node decays, so a node embedded while
+    live and decayed later leaves a stale vec row. Search and novelty must not
+    surface it, and sleep compaction must remove it."""
+
+    @pytest.fixture
+    def temp_db(self):
+        fd, db_path = tempfile.mkstemp(suffix='.db')
+        os.close(fd)
+        conn = sqlite3.connect(db_path)
+        conn.execute("""
+            CREATE TABLE thought_nodes (
+                id TEXT PRIMARY KEY, content TEXT NOT NULL, node_type TEXT NOT NULL,
+                timestamp TEXT NOT NULL, confidence REAL, mood_state TEXT,
+                metadata TEXT, source_file TEXT, decayed INTEGER DEFAULT 0
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE derivation_edges (
+                parent_id TEXT NOT NULL, child_id TEXT NOT NULL, relation TEXT NOT NULL,
+                weight REAL NOT NULL, reasoning TEXT,
+                PRIMARY KEY (parent_id, child_id, relation)
+            )
+        """)
+        nodes = [
+            ("n_sun1", "The weather is sunny and warm today", "observation"),
+            ("n_sun2", "I love bright sunny weather outdoors", "belief"),
+            ("n_py1", "Python is a great programming language", "fact"),
+            ("n_py2", "Programming in Python is productive", "belief"),
+            ("n_ml", "Machine learning needs training data", "fact"),
+        ]
+        conn.executemany(
+            "INSERT INTO thought_nodes (id, content, node_type, timestamp, confidence, decayed) "
+            "VALUES (?, ?, ?, '2023-01-01T00:00:00', 0.9, 0)", nodes,
+        )
+        conn.commit()
+        conn.close()
+        yield db_path
+        os.unlink(db_path)
+
+    def test_decayed_after_embedding_is_excluded_from_search(self, temp_db):
+        embed_nodes(temp_db)  # embeds all 5 live nodes → vec rows for each
+        # n_sun2 was live when embedded; decay it now. Its vec row persists.
+        conn = sqlite3.connect(temp_db)
+        conn.execute("UPDATE thought_nodes SET decayed = 1 WHERE id = 'n_sun2'")
+        conn.commit()
+        conn.close()
+
+        # If the vec table exists, the stale row is still present pre-compaction —
+        # proving search has to filter it, not that it was never there.
+        if _has_vec_table(sqlite3.connect(temp_db)):
+            assert _vec_row_exists(temp_db, "n_sun2")
+
+        results = search(temp_db, "sunny weather is warm", top_k=5)
+        ids = [nid for nid, _ in results]
+        assert "n_sun2" not in ids, "decayed node must not surface in search"
+        assert "n_sun1" in ids, "the live sunny node should still rank"
+
+    def test_novelty_skips_decayed_nearest_neighbor(self, temp_db):
+        embed_nodes(temp_db)
+        conn = sqlite3.connect(temp_db)
+        conn.execute("UPDATE thought_nodes SET decayed = 1 WHERE id = 'n_sun2'")
+        conn.commit()
+        conn.close()
+        # Content near the decayed node: the nearest *live* neighbour must be
+        # reported, never the decayed n_sun2.
+        _, _, nearest = check_novelty(temp_db, "I love bright sunny weather outdoors")
+        assert nearest != "n_sun2"
+
+    def test_compact_removes_stale_vec_rows(self, temp_db):
+        embed_nodes(temp_db)
+        if not _has_vec_table(sqlite3.connect(temp_db)):
+            pytest.skip("sqlite-vec not available; compaction is a no-op")
+        conn = sqlite3.connect(temp_db)
+        conn.execute("UPDATE thought_nodes SET decayed = 1 WHERE id = 'n_sun2'")
+        # a hard-deleted node's row should also be swept
+        conn.execute("DELETE FROM thought_nodes WHERE id = 'n_ml'")
+        conn.commit()
+        conn.close()
+
+        assert _vec_row_exists(temp_db, "n_sun2")
+        removed = compact_vec_index(temp_db)
+        assert removed >= 2
+        assert not _vec_row_exists(temp_db, "n_sun2")
+        assert not _vec_row_exists(temp_db, "n_ml")
+        # live nodes keep their rows
+        assert _vec_row_exists(temp_db, "n_sun1")
+
+    def test_live_node_ids_filters_decayed_and_missing(self, temp_db):
+        conn = sqlite3.connect(temp_db)
+        conn.execute("UPDATE thought_nodes SET decayed = 1 WHERE id = 'n_sun2'")
+        conn.commit()
+        live = _live_node_ids(conn, ["n_sun1", "n_sun2", "n_py1", "does_not_exist"])
+        conn.close()
+        assert live == {"n_sun1", "n_py1"}
