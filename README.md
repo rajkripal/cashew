@@ -19,7 +19,7 @@ The name comes from asking "do cats eat cashews?", a question I asked my aunt as
 
 - **Remembers across sessions.** Decisions, patterns, relationships, and project context survive compaction and restart. Your agent picks up where it left off.
 - **Learns autonomously.** Think cycles find cross-domain connections without prompting. A pattern in your work habits connects to a pattern in your communication style, and the brain surfaces it.
-- **Stays fast at scale.** sqlite-vec for O(log N) retrieval, recursive BFS graph walk, constant context cost regardless of graph size. 3,000 nodes costs the same as 300.
+- **Constant context cost.** Seeds come from a brute-force sqlite-vec scan (O(N), microseconds at this scale), then a bounded recursive BFS walk returns the same amount of context regardless of graph size. 3,000 nodes costs the same as 300 to walk. Above ~100k vectors the seed scan wants a real ANN index (HNSW).
 
 ## What If Forgetting Is the Intelligence?
 
@@ -136,7 +136,7 @@ context = retriever.generate_context(hints=["work", "projects"])
 - **Single SQLite file.** No external servers, no separate indexes. Your entire brain is one portable file.
 - **Local embeddings.** all-MiniLM-L6-v2 (384 dims). Downloads ~500MB on first run, then runs locally forever. No API calls for retrieval.
 - **LLM for intelligence.** Extraction and think cycles need an LLM (Claude, GPT, etc). Retrieval and storage don't. Bring your own via `model_fn` parameter or API key.
-- **Retrieval.** sqlite-vec seeds (O(log N) nearest neighbor) → recursive BFS graph walk (seeds=5, picks_per_hop=3, max_depth=3). The graph's organic connectivity provides implicit hierarchy, so no synthetic summary nodes are needed.
+- **Retrieval.** sqlite-vec seeds (brute-force O(N) nearest neighbor, fast at this scale) → recursive BFS graph walk (seeds=5, picks_per_hop=3, max_depth=3). The graph's organic connectivity provides implicit hierarchy, so no synthetic summary nodes are needed.
 - **Organic decay.** Nodes that aren't accessed lose fitness over time. Low-fitness nodes get marked decayed and excluded from retrieval.
 
 ## CLI Reference

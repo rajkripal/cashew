@@ -21,7 +21,7 @@ integration/               : OpenClaw bridges
 | Module | Purpose |
 |--------|---------|
 | `config.py` | YAML config loading with env var expansion. Global `config` singleton. |
-| `embeddings.py` | Sentence-transformer embeddings (all-MiniLM-L6-v2). sqlite-vec virtual table for O(log N) search. `search()`, `check_novelty()`, `embed_text()`. |
+| `embeddings.py` | Sentence-transformer embeddings (all-MiniLM-L6-v2). sqlite-vec virtual table for brute-force O(N) search. `search()`, `check_novelty()`, `embed_text()`. |
 | `retrieval.py` | `retrieve_recursive_bfs()`: seeds via sqlite-vec, BFS graph walk, per-hop scoring. The sole retrieval method. |
 | `context.py` | Composes retrieval results into formatted context strings for LLM consumption. |
 | `session.py` | Session lifecycle: `start_session()`, `end_session()`, `think_cycle()`, `tension_detection()`. |
@@ -60,7 +60,7 @@ SQLite with 3 tables + 1 virtual table:
 - **`thought_nodes`**: Knowledge nodes (id, content, node_type, domain, access_count, decayed, permanent, tags)
 - **`derivation_edges`**: Relationships (parent_id, child_id, weight)
 - **`embeddings`**: Vector embeddings per node (node_id, vector as BLOB, model name)
-- **`vec_embeddings`**: sqlite-vec virtual table for O(log N) nearest neighbor search (node_id, embedding float[384], cosine distance)
+- **`vec_embeddings`**: sqlite-vec virtual table for brute-force O(N) nearest neighbor search (node_id, embedding float[384], cosine distance)
 
 ### Key Columns
 
@@ -75,7 +75,7 @@ SQLite with 3 tables + 1 virtual table:
 
 The sole retrieval method. No hotspots, no hierarchy, no DFS.
 
-1. **Seed selection**: Embed query, find top-k nearest nodes via `vec_embeddings MATCH` (O(log N) with sqlite-vec, brute-force fallback)
+1. **Seed selection**: Embed query, find top-k nearest nodes via `vec_embeddings MATCH`. sqlite-vec 0.1.x is itself an exhaustive brute-force O(N) SIMD scan (no ANN index); a raw-embeddings path is the fallback when the vec table is unavailable.
 2. **BFS traversal**: From seeds, explore graph neighbors up to `max_depth` hops. At each hop, score neighbors by cosine similarity, keep top `picks_per_hop`.
 3. **Final ranking**: All candidates scored and sorted by similarity.
 
@@ -92,14 +92,14 @@ CREATE VIRTUAL TABLE vec_embeddings USING vec0(
     node_id TEXT PRIMARY KEY,
     embedding float[384] distance_metric=cosine
 );
--- Query: O(log N) nearest neighbor
+-- Query: brute-force O(N) nearest neighbor
 SELECT node_id, distance FROM vec_embeddings
 WHERE embedding MATCH ? ORDER BY distance LIMIT 5;
 ```
 
 - `embed_nodes()` dual-writes to both `embeddings` and `vec_embeddings`
 - `search()` uses sqlite-vec when available, falls back to brute force
-- `check_novelty()` uses sqlite-vec for O(log N) dedup checking
+- `check_novelty()` uses sqlite-vec for brute-force O(N) dedup checking
 - `backfill_vec_index()` for one-time migration of existing embeddings
 
 ## Novelty Gate

@@ -53,7 +53,7 @@ cashew combines persistent derivation, recursive BFS retrieval, and organic grap
 │  Traversal │    Sleep      │    sqlite-vec                  │
 │  Engine    │   Protocol    │    Integration                 │
 │            │               │                                │
-│  why(node) │   - Decay     │   - O(log N) search            │
+│  why(node) │   - Decay     │   - O(N) brute scan            │
 │  how(A→B)  │   - Promote   │   - Cosine distance            │
 │  audit()   │   - Cross-link│   - Embedding dual-write       │
 │  roots()   │   - Dedup     │   - Fallback to brute force    │
@@ -167,10 +167,10 @@ if get_schema_version(db_path) >= 1:
 ## 4. Core Operations
 
 ### 4.1 Context Retrieval
-**Recursive BFS with sqlite-vec seeding (O(log N) seeds + O(K) traversal)**
+**Recursive BFS with sqlite-vec seeding (brute-force O(N) seed scan + O(K) bounded traversal)**
 ```python
 def retrieve_recursive_bfs(hints: list[str], n_seeds=5, picks_per_hop=3, max_depth=3) -> list[ThoughtNode]:
-    # 1. Embed hints, find top-k seeds via sqlite-vec O(log N) search
+    # 1. Embed hints, find top-k seeds via sqlite-vec brute-force O(N) scan
     # 2. BFS traversal from seeds up to max_depth hops
     # 3. Score neighbors by cosine similarity each hop, select picks_per_hop best
     # 4. Return ranked candidates by final similarity to original query
@@ -288,7 +288,7 @@ when the `embeddings` table doesn't exist.
 
 ### Storage: SQLite + sqlite-vec
 - Single file, no server, portable  
-- sqlite-vec virtual table for O(log N) vector search
+- sqlite-vec virtual table for brute-force O(N) vector scan
 - Dual-write to both embeddings (BLOB) and vec_embeddings (float[384])
 - Handles 2000+ nodes efficiently with cosine distance
 - sentence-transformers for local embedding generation
@@ -315,7 +315,7 @@ The graph exhibits natural power law behavior:
 - **Emergent hierarchy**: Organization from simple connection rules
 
 ### Organic Retrieval Scaling
-Traditional RAG systems use flat vector search (O(N) comparisons). cashew uses sqlite-vec for O(log N) seed selection followed by recursive BFS graph traversal, achieving efficient retrieval while preserving semantic relationships through organic connectivity.
+Traditional RAG systems use flat vector search (O(N) comparisons). cashew's sqlite-vec seed scan is also brute-force O(N) (sqlite-vec 0.1.x has no ANN index), but it is followed by a bounded recursive BFS walk (O(K), ~45 nodes) that keeps context cost constant regardless of graph size. Brute force is microseconds at a few thousand vectors and fine here; above ~100k vectors a real ANN index (HNSW) would be needed for sublinear seeding.
 
 ### Think Cycles Generate Cross-Domain Synthesis
 Cross-domain context synthesis produces insights that connect disparate knowledge areas. The graph's organic structure enables discovery of non-obvious relationships across different domains.
@@ -330,7 +330,7 @@ Cross-domain context synthesis produces insights that connect disparate knowledg
 3. ✅ **Organic connectivity emerges**: cross-linking creates natural pathways without synthetic structure  
 4. ✅ **Think cycles produce cross-domain synthesis**: connections across knowledge areas
 5. ✅ **Graph exhibits preferential attachment**: high-connectivity nodes via cross-linking  
-6. ✅ **sqlite-vec retrieval scales**: O(log N) seed selection + BFS traversal
+6. ✅ **sqlite-vec retrieval works at this scale**: brute-force O(N) seed scan + bounded BFS traversal
 
 ### Phase 2: Multi-Domain Knowledge ✅ ACHIEVED  
 1. ✅ Multiple domains (user/ai) co-exist in single graph
@@ -459,7 +459,7 @@ Connect isolated thought chains, deduplicate, garbage collect, and consolidate. 
 - **6,122 derivation edges** with weight and reasoning
 - **Domain separation**: user/ai domains in single graph
 - **288/288 tests passing**: comprehensive coverage
-- **sqlite-vec integration**: O(log N) vector search
+- **sqlite-vec integration**: brute-force O(N) vector scan
 
 *Note: These statistics reflect the author's personal knowledge graph as of April 2026. New users start with an empty graph.*
 
@@ -484,7 +484,7 @@ Connect isolated thought chains, deduplicate, garbage collect, and consolidate. 
 
 Concrete achievements (April 2026):
 1. ✅ Graph scaled to 3,064 nodes, 6,122 edges from organic growth (author's personal graph)
-2. ✅ sqlite-vec integration: O(log N) vector search with cosine distance
+2. ✅ sqlite-vec integration: brute-force O(N) vector scan with cosine distance
 3. ✅ BFS retrieval: recursive traversal replaces hierarchical hotspots  
 4. ✅ Sleep cycle evolution: cross-linking, decay, dedup without clustering
 5. ✅ Think cycles via session.py, function-based not class-based

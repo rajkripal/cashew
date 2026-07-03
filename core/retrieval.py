@@ -378,7 +378,7 @@ def retrieve_recursive_bfs(db_path: str, query: str, top_k: int = 10, n_seeds: i
     start_time = time.perf_counter() if is_metrics_enabled() else None
     embed_start = time.perf_counter() if is_metrics_enabled() else None
 
-    # Step 1: Seed — find top N entry points via embedding search (O(log N) with sqlite-vec)
+    # Step 1: Seed. Find top N entry points via embedding search (brute-force O(N) scan with sqlite-vec)
     seed_results = embedding_search(db_path, query, top_k=n_seeds)
     if not seed_results:
         return []

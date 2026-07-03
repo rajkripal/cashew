@@ -7,7 +7,7 @@ This guide covers how to migrate from various data states to a fully-organized C
 Cashew organizes knowledge into a flat graph with:
 - **Content nodes**: Individual thoughts, decisions, insights with organic connectivity
 - **Cross-linking**: Sleep cycles build semantic relationships between related nodes
-- **sqlite-vec acceleration**: O(log N) vector search within the same SQLite file
+- **sqlite-vec acceleration**: brute-force O(N) SIMD vector scan within the same SQLite file
 - **BFS retrieval**: Recursive traversal through organic graph structure
 
 ## Migration Scenarios
@@ -145,7 +145,7 @@ KMP_DUPLICATE_LIB_OK=TRUE python3 scripts/cashew_context.py stats
 This will:
 - Create the `vec_embeddings` virtual table
 - Copy all existing embeddings from the `embeddings` table
-- Set up O(log N) vector search acceleration
+- Set up brute-force O(N) SIMD vector search acceleration
 - Maintain backward compatibility with the BLOB-based embeddings table
 
 ### Post-Migration Verification
@@ -223,7 +223,7 @@ Good migration results should show:
 - **Efficient retrieval**: Query response under 500ms for most graphs
 - **Cross-domain synthesis**: BFS finds relevant nodes across domains
 - **No isolated nodes**: Every node reachable within 3-6 hops
-- **sqlite-vec acceleration**: O(log N) seed selection working
+- **sqlite-vec acceleration**: brute-force O(N) seed scan working
 
 ## Common Migration Issues
 
@@ -360,7 +360,7 @@ A successful migration should achieve:
 - **Query performance**: <500ms response time for most queries
 - **Cross-domain synthesis**: BFS finds connections across knowledge areas
 - **Growth sustainability**: System handles new content without degradation
-- **sqlite-vec acceleration**: O(log N) seed selection working correctly
+- **sqlite-vec acceleration**: brute-force O(N) seed scan working correctly
 
 ## Next Steps
 

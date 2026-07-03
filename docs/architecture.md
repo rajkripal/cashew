@@ -2,7 +2,7 @@
 
 ## Overview
 
-Cashew implements a flat-graph retrieval system that uses recursive BFS (Breadth-First Search) combined with sqlite-vec for efficient vector search. Instead of hierarchical hotspots, the system performs O(log N) seed selection followed by graph traversal through organic connectivity patterns built by sleep cycles.
+Cashew implements a flat-graph retrieval system that uses recursive BFS (Breadth-First Search) combined with sqlite-vec for vector search. Instead of hierarchical hotspots, the system performs a brute-force sqlite-vec seed scan (O(N)) followed by a bounded graph traversal through organic connectivity patterns built by sleep cycles.
 
 ## Core Principles
 
@@ -15,7 +15,7 @@ Cashew implements a flat-graph retrieval system that uses recursive BFS (Breadth
 
 - A few thousand thought nodes and derivation edges in the author's personal graph; new installs start empty and grow organically.
 - **Flat graph structure** with organic cross-linking, no hotspots layer
-- **O(log N) retrieval** via sqlite-vec seeding + recursive BFS traversal
+- **O(N) brute-force seed scan + bounded BFS walk** via sqlite-vec seeding + recursive BFS traversal
 - **Domain separation** with cross-domain insight generation
 
 ## Recursive BFS Retrieval System
@@ -30,7 +30,7 @@ CREATE VIRTUAL TABLE vec_embeddings USING vec0(
     embedding float[384] distance_metric=cosine
 );
 
--- Query: O(log N) nearest neighbor search
+-- Query: brute-force O(N) nearest neighbor scan (sqlite-vec 0.1.x, SIMD linear scan)
 SELECT node_id, distance FROM vec_embeddings
 WHERE embedding MATCH ? ORDER BY distance LIMIT 5;
 ```
@@ -48,7 +48,7 @@ def retrieve_recursive_bfs(hints: List[str], n_seeds=5, picks_per_hop=3, max_dep
     # 1. Embed query hints
     query_embedding = embed_text(hints)
     
-    # 2. O(log N) seed selection via sqlite-vec
+    # 2. Brute-force O(N) seed scan via sqlite-vec
     seeds = search_similar_nodes(query_embedding, limit=n_seeds)
     
     # 3. BFS traversal from seeds
@@ -91,7 +91,7 @@ def retrieve_recursive_bfs(hints: List[str], n_seeds=5, picks_per_hop=3, max_dep
 ### Search Flow
 
 1. **Query embedding**: Convert search hints to 384-dimensional vector using sentence-transformers
-2. **Seed selection**: Find top-k most similar nodes via sqlite-vec O(log N) search  
+2. **Seed selection**: Find top-k most similar nodes via sqlite-vec brute-force O(N) scan  
 3. **BFS traversal**: For each hop (up to max_depth=3):
    - Get neighbors of current level nodes
    - Score neighbors by cosine similarity to original query
@@ -138,18 +138,23 @@ Nodes whose `source_file` contains `think_cycle` are scored against `gc_threshol
 
 ## Scalability Analysis
 
-| Node Count | Flat Search (O(N)) | sqlite-vec + BFS (O(log N + K)) | Speedup |
-|------------|-------------------|---------------------------|---------|
-| 100        | 100 comparisons   | ~10 comparisons           | 10x     |
-| 1,000      | 1,000 comparisons | ~15 comparisons          | 67x    |
-| 10,000     | 10,000 comparisons| ~20 comparisons          | 500x    |
-| 100,000    | 100,000 comparisons| ~25 comparisons         | 4,000x  |
+sqlite-vec 0.1.x does an exhaustive brute-force linear scan for KNN: N distance comparisons per query, SIMD-accelerated so the constant factor is tiny. There is no HNSW, no ANN index, no partitioning. The seed scan is O(N). The BFS walk that follows is bounded (n_seeds=5 x picks_per_hop=3 x max_depth=3, ~45 nodes) independent of graph size, so its search space is O(1); each edge/embedding lookup is an indexed B-tree seek (~O(log N)), and the walk is not the bottleneck. Overall retrieval is O(N), dominated by the brute-force seed scan.
 
-BFS search achieves sub-linear complexity through:
-- sqlite-vec O(log N) seed selection (not O(N) brute force)
-- Limited BFS traversal depth (3 hops maximum)
+| Node Count | Seed scan (sqlite-vec brute force) | BFS walk (bounded) | Rough seed-scan latency |
+|------------|------------------------------------|--------------------|-------------------------|
+| 100        | 100 comparisons                    | ~45 nodes          | microseconds            |
+| 1,000      | 1,000 comparisons                  | ~45 nodes          | microseconds            |
+| 10,000     | 10,000 comparisons                 | ~45 nodes          | sub-millisecond         |
+| 100,000    | 100,000 comparisons                | ~45 nodes          | low milliseconds        |
+
+At cashew's current scale (a few thousand vectors) brute force is microseconds and fine; below ~10k vectors it often beats ANN. But it grows linearly, so above ~100k vectors a real ANN index (HNSW, e.g. pgvector / Qdrant / Faiss) is needed for sublinear search. Do not read this table as sublinear seeding.
+
+Retrieval keeps context cost constant through:
+- Bounded BFS traversal depth (3 hops maximum), ~45 nodes regardless of graph size
 - Picks-per-hop constraint prevents combinatorial explosion
 - Organic connectivity provides efficient pathways to relevant content
+
+The seed scan itself is brute-force O(N), not sublinear. It is cheap at this scale but is the term that grows with N.
 
 ## Implementation Details
 
@@ -168,7 +173,7 @@ Uses flat node/edge schema with vector acceleration:
 - **`thought_nodes`**: Content, metadata, decay status
 - **`derivation_edges`**: Parent-child relationships with weights
 - **`embeddings`**: BLOB storage for backward compatibility 
-- **`vec_embeddings`**: sqlite-vec virtual table for O(log N) search
+- **`vec_embeddings`**: sqlite-vec virtual table for brute-force O(N) SIMD scan
 
 ### Command-Line Interface
 
@@ -305,7 +310,7 @@ Unlike systems with predetermined hierarchies, cashew's connectivity emerges fro
 Breadth-first search explores diverse neighborhoods before going deep, finding connections across knowledge domains rather than drilling down narrow paths.
 
 ### sqlite-vec Scaling
-Vector search acceleration within SQLite eliminates external dependencies while providing sub-linear query performance as the graph grows.
+Vector search inside SQLite eliminates external dependencies. sqlite-vec 0.1.x is a brute-force O(N) scan, cheap at this scale but linear in graph size; a real ANN index (HNSW) would be the path to sublinear seeding at large N.
 
 ### Cross-linking as Infrastructure
 Sleep cycle cross-linking builds the pathways that BFS traversal exploits, creating a positive feedback loop between structure-building and retrieval efficiency.

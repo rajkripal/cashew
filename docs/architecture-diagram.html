@@ -379,7 +379,7 @@
       <div class="table-card virtual">
         <div class="table-badge">sqlite-vec</div>
         <div class="table-name">vec_embeddings</div>
-        <div class="table-desc">Virtual table. O(log N) cosine-distance nearest neighbor search</div>
+        <div class="table-desc">Virtual table. Brute-force O(N) cosine-distance nearest neighbor scan (sqlite-vec 0.1.x, SIMD linear scan)</div>
       </div>
     </div>
   </div>
@@ -402,8 +402,8 @@
     <div class="op">
       <div class="op-icon">🔍</div>
       <div class="op-name">Search</div>
-      <div class="op-detail">Find nearest vectors via sqlite-vec</div>
-      <div class="op-complexity">O(log N)</div>
+      <div class="op-detail">Find nearest vectors via sqlite-vec (brute-force scan)</div>
+      <div class="op-complexity">O(N)</div>
     </div>
     <div class="op">
       <div class="op-icon">🚶</div>
@@ -508,7 +508,7 @@
       <div class="stat-label">File (SQLite)</div>
     </div>
     <div class="stat">
-      <div class="stat-value">O(log N)</div>
+      <div class="stat-value">O(N)</div>
       <div class="stat-label">Search</div>
     </div>
     <div class="stat">

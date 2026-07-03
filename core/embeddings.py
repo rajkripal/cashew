@@ -15,7 +15,7 @@ import argparse
 
 from .metrics import record_metric, is_metrics_enabled
 
-# sqlite-vec for O(log N) vector search
+# sqlite-vec for brute-force O(N) SIMD vector scan (0.1.x, no ANN index)
 _vec_available = False
 try:
     import sqlite_vec
@@ -228,7 +228,7 @@ def _ensure_embeddings_table(db_path: str):
     if 'reasoning' not in de_columns:
         cursor.execute("ALTER TABLE derivation_edges ADD COLUMN reasoning TEXT")
     
-    # sqlite-vec virtual table for O(log N) nearest neighbor search.
+    # sqlite-vec virtual table for brute-force O(N) SIMD nearest neighbor scan.
     # Dim comes from the configured embedding model (CASHEW_EMBEDDING_MODEL).
     # If an existing vec table was created at a different dim (e.g. legacy
     # 384-dim table now opened under gte-large/1024), we leave it alone and
@@ -350,7 +350,7 @@ def embed_nodes(db_path: str, batch_size: int = 100) -> dict:
                     VALUES (?, ?, ?, ?)
                 """, (node_id, vector_bytes, service.model, datetime.now().isoformat()))
                 
-                # Dual-write to vec_embeddings for O(log N) search
+                # Dual-write to vec_embeddings for brute-force O(N) SIMD scan
                 if has_vec:
                     try:
                         cursor.execute("DELETE FROM vec_embeddings WHERE node_id = ?", (node_id,))
@@ -394,7 +394,7 @@ def embed_nodes(db_path: str, batch_size: int = 100) -> dict:
 def search(db_path: str, query: str, top_k: int = 10) -> List[Tuple[str, float]]:
     """
     Semantic search using cosine similarity.
-    Uses sqlite-vec for O(log N) search when available, falls back to brute force.
+    Uses sqlite-vec (brute-force O(N) SIMD scan) when available, falls back to a raw-embeddings scan.
     
     Args:
         db_path: Path to SQLite database
@@ -418,7 +418,7 @@ def search(db_path: str, query: str, top_k: int = 10) -> List[Tuple[str, float]]
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA busy_timeout = 5000")
     
-    # Try sqlite-vec first (O(log N)). Skip when the vec table's dim doesn't
+    # Try sqlite-vec first (brute-force O(N) SIMD scan). Skip when the vec table's dim doesn't
     # match the query embedding (legacy 384-dim table under a 1024-dim model,
     # etc.) — that case falls through to brute force on the raw embeddings.
     if (
@@ -534,7 +534,7 @@ def check_novelty(db_path: str, content: str, threshold: float = NOVELTY_THRESHO
                   preloaded_embeddings: Optional[Dict[str, np.ndarray]] = None) -> Tuple[bool, float, Optional[str]]:
     """
     Check if content is sufficiently novel compared to existing graph.
-    Uses sqlite-vec when available for O(log N) nearest-neighbor lookup.
+    Uses sqlite-vec when available for brute-force O(N) SIMD nearest-neighbor lookup.
     
     Returns:
         (is_novel, max_similarity, nearest_node_id)
