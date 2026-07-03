@@ -158,7 +158,7 @@ Set `CASHEW_NO_DAEMON=1` to force the in-process path (useful when debugging).
 
 - Single SQLite file with sqlite-vec extension for vector search
 - Local embeddings: all-MiniLM-L6-v2 (384 dims, downloads ~500MB on first run)
-- Retrieval: O(log N) seed via sqlite-vec → recursive BFS graph walk (seeds=5, picks_per_hop=3, max_depth=3)
+- Retrieval: brute-force O(N) seed scan via sqlite-vec → recursive BFS graph walk (seeds=5, picks_per_hop=3, max_depth=3)
 - No external services or API keys needed for the graph itself
 - LLM needed only for extraction and think cycles (uses your Claude API key)
 

@@ -223,7 +223,7 @@
             <!-- Latency Over Time -->
             <div class="card">
                 <h3>Retrieval Latency Over Time</h3>
-                <p class="card-desc">End-to-end retrieval time per query. First query is slow (embedding model cold start), subsequent queries are fast. Should stay constant regardless of graph size — that's the O(log N) guarantee.</p>
+                <p class="card-desc">End-to-end retrieval time per query. First query is slow (embedding model cold start), subsequent queries are fast. The bounded BFS walk keeps context size constant regardless of graph size; the sqlite-vec seed scan is brute-force O(N), so query latency grows with the graph.</p>
                 <canvas id="latency-chart" ></canvas>
             </div>
             

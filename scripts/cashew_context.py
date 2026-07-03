@@ -1003,7 +1003,7 @@ Document ({filename}):
     cursor = conn.cursor()
     new_nodes = []
 
-    # Use sqlite-vec O(log N) lookup for novelty checks — no preloading needed
+    # Use the sqlite-vec brute-force O(N) scan for novelty checks, no preloading needed
     from core.embeddings import check_novelty
     
     for item in extractions:
@@ -1012,7 +1012,7 @@ Document ({filename}):
             continue
         node_type = item.get("type", "observation")
 
-        # Primary gate: semantic novelty check (uses sqlite-vec O(log N) fast path)
+        # Primary gate: semantic novelty check (uses the sqlite-vec brute-force O(N) scan)
         try:
             is_novel, max_sim, nearest_id = check_novelty(db_path, node_content)
             if not is_novel:

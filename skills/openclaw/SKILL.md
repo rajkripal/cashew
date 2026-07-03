@@ -189,7 +189,7 @@ Review aged `vault:private` nodes for safe declassification.
 
 ## Architecture
 - **Graph**: SQLite file with nodes, edges, embeddings in one file
-- **Retrieval**: O(log N) seed selection via sqlite-vec + recursive BFS graph walk
+- **Retrieval**: brute-force O(N) seed selection via sqlite-vec + recursive BFS graph walk
 - **Extraction**: LLM extracts facts/insights/observations/decisions/beliefs from conversations
 - **Think cycles**: Autonomous cross-domain pattern detection
 - **Decay**: Unused nodes naturally fade — forgetting is the quality filter
