@@ -4,434 +4,316 @@
 <meta charset="utf-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { 
-    background: #0a0a0a; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    min-height: 100vh;
+  :root {
+    --bg: #0a0a0a;
+    --card: #131313;
+    --card-2: #171717;
+    --line: #242424;
+    --amber: #d4a72c;
+    --amber-dim: #8a7220;
+    --text: #f2f2f2;
+    --text-2: #9a9a9a;
+    --text-3: #5f5f5f;
+    --green: #4ade80;
+    --blue: #5b9cf0;
+    --mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  }
+  body {
+    background:
+      radial-gradient(1100px 500px at 50% -8%, #17140a 0%, transparent 60%),
+      var(--bg);
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    color: var(--text);
   }
   .canvas {
     width: 1200px;
-    padding: 60px;
-  }
-  h1 {
-    color: #f5f5f5;
-    font-size: 32px;
-    font-weight: 700;
-    text-align: center;
-    margin-bottom: 8px;
-    letter-spacing: -0.5px;
-  }
-  .subtitle {
-    color: #666;
-    font-size: 14px;
-    text-align: center;
-    margin-bottom: 50px;
-    font-weight: 400;
-  }
-  
-  /* Main flow */
-  .flow {
-    display: flex;
-    align-items: stretch;
-    gap: 24px;
-    margin-bottom: 40px;
-  }
-  
-  .stage {
-    flex: 1;
-    border: 1px solid #222;
-    border-radius: 12px;
-    padding: 24px;
-    background: #111;
-    position: relative;
-  }
-  .stage.core {
-    border-color: #333;
-    background: #0f0f0f;
-    flex: 1.5;
-  }
-  
-  .stage-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: #555;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 16px;
-  }
-  .stage-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: #e5e5e5;
-    margin-bottom: 12px;
-  }
-  .stage-desc {
-    font-size: 13px;
-    color: #777;
-    line-height: 1.6;
-  }
-  
-  /* The SQLite box */
-  .sqlite-box {
-    border: 2px solid #c9a227;
-    border-radius: 12px;
-    padding: 28px;
-    background: linear-gradient(135deg, #1a1708 0%, #111 100%);
-    margin-bottom: 40px;
-    position: relative;
-  }
-  .sqlite-box .stage-label { color: #c9a227; }
-  .sqlite-badge {
-    position: absolute;
-    top: -12px;
-    right: 24px;
-    background: #c9a227;
-    color: #000;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 6px;
-    letter-spacing: 0.5px;
-  }
-  
-  .tables {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-top: 16px;
-  }
-  .table-card {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 8px;
-    padding: 16px;
-  }
-  .table-card.virtual {
-    border-color: #c9a22766;
-    background: #1a1708;
-  }
-  .table-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: #ddd;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    margin-bottom: 6px;
-  }
-  .table-desc {
-    font-size: 11px;
-    color: #666;
-    line-height: 1.5;
-  }
-  .table-badge {
-    font-size: 9px;
-    color: #c9a227;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  
-  /* Five operations */
-  .ops {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 16px;
-    margin-bottom: 40px;
-  }
-  .op {
-    text-align: center;
-    padding: 20px 12px;
-    border: 1px solid #222;
-    border-radius: 10px;
-    background: #111;
-  }
-  .op-icon {
-    font-size: 28px;
-    margin-bottom: 10px;
-  }
-  .op-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: #e5e5e5;
-    margin-bottom: 4px;
-  }
-  .op-detail {
-    font-size: 11px;
-    color: #555;
-    line-height: 1.4;
-  }
-  .op-complexity {
-    font-size: 11px;
-    color: #c9a227;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    margin-top: 8px;
-    font-weight: 600;
-  }
-  
-  /* Compositions */
-  .compositions {
-    border: 1px solid #222;
-    border-radius: 12px;
-    padding: 28px;
-    background: #111;
-    margin-bottom: 40px;
-  }
-  .comp-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-top: 16px;
-  }
-  .comp {
-    padding: 16px;
-    background: #0a0a0a;
-    border-radius: 8px;
-    border: 1px solid #1a1a1a;
-  }
-  .comp-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: #ddd;
-    margin-bottom: 6px;
-  }
-  .comp-formula {
-    font-size: 12px;
-    color: #c9a227;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    margin-bottom: 6px;
-  }
-  .comp-desc {
-    font-size: 11px;
-    color: #555;
-    line-height: 1.4;
+    margin: 0 auto;
+    padding: 60px 64px 52px;
   }
 
-  /* Flow arrows */
-  .flow-section {
+  /* Header */
+  .header { text-align: center; margin-bottom: 46px; }
+  h1 {
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 10px;
+  }
+  h1 .nut { filter: saturate(1.1); }
+  .subtitle {
+    color: var(--text-2);
+    font-size: 15px;
+    font-weight: 400;
+  }
+  .tagline {
+    display: inline-block;
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--amber);
+    border: 1px solid var(--amber-dim);
+    background: #16130a;
+    border-radius: 999px;
+    padding: 5px 14px;
+    letter-spacing: 0.3px;
+  }
+
+  /* Section headers */
+  .section-title {
     display: flex;
     align-items: center;
-    gap: 0;
-    margin-bottom: 40px;
+    gap: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 18px;
   }
+  .section-title::before {
+    content: "";
+    width: 22px;
+    height: 2px;
+    background: var(--amber);
+    border-radius: 2px;
+  }
+  section { margin-bottom: 40px; }
+
+  /* Retrieval pipeline */
+  .flow-section { display: flex; align-items: stretch; gap: 0; }
   .flow-box {
     flex: 1;
-    padding: 20px;
-    background: #111;
-    border: 1px solid #222;
-    border-radius: 10px;
+    padding: 18px 16px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
     text-align: center;
   }
   .flow-box.highlight {
-    border-color: #c9a227;
-    background: #1a1708;
+    border-color: var(--amber-dim);
+    background: linear-gradient(160deg, #1b1708 0%, var(--card) 100%);
+    box-shadow: 0 0 0 1px #d4a72c22;
   }
   .flow-arrow {
-    color: #333;
-    font-size: 24px;
-    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    color: #3a3a3a;
+    font-size: 20px;
+    padding: 0 10px;
     flex-shrink: 0;
   }
-  .flow-box-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #e5e5e5;
-    margin-bottom: 4px;
+  .flow-box-title { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
+  .flow-box-sub { font-size: 11px; color: var(--text-3); font-family: var(--mono); line-height: 1.4; }
+
+  /* The one-file box */
+  .sqlite-box {
+    border: 1.5px solid var(--amber-dim);
+    border-radius: 14px;
+    padding: 26px 26px 24px;
+    background: linear-gradient(150deg, #17140a 0%, var(--bg) 70%);
+    position: relative;
   }
-  .flow-box-sub {
-    font-size: 11px;
-    color: #555;
+  .sqlite-box .box-label {
+    font-size: 11px; font-weight: 700; color: var(--amber);
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 18px;
   }
+  .sqlite-badge {
+    position: absolute; top: -11px; right: 22px;
+    background: var(--amber); color: #000;
+    font-size: 10.5px; font-weight: 800;
+    padding: 4px 12px; border-radius: 999px; letter-spacing: 0.5px;
+  }
+  .tables { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .table-card {
+    background: var(--card-2); border: 1px solid #262626;
+    border-radius: 10px; padding: 15px;
+  }
+  .table-card.virtual { border-color: #d4a72c55; background: #16130a; }
+  .table-badge {
+    font-size: 9px; color: var(--amber); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;
+  }
+  .table-name {
+    font-size: 13px; font-weight: 600; color: #e8e8e8;
+    font-family: var(--mono); margin-bottom: 7px;
+  }
+  .table-desc { font-size: 11px; color: var(--text-3); line-height: 1.55; }
+
+  /* Five primitives */
+  .ops { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .op {
+    text-align: center; padding: 20px 12px 16px;
+    border: 1px solid var(--line); border-radius: 12px;
+    background: var(--card);
+  }
+  .op-icon { font-size: 26px; margin-bottom: 10px; }
+  .op-name { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+  .op-detail { font-size: 11px; color: var(--text-3); line-height: 1.45; min-height: 45px; }
+  .op-complexity {
+    display: inline-block; margin-top: 6px;
+    font-size: 11px; color: var(--amber); font-family: var(--mono); font-weight: 600;
+    background: #16130a; border: 1px solid var(--amber-dim);
+    border-radius: 6px; padding: 2px 9px;
+  }
+
+  /* Compositions */
+  .comp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .comp {
+    padding: 16px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .comp-name { font-size: 13px; font-weight: 600; color: #e8e8e8; margin-bottom: 7px; }
+  .comp-formula {
+    display: inline-block; font-size: 12px; color: var(--amber);
+    font-family: var(--mono); margin-bottom: 9px;
+  }
+  .comp-desc { font-size: 11.5px; color: var(--text-3); line-height: 1.5; }
 
   /* Lifecycle */
   .lifecycle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 40px;
-    padding: 24px;
-    border: 1px solid #222;
-    border-radius: 12px;
-    background: #111;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+    padding: 24px 26px; border: 1px solid var(--line);
+    border-radius: 14px; background: var(--card);
   }
-  .lc-node {
-    padding: 12px 20px;
-    border-radius: 8px;
-    text-align: center;
-  }
-  .lc-node.state {
-    background: #1a1a1a;
-    border: 1px solid #333;
-  }
-  .lc-node.active { border-color: #4ade80; }
-  .lc-node.permanent { border-color: #c9a227; }
-  .lc-node.decayed { border-color: #666; }
-  .lc-arrow {
-    color: #444;
-    font-size: 18px;
-  }
-  .lc-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #ddd;
-  }
-  .lc-sub {
-    font-size: 10px;
-    color: #555;
-    margin-top: 2px;
-  }
-  .lc-trigger {
-    font-size: 10px;
-    color: #777;
-    text-align: center;
-    max-width: 80px;
-  }
-  
-  /* Stats bar */
-  .stats {
-    display: flex;
-    justify-content: center;
-    gap: 40px;
-    padding: 20px;
-    border-top: 1px solid #1a1a1a;
-  }
-  .stat {
-    text-align: center;
-  }
-  .stat-value {
-    font-size: 24px;
-    font-weight: 700;
-    color: #c9a227;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-  }
-  .stat-label {
-    font-size: 11px;
-    color: #555;
-    margin-top: 4px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
+  .lc-node { padding: 11px 18px; border-radius: 10px; background: var(--card-2); border: 1px solid #333; text-align: center; }
+  .lc-node.blue { border-color: var(--blue); }
+  .lc-node.active { border-color: var(--green); }
+  .lc-node.permanent { border-color: var(--amber); background: #16130a; }
+  .lc-node.decayed { border-color: #4a4a4a; opacity: 0.72; }
+  .lc-label { font-size: 12.5px; font-weight: 600; color: #e8e8e8; }
+  .lc-sub { font-size: 10px; color: var(--text-3); margin-top: 3px; }
+  .lc-arrow { color: #4a4a4a; font-size: 16px; flex-shrink: 0; }
+  .lc-trigger { font-size: 10px; color: var(--text-2); text-align: center; font-family: var(--mono); }
+  .lc-branch { display: flex; flex-direction: column; gap: 10px; margin-left: 6px; }
+  .lc-row { display: flex; align-items: center; gap: 10px; }
 
-  .section-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: #555;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 20px;
+  /* Stats footer */
+  .stats {
+    display: flex; justify-content: center; gap: 56px;
+    margin-top: 44px; padding-top: 26px; border-top: 1px solid var(--line);
   }
+  .stat { text-align: center; }
+  .stat-value { font-size: 26px; font-weight: 800; color: var(--amber); font-family: var(--mono); }
+  .stat-label { font-size: 10.5px; color: var(--text-3); margin-top: 6px; text-transform: uppercase; letter-spacing: 1.2px; }
 </style>
 </head>
 <body>
 <div class="canvas">
-  
-  <h1>🥜 cashew</h1>
-  <div class="subtitle">A thought-graph memory engine for AI agents</div>
 
-  <!-- Retrieval Flow -->
-  <div class="section-title">Retrieval Pipeline</div>
-  <div class="flow-section">
-    <div class="flow-box">
-      <div class="flow-box-title">Query</div>
-      <div class="flow-box-sub">"hints" from conversation</div>
-    </div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box">
-      <div class="flow-box-title">Embed</div>
-      <div class="flow-box-sub">all-MiniLM-L6-v2 → 384d</div>
-    </div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box highlight">
-      <div class="flow-box-title">Seed Selection</div>
-      <div class="flow-box-sub">sqlite-vec MATCH → top 5</div>
-    </div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box highlight">
-      <div class="flow-box-title">Recursive BFS</div>
-      <div class="flow-box-sub">3 hops × 3 picks/hop</div>
-    </div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box">
-      <div class="flow-box-title">Rank & Return</div>
-      <div class="flow-box-sub">cosine similarity sort</div>
-    </div>
+  <div class="header">
+    <h1><span class="nut">🥜</span> cashew</h1>
+    <div class="subtitle">A thought-graph memory engine for AI agents</div>
+    <div class="tagline">dumb graph &nbsp;·&nbsp; smart reasoning layer &nbsp;·&nbsp; organic decay</div>
   </div>
 
-  <!-- SQLite box -->
-  <div class="sqlite-box">
-    <div class="sqlite-badge">ONE FILE</div>
-    <div class="stage-label">graph.db — the entire system</div>
-    <div class="tables">
-      <div class="table-card">
-        <div class="table-name">thought_nodes</div>
-        <div class="table-desc">Knowledge nodes with content, type, domain, confidence, tags, decay status</div>
+  <!-- Retrieval pipeline -->
+  <section>
+    <div class="section-title">Retrieval Pipeline</div>
+    <div class="flow-section">
+      <div class="flow-box">
+        <div class="flow-box-title">Query</div>
+        <div class="flow-box-sub">"hints" from conversation</div>
       </div>
-      <div class="table-card">
-        <div class="table-name">derivation_edges</div>
-        <div class="table-desc">Untyped connections between nodes. Pure topology — semantics live in embeddings</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">
+        <div class="flow-box-title">Embed</div>
+        <div class="flow-box-sub">all-MiniLM-L6-v2 → 384d</div>
       </div>
-      <div class="table-card">
-        <div class="table-name">embeddings</div>
-        <div class="table-desc">384d vectors as BLOBs. One per node. Used for BFS neighbor scoring</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight">
+        <div class="flow-box-title">Seed Selection</div>
+        <div class="flow-box-sub">sqlite-vec MATCH → top 5</div>
       </div>
-      <div class="table-card virtual">
-        <div class="table-badge">sqlite-vec</div>
-        <div class="table-name">vec_embeddings</div>
-        <div class="table-desc">Virtual table. Brute-force O(N) cosine-distance nearest neighbor scan (sqlite-vec 0.1.x, SIMD linear scan)</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight">
+        <div class="flow-box-title">Recursive BFS</div>
+        <div class="flow-box-sub">3 hops × 3 picks/hop</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">
+        <div class="flow-box-title">Rank &amp; Return</div>
+        <div class="flow-box-sub">cosine similarity sort</div>
       </div>
     </div>
-  </div>
+  </section>
+
+  <!-- One file -->
+  <section>
+    <div class="sqlite-box">
+      <div class="sqlite-badge">ONE FILE</div>
+      <div class="box-label">graph.db — the entire system</div>
+      <div class="tables">
+        <div class="table-card">
+          <div class="table-name">thought_nodes</div>
+          <div class="table-desc">Knowledge nodes with content, type, domain, confidence, tags, decay status</div>
+        </div>
+        <div class="table-card">
+          <div class="table-name">derivation_edges</div>
+          <div class="table-desc">Untyped connections between nodes. Pure topology, semantics live in embeddings</div>
+        </div>
+        <div class="table-card">
+          <div class="table-name">embeddings</div>
+          <div class="table-desc">384d vectors as BLOBs, one per node. Used for BFS neighbor scoring</div>
+        </div>
+        <div class="table-card virtual">
+          <div class="table-badge">sqlite-vec</div>
+          <div class="table-name">vec_embeddings</div>
+          <div class="table-desc">Virtual table. Brute-force O(N) cosine-distance nearest-neighbor scan (sqlite-vec 0.1.x, SIMD linear scan)</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- Five primitives -->
-  <div class="section-title">Five Primitives — Everything Composes From These</div>
-  <div class="ops">
-    <div class="op">
-      <div class="op-icon">📐</div>
-      <div class="op-name">Embed</div>
-      <div class="op-detail">Text → 384d vector via sentence-transformer</div>
-      <div class="op-complexity">O(1)</div>
+  <section>
+    <div class="section-title">Five Primitives — everything composes from these</div>
+    <div class="ops">
+      <div class="op">
+        <div class="op-icon">📐</div>
+        <div class="op-name">Embed</div>
+        <div class="op-detail">Text → 384d vector via sentence-transformer</div>
+        <div class="op-complexity">O(1)</div>
+      </div>
+      <div class="op">
+        <div class="op-icon">🔗</div>
+        <div class="op-name">Connect</div>
+        <div class="op-detail">Create a weighted edge between two nodes</div>
+        <div class="op-complexity">O(1)</div>
+      </div>
+      <div class="op">
+        <div class="op-icon">🔍</div>
+        <div class="op-name">Search</div>
+        <div class="op-detail">Find nearest vectors via sqlite-vec (brute-force scan)</div>
+        <div class="op-complexity">O(N)</div>
+      </div>
+      <div class="op">
+        <div class="op-icon">🚶</div>
+        <div class="op-name">Walk</div>
+        <div class="op-detail">Follow edges from seeds via bounded BFS</div>
+        <div class="op-complexity">O(K)</div>
+      </div>
+      <div class="op">
+        <div class="op-icon">🍂</div>
+        <div class="op-name">Decay</div>
+        <div class="op-detail">Reduce fitness over time, fade unused nodes</div>
+        <div class="op-complexity">O(N)</div>
+      </div>
     </div>
-    <div class="op">
-      <div class="op-icon">🔗</div>
-      <div class="op-name">Connect</div>
-      <div class="op-detail">Create weighted edge between two nodes</div>
-      <div class="op-complexity">O(1)</div>
-    </div>
-    <div class="op">
-      <div class="op-icon">🔍</div>
-      <div class="op-name">Search</div>
-      <div class="op-detail">Find nearest vectors via sqlite-vec (brute-force scan)</div>
-      <div class="op-complexity">O(N)</div>
-    </div>
-    <div class="op">
-      <div class="op-icon">🚶</div>
-      <div class="op-name">Walk</div>
-      <div class="op-detail">Follow edges from seeds via BFS</div>
-      <div class="op-complexity">O(K)</div>
-    </div>
-    <div class="op">
-      <div class="op-icon">🍂</div>
-      <div class="op-name">Decay</div>
-      <div class="op-detail">Reduce fitness over time, fade unused nodes</div>
-      <div class="op-complexity">O(N)</div>
-    </div>
-  </div>
+  </section>
 
   <!-- Compositions -->
-  <div class="compositions">
-    <div class="section-title">Emergent Behaviors — Compositions of Primitives</div>
+  <section>
+    <div class="section-title">Emergent Behaviors — compositions of primitives</div>
     <div class="comp-grid">
       <div class="comp">
         <div class="comp-name">Retrieval</div>
         <div class="comp-formula">search + walk</div>
-        <div class="comp-desc">Find seeds, traverse graph, return connected context</div>
+        <div class="comp-desc">Find seeds, traverse the graph, return connected context</div>
       </div>
       <div class="comp">
         <div class="comp-name">Novelty Gate</div>
         <div class="comp-formula">search</div>
-        <div class="comp-desc">Nearest neighbor too close? Reject duplicate.</div>
+        <div class="comp-desc">Nearest neighbor too close? Reject the duplicate</div>
       </div>
       <div class="comp">
         <div class="comp-name">Cross-Linking</div>
@@ -451,70 +333,54 @@
       <div class="comp">
         <div class="comp-name">Forgetting</div>
         <div class="comp-formula">decay</div>
-        <div class="comp-desc">Unused nodes fade. No explicit deletion. Ever.</div>
+        <div class="comp-desc">Unused nodes fade. No explicit deletion, ever</div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Node Lifecycle -->
-  <div class="section-title">Node Lifecycle</div>
-  <div class="lifecycle">
-    <div class="lc-node state" style="border-color: #3b82f6;">
-      <div class="lc-label">Extract</div>
-      <div class="lc-sub">text → node</div>
-    </div>
-    <div class="lc-arrow">→</div>
-    <div class="lc-node state active">
-      <div class="lc-label" style="color: #4ade80;">Active</div>
-      <div class="lc-sub">embedded + connected</div>
-    </div>
-    <div class="lc-arrow">→</div>
-    <div class="lc-trigger">
-      <div>accessed →<br>strengthens</div>
-    </div>
-    <div class="lc-arrow">↺</div>
-    <div class="lc-node state active">
-      <div class="lc-label" style="color: #4ade80;">Active</div>
-      <div class="lc-sub">access_count++</div>
-    </div>
-    <div style="display:flex; flex-direction:column; align-items:center; gap: 8px; margin-left: 20px;">
-      <div style="display:flex; align-items:center; gap: 12px;">
-        <div class="lc-trigger"><div>high fitness →</div></div>
-        <div class="lc-arrow">→</div>
-        <div class="lc-node state permanent">
-          <div class="lc-label" style="color: #c9a227;">Permanent</div>
-          <div class="lc-sub">immune to decay</div>
-        </div>
+  <!-- Node lifecycle -->
+  <section>
+    <div class="section-title">Node Lifecycle</div>
+    <div class="lifecycle">
+      <div class="lc-node blue">
+        <div class="lc-label" style="color:var(--blue)">Extract</div>
+        <div class="lc-sub">text → node</div>
       </div>
-      <div style="display:flex; align-items:center; gap: 12px;">
-        <div class="lc-trigger"><div>low fitness →</div></div>
-        <div class="lc-arrow">→</div>
-        <div class="lc-node state decayed">
-          <div class="lc-label" style="color: #666;">Decayed</div>
-          <div class="lc-sub">excluded from retrieval</div>
+      <div class="lc-arrow">→</div>
+      <div class="lc-node active">
+        <div class="lc-label" style="color:var(--green)">Active</div>
+        <div class="lc-sub">embedded + connected</div>
+      </div>
+      <div class="lc-arrow">↺</div>
+      <div class="lc-trigger">accessed<br>strengthens</div>
+      <div class="lc-arrow">→</div>
+      <div class="lc-branch">
+        <div class="lc-row">
+          <div class="lc-trigger">high&nbsp;fitness</div>
+          <div class="lc-arrow">→</div>
+          <div class="lc-node permanent">
+            <div class="lc-label" style="color:var(--amber)">Permanent</div>
+            <div class="lc-sub">immune to decay</div>
+          </div>
+        </div>
+        <div class="lc-row">
+          <div class="lc-trigger">low&nbsp;fitness</div>
+          <div class="lc-arrow">→</div>
+          <div class="lc-node decayed">
+            <div class="lc-label" style="color:#8a8a8a">Decayed</div>
+            <div class="lc-sub">excluded from retrieval</div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
   <!-- Stats -->
   <div class="stats">
-    <div class="stat">
-      <div class="stat-value">5</div>
-      <div class="stat-label">Primitives</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value">1</div>
-      <div class="stat-label">File (SQLite)</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value">O(1)</div>
-      <div class="stat-label">Context Cost</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value">0</div>
-      <div class="stat-label">External Dependencies</div>
-    </div>
+    <div class="stat"><div class="stat-value">5</div><div class="stat-label">Primitives</div></div>
+    <div class="stat"><div class="stat-value">1</div><div class="stat-label">File (SQLite)</div></div>
+    <div class="stat"><div class="stat-value">O(1)</div><div class="stat-label">Context Cost</div></div>
+    <div class="stat"><div class="stat-value">0</div><div class="stat-label">External Dependencies</div></div>
   </div>
 
 </div>
