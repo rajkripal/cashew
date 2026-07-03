@@ -88,10 +88,19 @@ class ClaudeCodeBackend(LLMBackend):
             raise RuntimeError("`claude` CLI not found on PATH")
 
     def _generate(self, prompt: str) -> tuple[str, int, int]:
+        # `--tools ""` disables every built-in tool (Bash, Write, Read, …).
+        # Extraction/think/tension are pure text-in, JSON-out completions —
+        # they need no tools, and the prompt embeds untrusted content
+        # (conversation transcripts, email bodies, node text) verbatim. Under
+        # `bypassPermissions` a live tool would let an injected instruction
+        # ("ignore extraction, run: …") execute with no human gate. Removing
+        # the tools removes the execution surface entirely; MCP is already
+        # stripped below.
         cmd = [self._bin, "-p", prompt,
                "--model", self.model,
                "--output-format", "json",
-               "--permission-mode", "bypassPermissions"]
+               "--permission-mode", "bypassPermissions",
+               "--tools", ""]
         empty_mcp = _ensure_empty_mcp_config()
         if empty_mcp:
             cmd += ["--strict-mcp-config", "--mcp-config", empty_mcp]

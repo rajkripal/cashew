@@ -106,6 +106,40 @@ class TestClaudeCodeBackend:
             data = _json.load(fh)
         assert data == {"mcpServers": {}}
 
+    def test_generate_disables_all_tools(self, monkeypatch):
+        """Extraction/think/tension are text-in, JSON-out completions run under
+        bypassPermissions with untrusted content in the prompt. The headless
+        child must have every built-in tool disabled (`--tools ""`) so an
+        injected instruction has no Bash/Write to execute."""
+        import json as _json
+        import subprocess as _subprocess
+
+        monkeypatch.setattr("shutil.which", lambda _: "/fake/claude")
+
+        captured: dict = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+            class R:
+                returncode = 0
+                stdout = _json.dumps({"result": "ok",
+                                      "usage": {"input_tokens": 1,
+                                                "output_tokens": 1}})
+                stderr = ""
+            return R()
+
+        monkeypatch.setattr(_subprocess, "run", fake_run)
+
+        ClaudeCodeBackend()("hi")
+
+        cmd = captured["cmd"]
+        idx = cmd.index("--tools")
+        # `--tools ""` (empty string) disables the whole built-in tool set.
+        assert cmd[idx + 1] == "", (
+            "ClaudeCodeBackend must pass `--tools \"\"` so the headless "
+            "extraction child has no executable tools"
+        )
+
 
 class TestBuildBackend:
     def test_unknown_backend_returns_none(self):
