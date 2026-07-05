@@ -190,3 +190,41 @@ def test_embed_orphans_uses_configured_model(monkeypatch, tmp_path):
     stored = conn.execute("SELECT model FROM embeddings WHERE node_id='n1'").fetchone()[0]
     assert stored == "sentinel/custom-model"
     conn.close()
+
+
+def test_embed_orphans_writes_vec_index_row(monkeypatch, tmp_path):
+    """Regression: _embed_orphans must write BYTES to vec_embeddings (like
+    embed_nodes), not a Python list. A list raises sqlite3.ProgrammingError,
+    which the OperationalError handler does NOT catch, so the orphan silently
+    ends up with an embeddings row but no vec-index row (invisible to the
+    primary search path, and never retried since it's no longer an orphan)."""
+    import sqlite3
+    import numpy as np
+    import sentence_transformers
+    from core import sleep as S
+    from core import config as C
+
+    class FakeST:
+        def __init__(self, name):
+            pass
+        def encode(self, text, normalize_embeddings=True):
+            return np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float32)
+
+    monkeypatch.setattr(sentence_transformers, "SentenceTransformer", FakeST)
+    monkeypatch.setattr(C, "get_embedding_model", lambda: "test-model")
+
+    db = str(tmp_path / "orphan.db")
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE thought_nodes (id TEXT PRIMARY KEY, content TEXT, decayed INTEGER DEFAULT 0)")
+    conn.execute("CREATE TABLE embeddings (node_id TEXT PRIMARY KEY, vector BLOB, model TEXT, updated_at TEXT)")
+    # Plain BLOB table standing in for the sqlite-vec virtual table: accepts
+    # bytes, rejects a Python list — exactly the bug boundary.
+    conn.execute("CREATE TABLE vec_embeddings (node_id TEXT PRIMARY KEY, embedding BLOB)")
+    conn.execute("INSERT INTO thought_nodes (id, content) VALUES ('n1', 'an orphan node')")
+    conn.commit()
+
+    n = S._embed_orphans(conn)
+    assert n == 1  # pre-fix the ProgrammingError escapes and embedded stays 0
+    row = conn.execute("SELECT embedding FROM vec_embeddings WHERE node_id='n1'").fetchone()
+    assert row is not None and isinstance(row[0], (bytes, bytearray))
+    conn.close()

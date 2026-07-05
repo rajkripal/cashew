@@ -848,10 +848,10 @@ def _embed_orphans(conn: sqlite3.Connection) -> int:
                 conn.execute(
                     "INSERT OR REPLACE INTO vec_embeddings "
                     "(node_id, embedding) VALUES (?, ?)",
-                    (nid, vec.astype(np.float32).tolist()),
-                )
-            except sqlite3.OperationalError:
-                pass
+                    (nid, blob),   # bytes, like embed_nodes — a Python list raises
+                )                  # ProgrammingError (not the OperationalError caught
+            except sqlite3.OperationalError:  # below), which left orphans with an
+                pass                          # embeddings row but no vec-index row.
             embedded += 1
         except Exception as e:
             logger.warning("sleep: failed to embed node %s: %s", nid[:8], e)
