@@ -1,0 +1,18 @@
+[
+  {"type":"semantic","query":"what happens to Raj when work gets really hard for him","id":"goes silent when struggling"},
+  {"type":"semantic","query":"how Raj reacts emotionally right before something succeeds","id":"imminent success makes setback"},
+  {"type":"semantic","query":"the assistant should not just tell the user what they want to hear","id":"sycophancy"},
+  {"type":"semantic","query":"keep the data structure simple and put the intelligence in the reasoning","id":"dumb graph"},
+  {"type":"semantic","query":"why letting old unused knowledge fade away is a good thing","id":"organic decay"},
+  {"type":"semantic","query":"the person Raj lives with and shares his life with","id":"Harika"},
+  {"type":"semantic","query":"the animal companion in Raj's household","id":"Chiki"},
+  {"type":"lexical","query":"Trupanion pet insurance policy","id":"Trupanion"},
+  {"type":"lexical","query":"HippoRAG personalized pagerank","id":"HippoRAG"},
+  {"type":"lexical","query":"Reciprocal Rank Fusion","id":"Reciprocal Rank Fusion"},
+  {"type":"lexical","query":"gte-large embedding model 1024","id":"gte-large"},
+  {"type":"lexical","query":"queue-sweeper launchd delivery","id":"queue-sweeper"},
+  {"type":"mixed","query":"how fast is cashew vector search at large scale, is brute force ok","id":"brute-force"},
+  {"type":"mixed","query":"Raj's employer and engineering level","id":"Meta"},
+  {"type":"mixed","query":"the LoCoMo benchmark score cashew got versus mem0","id":"0.517"},
+  {"type":"mixed","query":"what visual identity did Bunny pick for itself","id":"rabbit silhouette"}
+]
