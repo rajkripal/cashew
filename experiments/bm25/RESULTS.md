@@ -46,3 +46,25 @@ work. Revisit only if (a) the graph grows large (10k-100k+) where brute-force de
 degrades, or (b) exact-match retrieval of specific IDs/rare tokens becomes critical AND the
 embedding model starts missing them. Ablation B (hybrid walk/ranking) is unlikely to change
 this given dense already hits ceiling on coverage.
+
+## Follow-up: parallel BM25 append (Raj's variant, better architecture)
+
+Run BM25 as a SEPARATE parallel search and append its top hits directly to the dense
+result set, instead of fusing at the seed and letting cosine re-rank bury them. This is
+strictly better at preserving BM25's contribution (no cosine neutralization).
+
+Result (16 queries, dense pipeline top-10 vs bm25 parallel top-10):
+- BM25-parallel rescued **12 relevant nodes** dense's top-10 missed — vs ~0 net from the
+  RRF-into-seed approach. So the architecture matters: append > fuse-then-rerank.
+- BUT 11 of 12 rescues are extra nodes on topics dense ALREADY covered (depth, not coverage).
+  Only **1** is a genuine coverage fix (the "sycophancy" query — dense missed the topic
+  entirely, BM25 caught it; hit@10 0.938 -> 1.0).
+- Fixed result budget (7 dense + 3 bm25): rec@10 0.625 -> 0.656 (+0.03, marginal).
+- The larger gain only materializes if you GROW the result set to include the appends, which
+  spends more context — and bounded context is cashew's core value prop.
+
+Updated take: Raj's parallel-append is the correct architecture and captures value the
+seed-fusion approach discarded. But at current scale the payoff is still modest (one
+coverage fix + more depth per already-covered topic), because dense saturates topic coverage.
+Clearly worth it at larger scale, or if the goal shifts from "hit the topic" to "surface more
+relevant nodes per topic." Reasonable next step: wire it as an optional flag and A/B live.
