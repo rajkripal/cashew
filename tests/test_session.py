@@ -528,3 +528,41 @@ class TestSessionDataClasses:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+def test_find_similar_nodes_uses_configured_cross_link_threshold(monkeypatch, tmp_path):
+    """Regression: _find_similar_nodes must default to the configured model's
+    cross-link threshold, not a hardcoded 0.3 (which filtered nothing on
+    gte-large and wired every node to 3 unrelated ones)."""
+    import sqlite3
+    from core import session as S
+
+    db = str(tmp_path / "sim.db")
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE thought_nodes (id TEXT PRIMARY KEY, content TEXT)")
+    conn.execute("INSERT INTO thought_nodes (id, content) VALUES ('q', 'query content')")
+    conn.commit(); conn.close()
+
+    monkeypatch.setattr("core.embeddings.search",
+                        lambda db_path, content, top_k=10: [("strong", 0.95), ("weak", 0.60)])
+
+    class _Profile:
+        cross_link_threshold = 0.90
+    monkeypatch.setattr(S, "get_active_profile", lambda *a, **k: _Profile())
+
+    out = S._find_similar_nodes(db, "q")   # threshold=None -> profile's 0.90
+    assert [nid for nid, _ in out] == ["strong"]   # 0.95 kept, 0.60 dropped
+
+
+def test_session_similarity_thresholds_are_profile_calibrated():
+    """Guard: the think-cycle diversity, tension band, and extraction-link
+    thresholds must resolve through get_active_profile(), not hardcoded literals.
+    Catches a future reintroduction of a model-blind threshold — the class of bug
+    that silently no-op'd think/tension/extraction on gte-large."""
+    import inspect
+    from core import session as S
+    src = inspect.getsource(S)
+    assert "get_active_profile().novelty_threshold" in src
+    assert "get_active_profile().tension_band" in src
+    assert "get_active_profile().cross_link_threshold" in src
+    assert "DIVERSITY_THRESHOLD = 0.85" not in src
+    assert "0.30 <= sim <= 0.70" not in src

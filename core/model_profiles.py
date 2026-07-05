@@ -22,7 +22,7 @@ silently reusing another model's numbers: the constants must be measured (see
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 
 @dataclass(frozen=True)
@@ -39,6 +39,12 @@ class ModelProfile:
     dedup_threshold: float       # cosine >= this -> dedup/merge candidate
     novelty_threshold: float     # reject a new node if nearest-neighbor cosine >= this
     notes: str = ""
+    # (lo, hi) cosine band for "same topic, different stance" tension pairs:
+    # above the model's unrelated-pair mass, below its cross-link/dupe level.
+    # Model-specific like every other threshold here — an absolute band is
+    # meaningless across models (0.30-0.70 is moderate on MiniLM, but BELOW
+    # gte-large's 0.765 unrelated-pair mean, so it would match nothing).
+    tension_band: Tuple[float, float] = (0.30, 0.70)
 
     def __post_init__(self) -> None:
         for field in ("cross_link_threshold", "dedup_threshold", "novelty_threshold"):
@@ -49,6 +55,11 @@ class ModelProfile:
             raise ValueError(
                 f"{self.name}: cross_link_threshold ({self.cross_link_threshold}) "
                 f"must be < dedup_threshold ({self.dedup_threshold})"
+            )
+        lo, hi = self.tension_band
+        if not 0.0 <= lo < hi <= 1.0:
+            raise ValueError(
+                f"{self.name}: tension_band {self.tension_band} must satisfy 0 <= lo < hi <= 1"
             )
 
 
@@ -66,6 +77,9 @@ MODEL_PROFILES: Dict[str, ModelProfile] = {
         cross_link_threshold=0.90,
         dedup_threshold=0.94,
         novelty_threshold=0.95,
+        # Above unrelated-pair P95 (0.831), below the cross-link level (0.90):
+        # related enough to share a topic, not yet strongly linked or duplicate.
+        tension_band=(0.83, 0.90),
         notes=(
             "Measured 2026-06-01 on a 4212-node graph (40k random pairs): "
             "unrelated-pair cosine mean 0.765, P95 0.831, P99 0.862. "
@@ -122,9 +136,18 @@ def get_profile(model_name: str) -> ModelProfile:
 def get_active_profile(model_name: Optional[str] = None) -> ModelProfile:
     """Return the profile for the active embedding model.
 
-    If *model_name* is None, falls back to the configured DEFAULT_EMBEDDING_MODEL.
+    If *model_name* is None, resolves the CONFIGURED embedding model via
+    get_embedding_model() (which honors CASHEW_EMBEDDING_MODEL and
+    models.embedding.name in config.yaml) — NOT the hardcoded default. Using the
+    default here silently returned the wrong model's thresholds under any model
+    override. Falls back to DEFAULT_EMBEDDING_MODEL only if the config can't be
+    read yet (e.g. during Config.__init__, before the singleton is bound).
     """
     if model_name is None:
-        from .config import DEFAULT_EMBEDDING_MODEL
-        model_name = DEFAULT_EMBEDDING_MODEL
+        try:
+            from .config import get_embedding_model
+            model_name = get_embedding_model()
+        except Exception:
+            from .config import DEFAULT_EMBEDDING_MODEL
+            model_name = DEFAULT_EMBEDDING_MODEL
     return get_profile(model_name)

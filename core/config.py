@@ -25,9 +25,21 @@ DEFAULT_AI_DOMAIN = "ai"
 
 
 def _default_novelty_threshold() -> float:
-    """Novelty threshold for the configured embedding model (model-specific)."""
-    from .model_profiles import get_active_profile
-    return get_active_profile(DEFAULT_EMBEDDING_MODEL).novelty_threshold
+    """Novelty threshold for the configured embedding model (model-specific).
+
+    Resolves the model from CASHEW_EMBEDDING_MODEL (falling back to
+    DEFAULT_EMBEDDING_MODEL) rather than hardcoding the default. This runs during
+    Config.__init__, before self.embedding_model is set, so it reads the env
+    directly instead of going through get_embedding_model().
+    """
+    from .model_profiles import get_active_profile, UncalibratedModelError
+    model = os.environ.get('CASHEW_EMBEDDING_MODEL') or DEFAULT_EMBEDDING_MODEL
+    try:
+        return get_active_profile(model).novelty_threshold
+    except UncalibratedModelError:
+        # Config must still load if the model has no profile yet; the real
+        # embedding path raises where calibration actually matters.
+        return get_active_profile(DEFAULT_EMBEDDING_MODEL).novelty_threshold
 
 def _expand_env_vars(value: Any) -> Any:
     """Recursively expand environment variables in configuration values"""

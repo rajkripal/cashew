@@ -19,6 +19,7 @@ from .config import config, get_token_budget, get_top_k, get_walk_depth, get_use
 from .retrieval import retrieve, retrieve_recursive_bfs, RetrievalResult
 from .embeddings import embed_text, embed_nodes
 from .stats import get_active_node_count
+from .model_profiles import get_active_profile
 
 @dataclass
 class SessionContext:
@@ -620,8 +621,12 @@ def _create_node(db_path: str, content: str, node_type: str,
     
     return node_id
 
-def _find_similar_nodes(db_path: str, node_id: str, threshold: float = 0.3) -> List[Tuple[str, float]]:
-    """Find nodes similar to the given node using embeddings"""
+def _find_similar_nodes(db_path: str, node_id: str, threshold: Optional[float] = None) -> List[Tuple[str, float]]:
+    """Find nodes similar to the given node using embeddings.
+
+    threshold defaults to the configured model's cross-link threshold
+    (model_profiles). A hardcoded 0.3 filtered nothing on gte-large
+    (unrelated-pair mean 0.765), wiring every new node to 3 unrelated ones."""
     conn = _get_connection(db_path)
     cursor = conn.cursor()
     
@@ -634,7 +639,10 @@ def _find_similar_nodes(db_path: str, node_id: str, threshold: float = 0.3) -> L
     
     content = row[0]
     conn.close()
-    
+
+    if threshold is None:
+        threshold = get_active_profile().cross_link_threshold
+
     # Use existing embedding search
     from .embeddings import search
     results = search(db_path, content, top_k=10)
@@ -1095,8 +1103,11 @@ JSON format:
         # the prompt is the deterministic signal we trust.
         filtered = [t for t in new_thoughts if t.get("content")]
         
-        # Diversity check: filter out thoughts too similar to existing nodes
-        DIVERSITY_THRESHOLD = 0.85
+        # Diversity check: filter out thoughts too similar to existing nodes.
+        # Calibrated per model (model_profiles): "too similar to keep" is the same
+        # judgment as novelty, so reuse that threshold. A hardcoded 0.85 dropped
+        # the large majority of gte-large insights (nearest-neighbor median 0.913).
+        DIVERSITY_THRESHOLD = get_active_profile().novelty_threshold
         diversity_filtered = []
         
         for thought in filtered:
@@ -1269,8 +1280,11 @@ def tension_detection(db_path: str, model_fn: Callable[[str], str],
     # Compute similarity matrix
     sim_matrix = embeddings @ embeddings.T
     
-    # Find tension candidates: moderate similarity (same topic area, potentially different views)
-    # Exclude near-duplicates (>0.85) and unrelated (<0.30)
+    # Find tension candidates: same topic area, potentially different views.
+    # The band is calibrated per model (model_profiles.tension_band). A fixed
+    # 0.30-0.70 sits BELOW gte-large's 0.765 unrelated-pair mean, so it matched
+    # nothing and tension detection was a permanent silent no-op.
+    tension_lo, tension_hi = get_active_profile().tension_band
     tension_pairs = []
     n = len(nodes)
     for i in range(n):
@@ -1278,7 +1292,7 @@ def tension_detection(db_path: str, model_fn: Callable[[str], str],
             sim = float(sim_matrix[i][j])
             if np.isnan(sim) or np.isinf(sim):
                 continue
-            if 0.30 <= sim <= 0.70:
+            if tension_lo <= sim <= tension_hi:
                 # Prefer different node types (more likely to be genuine tensions)
                 type_bonus = 0.05 if nodes[i]["type"] != nodes[j]["type"] else 0
                 # Prefer different domains (cross-domain tensions are more interesting)
