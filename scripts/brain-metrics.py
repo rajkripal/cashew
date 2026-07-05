@@ -20,6 +20,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from core.stats import get_edge_count
 from core import db as cdb
+from core.model_profiles import get_active_profile
 from integration.session import generate_session_context
 
 def load_embedding(blob_data):
@@ -155,7 +156,11 @@ def get_graph_stats(db_path):
     """)
     orphan_count = cursor.fetchone()[0]
     
-    # Near-duplicates analysis (cosine similarity > 0.82)
+    # Near-duplicates analysis. The threshold is model-specific (model_profiles):
+    # a hardcoded 0.82 is MiniLM's dedup level and sits inside gte-large's
+    # unrelated-pair mass (mean 0.765), so it counted ordinary unrelated pairs as
+    # near-duplicates and massively over-reported the count.
+    dedup_threshold = get_active_profile().dedup_threshold
     cursor.execute("""
         SELECT e.node_id, e.vector 
         FROM embeddings e 
@@ -184,11 +189,11 @@ def get_graph_stats(db_path):
                     vectors_array = np.array(vectors)
                     similarity_matrix = cosine_similarity(vectors_array)
                     
-                    # Count pairs with similarity > 0.82
+                    # Count pairs at or above the model's dedup threshold
                     for i in range(len(node_ids)):
                         for j in range(i+1, len(node_ids)):
                             sim = similarity_matrix[i][j]
-                            if not np.isnan(sim) and sim > 0.82:
+                            if not np.isnan(sim) and sim > dedup_threshold:
                                 near_duplicate_count += 1
         except Exception as e:
             print(f"Warning: Could not compute near-duplicates: {e}", file=sys.stderr)
