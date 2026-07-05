@@ -186,7 +186,8 @@ def get_graph_stats(db_path):
                 # Check if all vectors have same length
                 lengths = [len(v) for v in vectors]
                 if len(set(lengths)) == 1:
-                    vectors_array = np.array(vectors)
+                    # float64: avoid spurious float32-BLAS FPE warnings in cosine
+                    vectors_array = np.array(vectors, dtype=np.float64)
                     similarity_matrix = cosine_similarity(vectors_array)
                     
                     # Count pairs at or above the model's dedup threshold

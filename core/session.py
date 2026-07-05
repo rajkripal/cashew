@@ -1271,7 +1271,7 @@ def tension_detection(db_path: str, model_fn: Callable[[str], str],
         return ThinkResult(new_nodes=[], new_edges=[],
                            cluster_topic="Not enough same-dim nodes for tension detection")
 
-    embeddings = np.array(embeddings)
+    embeddings = np.array(embeddings, dtype=np.float64)  # float64: avoid spurious float32-BLAS FPE warnings in the matmul below
     # Normalize
     norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
     norms[norms == 0] = 1

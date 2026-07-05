@@ -253,3 +253,28 @@ def test_promote_core_memories_never_promotes_decayed_node():
     conn.close()
     assert dead_perm in (0, None), "decayed node must not be marked permanent"
     assert live_perm == 1, "live top-fitness node should still be promoted"
+
+
+def test_load_embedding_matrix_is_float64(monkeypatch, tmp_path):
+    """The sleep similarity matrix must be float64. Cosine matmul on float32
+    raises spurious FPE warnings (divide-by-zero/overflow) under Apple's BLAS
+    even though results are correct; float64 fires none. Asserts dtype rather
+    than warning-absence, which is platform-dependent."""
+    import sqlite3
+    import numpy as np
+    from core import sleep as S
+
+    monkeypatch.setattr(S, "_resolve_expected_dim", lambda: 4)
+    db = str(tmp_path / "m.db")
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE thought_nodes (id TEXT PRIMARY KEY, decayed INTEGER DEFAULT 0)")
+    conn.execute("CREATE TABLE embeddings (node_id TEXT PRIMARY KEY, vector BLOB)")
+    for nid, vec in [("a", [1, 0, 0, 0]), ("b", [0, 1, 0, 0])]:
+        conn.execute("INSERT INTO thought_nodes (id) VALUES (?)", (nid,))
+        conn.execute("INSERT INTO embeddings (node_id, vector) VALUES (?, ?)",
+                     (nid, np.array(vec, dtype=np.float32).tobytes()))
+    conn.commit()
+    ids, matrix = S._load_embedding_matrix(conn, ["a", "b"])
+    conn.close()
+    assert matrix.dtype == np.float64
+    assert len(ids) == 2

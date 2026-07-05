@@ -199,8 +199,11 @@ def _load_embedding_matrix(
             wrong_dim, expected_dim,
         )
     if not vectors:
-        return [], np.array([])
-    return valid_ids, np.array(vectors)
+        return [], np.array([], dtype=np.float64)
+    # float64: cosine matmul on float32 raises spurious FPE warnings (divide-by-
+    # zero / overflow / invalid) under Apple's Accelerate BLAS even though the
+    # results are finite and correct (float32 vs float64 differ by ~1e-6).
+    return valid_ids, np.array(vectors, dtype=np.float64)
 
 
 # ── Phase 1: candidate discovery (vectorized) ────────────────────────────
