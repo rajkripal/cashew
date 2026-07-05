@@ -140,6 +140,22 @@ def _current_embedding_dim() -> int:
     return resolve_embedding_dim()
 
 
+def expected_embedding_dim() -> int:
+    """The configured embedding model's vector dimension — the single source of
+    truth for read paths that do vector math across multiple stored vectors.
+
+    A partially-migrated brain can hold both legacy (e.g. 384d MiniLM) and
+    current (e.g. 1024d gte-large) vectors; combining them in np.dot / a matrix
+    raises "shapes not aligned". Read paths must filter stored vectors to this
+    dim first. Falls back to 384 if the embedding service can't be constructed
+    (e.g. CI without the model cached), matching sleep._resolve_expected_dim."""
+    try:
+        from .embedding_service import get_default_service
+        return get_default_service().dim
+    except Exception:
+        return 384
+
+
 _WARNED_DIM_MISMATCH: set = set()
 
 
@@ -370,14 +386,16 @@ def embed_nodes(db_path: str, batch_size: int = 100) -> dict:
             logging.error(f"Error embedding batch starting at {i}: {e}")
             continue
     
+    # Capture vec-table presence while the connection is still open — checking
+    # it after conn.close() silently returns False (the error is swallowed),
+    # which would make dual_write_success permanently False.
+    has_vec = _vec_available and _has_vec_table(conn)
     conn.close()
-    
+
     # Record metrics
     if is_metrics_enabled() and start_time is not None:
         duration = (time.perf_counter() - start_time) * 1000
-        
-        # Check dual-write success
-        has_vec = _vec_available and _has_vec_table(conn)
+
         dual_write_success = has_vec and (embedded_count > 0)
         
         record_metric(db_path, 'embed', duration,
@@ -583,7 +601,14 @@ def check_novelty(db_path: str, content: str, threshold: float = NOVELTY_THRESHO
     if cn == 0:
         return True, 0.0, None
     
+    cand_dim = candidate_embedding.shape[0]
     for node_id, stored in preloaded_embeddings.items():
+        # Skip legacy/mismatched-dim vectors — a partially-migrated brain can
+        # hold a wrong-dim vector, and np.dot on mismatched shapes would raise
+        # and crash the whole novelty check (aborting extraction/dedup) rather
+        # than skipping the one bad row.
+        if stored.shape[0] != cand_dim:
+            continue
         sn = np.linalg.norm(stored)
         if sn > 0:
             sim = float(np.dot(candidate_embedding, stored) / (cn * sn))

@@ -427,3 +427,29 @@ class TestVecDecayFilter:
         live = _live_node_ids(conn, ["n_sun1", "n_sun2", "n_py1", "does_not_exist"])
         conn.close()
         assert live == {"n_sun1", "n_py1"}
+
+
+def test_expected_embedding_dim_is_positive_int():
+    """The shared dim resolver returns a usable dimension (falls back to 384)."""
+    from core.embeddings import expected_embedding_dim
+    d = expected_embedding_dim()
+    assert isinstance(d, int) and d > 0
+
+
+def test_check_novelty_skips_mismatched_dim_instead_of_crashing(monkeypatch):
+    """Regression: check_novelty's brute-force path must skip wrong-dim vectors,
+    not raise on np.dot shape mismatch (a partially-migrated brain). Providing
+    preloaded_embeddings forces the brute-force path."""
+    from core import embeddings as E
+    import numpy as np
+    # Candidate is 4-dim; one stored vector is 3-dim (would crash np.dot pre-fix).
+    monkeypatch.setattr(E, "embed_text", lambda c: [0.0, 1.0, 0.0, 0.0])
+    preloaded = {
+        "wrongdim": np.array([1.0, 0.0, 0.0], dtype=np.float32),
+        "match":    np.array([0.0, 1.0, 0.0, 0.0], dtype=np.float32),
+    }
+    is_novel, max_sim, nearest = E.check_novelty(
+        "unused.db", "text", threshold=0.9, preloaded_embeddings=preloaded)
+    assert nearest == "match"          # matching-dim vector picked
+    assert max_sim > 0.99              # cosine ~1.0
+    assert is_novel is False           # above threshold → not novel

@@ -812,7 +812,13 @@ def _embed_orphans(conn: sqlite3.Connection) -> int:
     logger.info("sleep: embedding %d orphaned nodes…", len(rows))
 
     from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer(DEFAULT_EMBEDDING_MODEL)
+    from .config import get_embedding_model
+    # Use the CONFIGURED model, not the hardcoded default — otherwise, under a
+    # CASHEW_EMBEDDING_MODEL override, orphans get embedded at the wrong dim,
+    # get filtered out as wrong-dim every subsequent sleep cycle (re-embedded
+    # forever), and are unusable in search.
+    model_name = get_embedding_model()
+    model = SentenceTransformer(model_name)
 
     embedded = 0
     for nid, content in rows:
@@ -831,7 +837,7 @@ def _embed_orphans(conn: sqlite3.Connection) -> int:
                     "INSERT OR REPLACE INTO embeddings "
                     "(node_id, vector, model, updated_at) "
                     "VALUES (?, ?, ?, datetime('now'))",
-                    (nid, blob, DEFAULT_EMBEDDING_MODEL),
+                    (nid, blob, model_name),
                 )
             except sqlite3.OperationalError:
                 conn.execute(

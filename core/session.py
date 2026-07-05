@@ -1234,10 +1234,12 @@ def tension_detection(db_path: str, model_fn: Callable[[str], str],
     import numpy as np
     import struct
     
+    from core.embeddings import expected_embedding_dim
+    expected_dim = expected_embedding_dim()
+
     nodes = []
     embeddings = []
     for row in rows:
-        nodes.append({"id": row[0], "content": row[1], "type": row[2], "domain": row[3]})
         vec_blob = row[4]
         if isinstance(vec_blob, bytes):
             emb = list(struct.unpack(f'{len(vec_blob)//4}f', vec_blob))
@@ -1245,8 +1247,19 @@ def tension_detection(db_path: str, model_fn: Callable[[str], str],
             emb = json.loads(vec_blob)
         else:
             emb = list(vec_blob)
-        embeddings.append(np.array(emb, dtype=np.float32))
-    
+        v = np.array(emb, dtype=np.float32)
+        # Skip legacy/mismatched-dim vectors so the similarity matrix below can't
+        # be ragged — mixing dims would crash norm/matmul on a partially-migrated
+        # brain. Sibling readers (sleep._load_embedding_matrix) filter the same way.
+        if v.shape[0] != expected_dim:
+            continue
+        nodes.append({"id": row[0], "content": row[1], "type": row[2], "domain": row[3]})
+        embeddings.append(v)
+
+    if len(nodes) < 4:
+        return ThinkResult(new_nodes=[], new_edges=[],
+                           cluster_topic="Not enough same-dim nodes for tension detection")
+
     embeddings = np.array(embeddings)
     # Normalize
     norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
