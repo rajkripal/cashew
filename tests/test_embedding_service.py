@@ -193,3 +193,34 @@ class TestModelDimShim:
         from core.embedding_service import _model_dim
         with pytest.raises(AttributeError, match="get_embedding_dimension"):
             _model_dim(_ModelNoApi())
+
+
+def test_embed_np_survives_daemon_serving_wrong_dim():
+    """Regression: if the warm daemon serves a different model (wrong dim) than
+    the service is configured for, its output must be discarded in favour of the
+    in-process backend — not stacked alongside correct-dim cache hits, which
+    crashes with 'all input arrays must have the same shape'."""
+    import numpy as np
+    from core.embedding_service import EmbeddingService
+
+    class FakeLocal:
+        dim = 4
+        def encode(self, texts):
+            return np.ones((len(texts), 4), dtype=np.float32)
+
+    class FakeDaemonWrongDim:
+        dim = 1024
+        def encode(self, texts):
+            return np.ones((len(texts), 1024), dtype=np.float32)  # wrong model/dim
+
+    class FakeCacheMixed:
+        # First text is a correct-dim (4) hit; the rest miss -> _compute.
+        def get_many(self, model, texts):
+            return [np.ones(4, dtype=np.float32)] + [None] * (len(texts) - 1)
+        def put_many(self, model, items):
+            pass
+
+    svc = EmbeddingService(model="tiny-test", cache=FakeCacheMixed(),
+                           daemon=FakeDaemonWrongDim(), local=FakeLocal())
+    out = svc.embed_np(["a", "b", "c"])   # pre-fix: [4d, 1024d, 1024d] -> stack crash
+    assert out.shape == (3, 4)            # daemon output rejected; all local dim

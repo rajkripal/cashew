@@ -24,6 +24,8 @@ from __future__ import annotations
 
 from typing import List, Optional, Protocol, Sequence, Union
 
+import logging
+
 import numpy as np
 
 from .embedding_cache import EmbeddingCache
@@ -253,7 +255,7 @@ class EmbeddingService:
                     miss_texts.append(nonempty_texts[pos])
 
             if miss_texts:
-                computed = self._compute(miss_texts)
+                computed = self._compute(miss_texts, expected_dim)
                 to_store = []
                 for pos, vec in zip(miss_idx, computed):
                     results[nonempty_idx[pos]] = vec
@@ -272,11 +274,29 @@ class EmbeddingService:
 
         return [r for r in results if r is not None]
 
-    def _compute(self, texts: List[str]) -> List[np.ndarray]:
-        """Daemon first, then local. Returns one vector per input text."""
+    def _compute(self, texts: List[str], expected_dim: int) -> List[np.ndarray]:
+        """Daemon first, then local. Returns one vector per input text.
+
+        Guards against a daemon serving a DIFFERENT model than this service is
+        configured for — a stale warm daemon after a CASHEW_EMBEDDING_MODEL
+        change, or a checkout without config.yaml resolving a different model.
+        The daemon serves whatever model it was started with; if its output dim
+        doesn't match the configured model's dim, its vectors are for the wrong
+        model. Mixing them with cache hits (or the vec index) reaches np.stack
+        and crashes with an opaque "all input arrays must have the same shape".
+        On a dim mismatch, discard the daemon's output and use the local
+        backend, which loads the configured model."""
         vecs = self.daemon.encode(texts)
         if len(vecs) == len(texts):
-            return [vecs[i] for i in range(len(texts))]
+            daemon_dim = vecs.shape[1] if getattr(vecs, "ndim", 0) == 2 else None
+            if daemon_dim == expected_dim:
+                return [vecs[i] for i in range(len(texts))]
+            logging.warning(
+                "embedding daemon served dim %s but model %r expects %d — the "
+                "daemon is serving a different model (restart it, or point "
+                "CASHEW_SOCKET elsewhere); using the in-process backend instead.",
+                daemon_dim, self.model, expected_dim,
+            )
         vecs = self.local.encode(texts)
         return [vecs[i] for i in range(len(texts))]
 

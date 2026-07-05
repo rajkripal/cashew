@@ -11,6 +11,25 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+
+@pytest.fixture(autouse=True)
+def _isolate_embedding_daemon(monkeypatch, tmp_path_factory):
+    """Point the embedding daemon socket at a path that doesn't exist, so tests
+    never ride on whatever warm daemon happens to be running on this machine.
+
+    That daemon serves whatever model it was started with (typically gte-large,
+    1024d), which may differ from the model the test env resolves — e.g. a fresh
+    worktree has no untracked config.yaml and falls back to MiniLM (384d). Mixing
+    the daemon's 1024d output with 384d cache/zero vectors is what made
+    TestVecDecayFilter fail with "all input arrays must have the same shape".
+    With the daemon unreachable, the service uses the in-process backend for the
+    configured model, so every batch is self-consistent. Tests that need a real
+    daemon pass socket_path explicitly (see test_embedding_daemon_integration)
+    and are unaffected by this env default."""
+    absent = tmp_path_factory.mktemp("no_daemon") / "absent.sock"
+    monkeypatch.setenv("CASHEW_SOCKET", str(absent))
+
+
 @pytest.fixture
 def temp_db():
     """Create a temporary database with proper schema for testing"""
