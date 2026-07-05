@@ -422,22 +422,28 @@ def retrieve_recursive_bfs(db_path: str, query: str, top_k: int = 10, n_seeds: i
     _vec_cache = {}
 
     def cosine_sim(node_id: str) -> float:
-        if node_id in seed_scores:
-            return seed_scores[node_id]
+        # Rank by TRUE cosine, computed from the node's stored vector — never by
+        # the seed's *selection* score. The old shortcut returned
+        # seed_scores[node_id] for seeds, which assumed seed scores are cosines.
+        # That holds for the dense seed (embedding_search returns cosine) but
+        # silently corrupts ranking for any alternate seed whose scores aren't
+        # cosines (e.g. BM25 or RRF magnitudes) — the seeds would rank by a
+        # foreign scale instead of similarity. Computing the real cosine here
+        # also makes seeds and walked nodes score on the *same* scale (both
+        # numpy cosine), rather than mixing sqlite-vec's cosine for seeds with
+        # numpy's for the rest. Fall back to the seed score only if the vector
+        # is genuinely missing (unchanged behavior for that edge case).
         if node_id in _vec_cache:
             vec = _vec_cache[node_id]
         else:
             row = cursor.execute("SELECT vector FROM embeddings WHERE node_id = ?", (node_id,)).fetchone()
-            if row is None:
-                _vec_cache[node_id] = None
-                return 0.0
-            vec = np.frombuffer(row[0], dtype=np.float32)
+            vec = np.frombuffer(row[0], dtype=np.float32) if row and row[0] is not None else None
             _vec_cache[node_id] = vec
         if vec is None:
-            return 0.0
+            return seed_scores.get(node_id, 0.0)
         nv = np.linalg.norm(vec)
         if nv == 0:
-            return 0.0
+            return seed_scores.get(node_id, 0.0)
         return float(np.dot(query_vec, vec) / (query_norm * nv))
 
     # Step 2: Recursive BFS — explore from seeds
@@ -462,6 +468,14 @@ def retrieve_recursive_bfs(db_path: str, query: str, top_k: int = 10, n_seeds: i
 
     bfs_time = (time.perf_counter() - bfs_start) * 1000 if is_metrics_enabled() else 0
     bfs_explored = len(candidates)
+
+    # The final ranking below scores every candidate by true cosine — seeds
+    # included, since they no longer shortcut to their selection score. Walked
+    # nodes were already scored (and cached) during the BFS, but seeds were not,
+    # so warm their vectors into the cache while the connection is still open;
+    # otherwise cosine_sim would hit the closed cursor during ranking.
+    for _seed_id in seeds:
+        cosine_sim(_seed_id)
 
     conn.close()
 
@@ -568,22 +582,28 @@ def retrieve_bfs_streaming(db_path: str, query: str, n_seeds: int = 5,
 
     _vec_cache = {}
     def cosine_sim(node_id: str) -> float:
-        if node_id in seed_scores:
-            return seed_scores[node_id]
+        # Rank by TRUE cosine, computed from the node's stored vector — never by
+        # the seed's *selection* score. The old shortcut returned
+        # seed_scores[node_id] for seeds, which assumed seed scores are cosines.
+        # That holds for the dense seed (embedding_search returns cosine) but
+        # silently corrupts ranking for any alternate seed whose scores aren't
+        # cosines (e.g. BM25 or RRF magnitudes) — the seeds would rank by a
+        # foreign scale instead of similarity. Computing the real cosine here
+        # also makes seeds and walked nodes score on the *same* scale (both
+        # numpy cosine), rather than mixing sqlite-vec's cosine for seeds with
+        # numpy's for the rest. Fall back to the seed score only if the vector
+        # is genuinely missing (unchanged behavior for that edge case).
         if node_id in _vec_cache:
             vec = _vec_cache[node_id]
         else:
             row = cursor.execute("SELECT vector FROM embeddings WHERE node_id = ?", (node_id,)).fetchone()
-            if row is None:
-                _vec_cache[node_id] = None
-                return 0.0
-            vec = np.frombuffer(row[0], dtype=np.float32)
+            vec = np.frombuffer(row[0], dtype=np.float32) if row and row[0] is not None else None
             _vec_cache[node_id] = vec
         if vec is None:
-            return 0.0
+            return seed_scores.get(node_id, 0.0)
         nv = np.linalg.norm(vec)
         if nv == 0:
-            return 0.0
+            return seed_scores.get(node_id, 0.0)
         return float(np.dot(query_vec, vec) / (query_norm * nv))
 
     frontier = list(seeds)
@@ -605,6 +625,12 @@ def retrieve_bfs_streaming(db_path: str, query: str, n_seeds: int = 5,
         frontier = next_frontier
         if not frontier:
             break
+
+    # Warm seed vectors while the connection is open — the final ranking scores
+    # seeds by true cosine now (not their selection score), and they weren't
+    # cached during the walk, so this avoids hitting the closed cursor below.
+    for _seed_id in seed_scores:
+        cosine_sim(_seed_id)
 
     conn.close()
     final = sorted(((nid, cosine_sim(nid)) for nid in candidates), key=lambda x: x[1], reverse=True)

@@ -13,7 +13,7 @@ from typing import List, Dict
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from core.retrieval import retrieve, format_context, explain_retrieval, _graph_walk, _load_node_details, RetrievalResult
+from core.retrieval import retrieve, retrieve_recursive_bfs, format_context, explain_retrieval, _graph_walk, _load_node_details, RetrievalResult
 from core.embeddings import embed_nodes
 
 class TestRetrieval:
@@ -153,7 +153,59 @@ class TestRetrieval:
         assert details["weather1"]["domain"] == "weather"
         
         assert details["mood1"]["domain"] == "psychology"
-    
+
+    def test_ranking_uses_true_cosine_not_seed_score(self, monkeypatch):
+        """Regression: retrieve_recursive_bfs must rank by TRUE cosine, not by the
+        seed's selection score. A non-cosine seed (e.g. BM25/RRF magnitudes) must
+        not be able to shove a low-similarity node to the top of the results.
+
+        Before the fix, cosine_sim returned seed_scores[node_id] for seeds, so a
+        seed handed a bogus large score would rank #1 regardless of similarity.
+
+        Fully controlled (own vectors + query, matching dims) so it doesn't depend
+        on the embedding model."""
+        import tempfile, sqlite3
+        import numpy as np
+        import core.retrieval as R
+
+        fd, db = tempfile.mkstemp(suffix='.db'); os.close(fd)
+        conn = sqlite3.connect(db); cur = conn.cursor()
+        cur.execute("CREATE TABLE thought_nodes (id TEXT PRIMARY KEY, content TEXT, node_type TEXT, "
+                    "timestamp TEXT, confidence REAL, mood_state TEXT, metadata TEXT, source_file TEXT, decayed INTEGER DEFAULT 0)")
+        cur.execute("CREATE TABLE derivation_edges (parent_id TEXT, child_id TEXT, relation TEXT, weight REAL, "
+                    "reasoning TEXT, PRIMARY KEY(parent_id, child_id, relation))")
+        cur.execute("CREATE TABLE embeddings (node_id TEXT PRIMARY KEY, embedding BLOB, model TEXT, vector BLOB, updated_at TEXT)")
+        # 'close' aligns with the query vector; 'far' is orthogonal to it.
+        vecs = {"close": np.array([0, 1, 0, 0], dtype=np.float32),
+                "far":   np.array([1, 0, 0, 0], dtype=np.float32)}
+        for nid, v in vecs.items():
+            cur.execute("INSERT INTO thought_nodes (id, content, node_type, timestamp, confidence) VALUES (?,?,?,?,?)",
+                        (nid, f"content {nid}", "fact", "2026-01-01T00:00:00", 0.9))
+            cur.execute("INSERT INTO embeddings (node_id, vector, model) VALUES (?,?,?)", (nid, v.tobytes(), "test"))
+        conn.commit(); conn.close()
+
+        # Query aligns with 'close'. Alternate seed hands 'far' a huge non-cosine
+        # score and 'close' a tiny one — the pre-fix ranking would obey the 999.
+        monkeypatch.setattr(R, "embed_text", lambda t: [0.0, 1.0, 0.0, 0.0])
+        monkeypatch.setattr(R, "embedding_search",
+                            lambda db_path, q, top_k=10: [("far", 999.0), ("close", 0.01)])
+
+        results = R.retrieve_recursive_bfs(db, "anything", top_k=5, n_seeds=2)
+        ids = [r.node_id for r in results]
+
+        # The streaming variant shares the same fix; exercise it on the same setup.
+        done = [e for e in R.retrieve_bfs_streaming(db, "anything", n_seeds=2)
+                if e.get("event") == "done"]
+        os.unlink(db)
+
+        assert ids, "expected results"
+        # 'close' (true cosine 1.0) must outrank 'far' (bogus 999 selection score).
+        assert ids[0] == "close", f"'far' with a bogus 999 seed score wrongly ranked first: {ids}"
+        assert ids.index("close") < ids.index("far")
+        assert done, "streaming should emit a done event"
+        ranked = [r["id"] for r in done[0]["ranked"]]
+        assert ranked and ranked[0] == "close", f"streaming ranked 'far' first: {ranked}"
+
     def test_graph_walk_finds_connected_nodes(self, test_graph_db):
         """Test that graph walking finds connected nodes from entry points"""
         # Start from weather1, should reach connected nodes in both directions
