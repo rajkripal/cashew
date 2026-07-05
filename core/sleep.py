@@ -673,14 +673,19 @@ def _promote_core_memories(conn: sqlite3.Connection, metrics: Dict[str, dict]) -
     if promoted:
         pp = ",".join("?" * len(promoted))
         conn.execute(
+            # Never promote a decayed node: it can be in the top-√N by fitness
+            # (metrics are computed pre-GC, and Phase 5 may have just decayed it),
+            # and permanent=1 on a decayed node breaks the permanence invariant
+            # (validate_permanence_integrity: permanent_but_decayed must be 0).
             f"UPDATE thought_nodes SET node_type='core_memory', permanent=1 "
-            f"WHERE id IN ({pp})",
+            f"WHERE id IN ({pp}) AND (decayed IS NULL OR decayed = 0)",
             list(promoted),
         )
 
     conn.execute(
         "UPDATE thought_nodes SET permanent=1 "
-        "WHERE node_type='core_memory' AND (permanent IS NULL OR permanent = 0)"
+        "WHERE node_type='core_memory' AND (permanent IS NULL OR permanent = 0) "
+        "AND (decayed IS NULL OR decayed = 0)"
     )
 
     if demoted:

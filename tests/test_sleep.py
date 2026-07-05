@@ -228,3 +228,28 @@ def test_embed_orphans_writes_vec_index_row(monkeypatch, tmp_path):
     row = conn.execute("SELECT embedding FROM vec_embeddings WHERE node_id='n1'").fetchone()
     assert row is not None and isinstance(row[0], (bytes, bytearray))
     conn.close()
+
+
+def test_promote_core_memories_never_promotes_decayed_node():
+    """Regression: a decayed node must never be marked permanent, even if it
+    ranks in the top-√N by fitness. metrics are computed pre-GC, so Phase 5 can
+    decay a node that Phase 7 then sees as high-fitness — promoting it would
+    violate the permanence invariant (permanent_but_decayed must be 0)."""
+    import sqlite3
+    from core.sleep import _promote_core_memories
+
+    conn = sqlite3.connect(":memory:")
+    conn.execute("CREATE TABLE thought_nodes (id TEXT PRIMARY KEY, node_type TEXT, "
+                 "permanent INTEGER DEFAULT 0, decayed INTEGER DEFAULT 0)")
+    for nid, dec in [("dead", 1), ("live", 0), ("c", 0), ("d", 0)]:
+        conn.execute("INSERT INTO thought_nodes (id, node_type, decayed) VALUES (?, 'derived', ?)", (nid, dec))
+    conn.commit()
+    # target = int(sqrt(4)) = 2; the two highest-fitness are the decayed one and 'live'.
+    metrics = {"dead": {"fitness": 0.99}, "live": {"fitness": 0.98},
+               "c": {"fitness": 0.10}, "d": {"fitness": 0.10}}
+    _promote_core_memories(conn, metrics)
+    dead_perm = conn.execute("SELECT permanent FROM thought_nodes WHERE id='dead'").fetchone()[0]
+    live_perm = conn.execute("SELECT permanent FROM thought_nodes WHERE id='live'").fetchone()[0]
+    conn.close()
+    assert dead_perm in (0, None), "decayed node must not be marked permanent"
+    assert live_perm == 1, "live top-fitness node should still be promoted"
