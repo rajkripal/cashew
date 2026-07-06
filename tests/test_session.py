@@ -566,3 +566,20 @@ def test_session_similarity_thresholds_are_profile_calibrated():
     assert "get_active_profile().cross_link_threshold" in src
     assert "DIVERSITY_THRESHOLD = 0.85" not in src
     assert "0.30 <= sim <= 0.70" not in src
+
+
+def test_ensure_schema_fast_path_skips_migration_when_current(monkeypatch, tmp_path):
+    """_ensure_schema must skip the migration DDL when the schema is already
+    current. Running CREATE/ALTER on every ingest/extract/think/sleep call took a
+    write lock each time and caused 'database is locked: schema migration
+    contention' when jobs overlapped (observed once in think-cycle ingest)."""
+    from core import session as S
+
+    db = str(tmp_path / "s.db")
+    S._ensure_schema(db)                       # fresh DB -> full migration, sets user_version
+    assert S.get_schema_version(db) == S.SCHEMA_VERSION
+
+    calls = []
+    monkeypatch.setattr(S, "_apply_v1", lambda c: calls.append(1))
+    S._ensure_schema(db)                        # already current -> must fast-path out
+    assert calls == [], "_ensure_schema re-ran migration DDL on an already-current DB"

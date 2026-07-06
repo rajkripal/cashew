@@ -224,6 +224,16 @@ def _ensure_schema(db_path: str):
     conn = _get_connection(db_path)
     cursor = conn.cursor()
     try:
+        # Fast path: skip all DDL when the schema is already current. Running the
+        # migration (CREATE/ALTER) on every ingest/extract/think/sleep call took a
+        # write lock each time, and overlapping jobs collided on it — an observed
+        # "database is locked: schema migration contention" failure that dropped a
+        # think-cycle write. A single PRAGMA user_version read (no write lock under
+        # WAL) replaces that churn on the hot path; migrations still run when the
+        # version is behind.
+        if cursor.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION:
+            return
+
         _apply_v1(cursor)
 
         cursor.execute("PRAGMA table_info(thought_nodes)")
