@@ -453,3 +453,97 @@ def test_check_novelty_skips_mismatched_dim_instead_of_crashing(monkeypatch):
     assert nearest == "match"          # matching-dim vector picked
     assert max_sim > 0.99              # cosine ~1.0
     assert is_novel is False           # above threshold → not novel
+
+
+def test_embed_nodes_raises_on_none_embedding(monkeypatch, tmp_path):
+    """Guard against PR #101's root cause recurring: if the embedding service
+    returns None (or an empty vector) for a node, embed_nodes must raise
+    rather than silently insert a NULL/empty vector into the embeddings table."""
+    from core import embeddings as E
+    import sqlite3
+
+    db_path = str(tmp_path / "guard.db")
+    conn = sqlite3.connect(db_path)
+    conn.execute("""
+        CREATE TABLE thought_nodes (
+            id TEXT PRIMARY KEY, content TEXT, node_type TEXT,
+            timestamp TEXT, confidence REAL, mood_state TEXT,
+            metadata TEXT, source_file TEXT, decayed INTEGER DEFAULT 0
+        )
+    """)
+    conn.execute('''
+        CREATE TABLE derivation_edges (
+            parent_id TEXT NOT NULL, child_id TEXT NOT NULL,
+            relation TEXT, weight REAL, reasoning TEXT
+        )
+    ''')
+    conn.execute(
+        "INSERT INTO thought_nodes (id, content, node_type, timestamp, confidence, decayed) "
+        "VALUES ('n1', 'some content', 'fact', '2023-01-01T00:00:00', 1.0, 0)"
+    )
+    conn.commit()
+    conn.close()
+
+    class FakeService:
+        model = "fake-model"
+        dim = 4
+
+        def embed_np(self, texts):
+            # Simulate a broken embedding call returning None for a row.
+            return [None for _ in texts]
+
+    from core import embedding_service as ES
+    monkeypatch.setattr(ES, "get_default_service", lambda: FakeService())
+
+    with pytest.raises(ValueError):
+        E.embed_nodes(db_path)
+
+    conn = sqlite3.connect(db_path)
+    assert conn.execute("SELECT COUNT(*) FROM embeddings").fetchone()[0] == 0
+    conn.close()
+
+
+def test_embed_nodes_raises_on_empty_embedding(monkeypatch, tmp_path):
+    """Same guard, empty-vector case (zero-length ndarray)."""
+    from core import embeddings as E
+    import sqlite3
+    import numpy as np
+
+    db_path = str(tmp_path / "guard2.db")
+    conn = sqlite3.connect(db_path)
+    conn.execute("""
+        CREATE TABLE thought_nodes (
+            id TEXT PRIMARY KEY, content TEXT, node_type TEXT,
+            timestamp TEXT, confidence REAL, mood_state TEXT,
+            metadata TEXT, source_file TEXT, decayed INTEGER DEFAULT 0
+        )
+    """)
+    conn.execute('''
+        CREATE TABLE derivation_edges (
+            parent_id TEXT NOT NULL, child_id TEXT NOT NULL,
+            relation TEXT, weight REAL, reasoning TEXT
+        )
+    ''')
+    conn.execute(
+        "INSERT INTO thought_nodes (id, content, node_type, timestamp, confidence, decayed) "
+        "VALUES ('n1', 'some content', 'fact', '2023-01-01T00:00:00', 1.0, 0)"
+    )
+    conn.commit()
+    conn.close()
+
+    class FakeService:
+        model = "fake-model"
+        dim = 4
+
+        def embed_np(self, texts):
+            return [np.array([], dtype=np.float32) for _ in texts]
+
+    from core import embedding_service as ES
+    monkeypatch.setattr(ES, "get_default_service", lambda: FakeService())
+
+    with pytest.raises(ValueError):
+        E.embed_nodes(db_path)
+
+    conn = sqlite3.connect(db_path)
+    assert conn.execute("SELECT COUNT(*) FROM embeddings").fetchone()[0] == 0
+    conn.close()

@@ -230,6 +230,70 @@ def test_embed_orphans_writes_vec_index_row(monkeypatch, tmp_path):
     conn.close()
 
 
+def test_embed_orphans_raises_on_none_embedding(monkeypatch, tmp_path):
+    """Guard against PR #101's root cause recurring: if the embedding call
+    returns None (or an empty vector), _embed_orphans must raise rather than
+    silently insert a NULL/empty vector into the embeddings table."""
+    import sqlite3
+    import sentence_transformers
+    from core import sleep as S
+    from core import config as C
+
+    class FakeST:
+        def __init__(self, name):
+            pass
+        def encode(self, text, normalize_embeddings=True):
+            return None
+
+    monkeypatch.setattr(sentence_transformers, "SentenceTransformer", FakeST)
+    monkeypatch.setattr(C, "get_embedding_model", lambda: "test-model")
+
+    db = str(tmp_path / "orphan.db")
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE thought_nodes (id TEXT PRIMARY KEY, content TEXT, decayed INTEGER DEFAULT 0)")
+    conn.execute("CREATE TABLE embeddings (node_id TEXT PRIMARY KEY, vector BLOB, model TEXT, updated_at TEXT)")
+    conn.execute("INSERT INTO thought_nodes (id, content) VALUES ('n1', 'an orphan node')")
+    conn.commit()
+
+    with pytest.raises(ValueError):
+        S._embed_orphans(conn)
+
+    # Nothing should have been inserted.
+    assert conn.execute("SELECT COUNT(*) FROM embeddings").fetchone()[0] == 0
+    conn.close()
+
+
+def test_embed_orphans_raises_on_empty_embedding(monkeypatch, tmp_path):
+    """Same guard, empty-vector case (zero-length ndarray)."""
+    import sqlite3
+    import numpy as np
+    import sentence_transformers
+    from core import sleep as S
+    from core import config as C
+
+    class FakeST:
+        def __init__(self, name):
+            pass
+        def encode(self, text, normalize_embeddings=True):
+            return np.array([], dtype=np.float32)
+
+    monkeypatch.setattr(sentence_transformers, "SentenceTransformer", FakeST)
+    monkeypatch.setattr(C, "get_embedding_model", lambda: "test-model")
+
+    db = str(tmp_path / "orphan.db")
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE thought_nodes (id TEXT PRIMARY KEY, content TEXT, decayed INTEGER DEFAULT 0)")
+    conn.execute("CREATE TABLE embeddings (node_id TEXT PRIMARY KEY, vector BLOB, model TEXT, updated_at TEXT)")
+    conn.execute("INSERT INTO thought_nodes (id, content) VALUES ('n1', 'an orphan node')")
+    conn.commit()
+
+    with pytest.raises(ValueError):
+        S._embed_orphans(conn)
+
+    assert conn.execute("SELECT COUNT(*) FROM embeddings").fetchone()[0] == 0
+    conn.close()
+
+
 def test_promote_core_memories_never_promotes_decayed_node():
     """Regression: a decayed node must never be marked permanent, even if it
     ranks in the top-√N by fitness. metrics are computed pre-GC, so Phase 5 can

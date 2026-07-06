@@ -832,13 +832,25 @@ def _embed_orphans(conn: sqlite3.Connection) -> int:
     for nid, content in rows:
         try:
             vec = model.encode(content, normalize_embeddings=True)
+
+            # Guard: never let a None/empty/wrong-type vector reach the
+            # embeddings table (PR #101 cleaned up 13 rows that had slipped
+            # through as NULL/empty vectors; root cause was never
+            # conclusively found). Fail loudly rather than silently
+            # inserting — or silently skipping and moving on.
+            if vec is None or not isinstance(vec, np.ndarray) or vec.size == 0:
+                raise ValueError(
+                    f"_embed_orphans: refusing to insert NULL/empty embedding for "
+                    f"node {nid[:8]} (got {type(vec).__name__})"
+                )
+
             blob = vec.astype(np.float32).tobytes()
 
             if not blob:
-                logger.warning(
-                    "sleep: skipping node %s — embedding produced empty bytes", nid[:8]
+                raise ValueError(
+                    f"_embed_orphans: refusing to insert empty-bytes embedding for "
+                    f"node {nid[:8]}"
                 )
-                continue
 
             try:
                 conn.execute(
@@ -861,6 +873,10 @@ def _embed_orphans(conn: sqlite3.Connection) -> int:
             except sqlite3.OperationalError:  # below), which left orphans with an
                 pass                          # embeddings row but no vec-index row.
             embedded += 1
+        except ValueError:
+            # NULL/empty/wrong-type vector guard above — let this propagate
+            # loudly instead of being swallowed as a per-node warning.
+            raise
         except Exception as e:
             logger.warning("sleep: failed to embed node %s: %s", nid[:8], e)
 

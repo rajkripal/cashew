@@ -352,13 +352,26 @@ def embed_nodes(db_path: str, batch_size: int = 100) -> dict:
                 and _vec_table_dim_matches(conn, service.dim)
             )
             for j, (node_id, content) in enumerate(batch):
-                vector_bytes = embeddings[j].astype(np.float32).tobytes()
+                vec = embeddings[j]
+
+                # Guard: never let a None/empty/wrong-type vector reach the
+                # embeddings table (PR #101 cleaned up 13 rows that had slipped
+                # through as NULL/empty vectors; root cause was never
+                # conclusively found). Fail loudly rather than silently
+                # inserting — or silently skipping and moving on.
+                if vec is None or not isinstance(vec, np.ndarray) or vec.size == 0:
+                    raise ValueError(
+                        f"embed_nodes: refusing to insert NULL/empty embedding for "
+                        f"node {node_id} (got {type(vec).__name__})"
+                    )
+
+                vector_bytes = vec.astype(np.float32).tobytes()
 
                 if not vector_bytes:
-                    logging.warning(
-                        f"embed_nodes: skipping node {node_id} — embedding produced empty bytes"
+                    raise ValueError(
+                        f"embed_nodes: refusing to insert empty-bytes embedding for "
+                        f"node {node_id}"
                     )
-                    continue
 
                 cursor.execute("""
                     INSERT OR REPLACE INTO embeddings
@@ -381,7 +394,12 @@ def embed_nodes(db_path: str, batch_size: int = 100) -> dict:
             
             conn.commit()
             logging.info(f"Embedded batch {i//batch_size + 1}/{(total_nodes + batch_size - 1)//batch_size}")
-            
+
+        except ValueError:
+            # NULL/empty/wrong-type vector guard above — let this propagate
+            # loudly instead of being swallowed as a generic batch error.
+            conn.close()
+            raise
         except Exception as e:
             logging.error(f"Error embedding batch starting at {i}: {e}")
             continue
