@@ -24,9 +24,36 @@ Set the `CASHEW_DB` environment variable to avoid passing `--db` every time:
 export CASHEW_DB=~/.cashew/graph.db
 ```
 
+## Structural Mode (recommended)
+
+The protocol below asks you to *remember* to query the brain. That's volitional,
+and in practice it gets skipped — the brain is only as useful as it is reliably
+consulted. **Structural mode** removes the decision: a `UserPromptSubmit` hook
+queries cashew on every substantive prompt and injects the relevant, relevance-
+gated context automatically.
+
+```bash
+bash skills/claude-code/scripts/install-structural-mode.sh
+# wires hooks/inject_context.py into ~/.claude/settings.json (idempotent)
+```
+
+How it behaves:
+- **Deterministic trigger** — runs on every non-trivial prompt; trivia ("ok",
+  "thanks") inject nothing.
+- **Embedding of the prompt IS the query** — no keyword-guessing. An explicit
+  `cashew context` call (below) stays available as a refinement layer.
+- **Relevance-gated** — injects only nodes above a similarity threshold
+  (`CASHEW_HOOK_RELEVANCE`, default 0.83), so noise never lands.
+- **Non-authoritative** — injected as labeled, score-tagged *leads to verify*,
+  never as fact.
+- **Fail-safe** — any error injects nothing and never blocks the turn.
+
+Run `cashew serve` (warm daemon) so injection stays ~sub-second. The protocol
+below is still the model for extraction and for on-demand deep queries.
+
 ## Core Protocol
 
-### 1. Session Start — Query First (MANDATORY)
+### 1. Session Start — Query First (structural mode does this for you)
 
 Before answering any substantive question in a new session, query the brain:
 
