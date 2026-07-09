@@ -13,7 +13,7 @@ from typing import List, Dict
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from core.retrieval import retrieve, retrieve_recursive_bfs, format_context, explain_retrieval, _graph_walk, _load_node_details, RetrievalResult
+from core.retrieval import retrieve_recursive_bfs, format_context, _graph_walk, _load_node_details, RetrievalResult
 from core.embeddings import embed_nodes
 
 class TestRetrieval:
@@ -266,90 +266,9 @@ class TestRetrieval:
         assert weather_connected
         assert prog_connected
     
-    def test_retrieve_combines_embedding_and_graph_results(self, test_graph_db):
-        """Test that retrieve combines embedding search with graph walking"""
-        # Search for "sunny weather" - should hit weather1 directly via embedding
-        # and find connected mood/productivity nodes via graph walk
-        results = retrieve(test_graph_db, "sunny weather", top_k=5, walk_depth=2)
-        
-        assert len(results) > 0
-        assert len(results) <= 5
-        
-        # Results should be RetrievalResult objects
-        for result in results:
-            assert isinstance(result, RetrievalResult)
-            assert hasattr(result, 'node_id')
-            assert hasattr(result, 'content')
-            assert hasattr(result, 'score')
-            assert hasattr(result, 'path')
-        
-        # Should include weather-related nodes at the top
-        top_node_ids = [r.node_id for r in results[:2]]
-        weather_found = any("weather" in node_id for node_id in top_node_ids)
-        assert weather_found
-        
-        # Should include some connected nodes from graph walk
-        all_node_ids = [r.node_id for r in results]
-        graph_expansion = any("mood" in node_id or "work" in node_id for node_id in all_node_ids)
-        # Note: This might not always be true depending on embedding similarity, but let's check paths
-        
-        # At least some results should have multi-step paths (from graph walk)
-        multi_step_paths = [r for r in results if len(r.path) > 1]
-        # We expect some graph expansion, but exact results depend on embedding similarity
-    
-    def test_retrieve_hybrid_scoring(self, test_graph_db):
-        """Test that hybrid scoring combines embedding and graph proximity appropriately"""
-        results = retrieve(test_graph_db, "sunny weather mood", top_k=8, walk_depth=2)
-        
-        # Should find multiple relevant nodes
-        assert len(results) > 3
-        
-        # Check that scoring makes sense
-        for result in results:
-            assert 0.0 <= result.score <= 1.0
-        
-        # Results should be sorted by score
-        scores = [r.score for r in results]
-        assert scores == sorted(scores, reverse=True)
-        
-        # Find specific nodes to test scoring logic
-        weather_result = next((r for r in results if r.node_id == "weather1"), None)
-        mood_result = next((r for r in results if r.node_id == "mood1"), None)
-        
-        if weather_result and mood_result:
-            # Both should be found and have reasonable scores
-            # The exact ranking depends on semantic similarity - mood1 contains both "weather" and "mood"
-            # so it might actually score higher than weather1 for "sunny weather mood"
-            assert weather_result.score > 0.0 and mood_result.score > 0.0
-            # At least one should be from graph walk (multi-step path) or direct embedding
-            assert len(weather_result.path) >= 1 and len(mood_result.path) >= 1
-            # Combined they should demonstrate both embedding and graph expansion
-            total_unique_paths = set(weather_result.path + mood_result.path)
-            assert len(total_unique_paths) >= 2  # At least 2 unique nodes involved
-    
-    def test_retrieve_excludes_decayed_nodes(self, test_graph_db):
-        """Test that retrieve excludes decayed nodes from results"""
-        results = retrieve(test_graph_db, "thought", top_k=10, walk_depth=3)
-        
-        # Should not include the decayed node
-        node_ids = [r.node_id for r in results]
-        assert "decayed1" not in node_ids
-    
-    def test_retrieve_finds_isolated_nodes_via_embedding(self, test_graph_db):
-        """Test that isolated nodes can still be found via embedding search"""
-        results = retrieve(test_graph_db, "quantum physics", top_k=5, walk_depth=2)
-        
-        # Should find the isolated node via embedding similarity
-        node_ids = [r.node_id for r in results]
-        
-        # The isolated node might not be top result due to exact content matching
-        # but should be findable if embedding model recognizes semantic similarity
-        # Let's just check that we get some results and the system doesn't crash
-        assert len(results) >= 0  # At minimum, should not crash
-    
     def test_format_context_creates_readable_output(self, test_graph_db):
         """Test that format_context creates human-readable context"""
-        results = retrieve(test_graph_db, "sunny weather productivity", top_k=3, walk_depth=2)
+        results = retrieve_recursive_bfs(test_graph_db, "sunny weather productivity", top_k=3)
         
         # Test basic formatting
         context = format_context(results, include_paths=False)
@@ -376,40 +295,9 @@ class TestRetrieval:
         context = format_context([])
         assert context == "No relevant context found."
     
-    def test_explain_retrieval_provides_detailed_breakdown(self, test_graph_db):
-        """Test that explain_retrieval provides comprehensive debugging info"""
-        explanation = explain_retrieval(test_graph_db, "sunny weather mood", top_k=3, walk_depth=2)
-        
-        # Should include all major sections
-        required_keys = ["query", "embedding_search", "graph_walk", "final_results", "summary"]
-        for key in required_keys:
-            assert key in explanation
-        
-        # Embedding search info
-        assert "num_results" in explanation["embedding_search"]
-        assert "entry_points" in explanation["embedding_search"]
-        assert explanation["embedding_search"]["num_results"] > 0
-        
-        # Graph walk info
-        assert "walk_depth" in explanation["graph_walk"]
-        assert "nodes_discovered" in explanation["graph_walk"]
-        assert explanation["graph_walk"]["walk_depth"] == 2
-        
-        # Final results
-        assert len(explanation["final_results"]) <= 3
-        for result in explanation["final_results"]:
-            assert "node_id" in result
-            assert "content" in result
-            assert "score" in result
-        
-        # Summary
-        assert "embedding_hits" in explanation["summary"]
-        assert "graph_expansion" in explanation["summary"]
-        assert "final_results" in explanation["summary"]
-    
     def test_retrieval_result_to_dict(self, test_graph_db):
         """Test that RetrievalResult.to_dict() works correctly"""
-        results = retrieve(test_graph_db, "weather", top_k=1, walk_depth=1)
+        results = retrieve_recursive_bfs(test_graph_db, "weather", top_k=1)
         
         if results:
             result = results[0]
@@ -439,29 +327,6 @@ class TestRetrieval:
         # Note: exact results depend on graph structure, but should find connected nodes
         assert len(node_ids) > 1  # Should find more than just the starting node
     
-    def test_retrieve_with_zero_depth_gives_embedding_only(self, test_graph_db):
-        """Test that walk_depth=0 gives pure embedding search"""
-        results = retrieve(test_graph_db, "sunny weather", top_k=5, walk_depth=0)
-        
-        # Should still get results (from embedding search)
-        assert len(results) > 0
-        
-        # All paths should be single-node (no graph expansion)
-        for result in results:
-            assert len(result.path) == 1
-            assert result.path[0] == result.node_id
-    
-    def test_retrieve_handles_nonexistent_query_gracefully(self, test_graph_db):
-        """Test that retrieve handles queries with no matches"""
-        # Query for something completely unrelated
-        results = retrieve(test_graph_db, "zebra unicorn moonbeam", top_k=5, walk_depth=2)
-        
-        # Might get low-similarity results or empty results
-        # Should not crash and should return valid RetrievalResult objects
-        for result in results:
-            assert isinstance(result, RetrievalResult)
-            assert 0.0 <= result.score <= 1.0
-
 
 def test_graph_walk_excludes_decayed_nodes():
     """Test that _graph_walk() excludes decayed nodes even when they have edges.

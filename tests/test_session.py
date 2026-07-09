@@ -217,7 +217,7 @@ class TestSessionIntegration:
     
     def test_start_session_token_budget(self, test_db_path):
         """Test that session respects token budget"""
-        with patch('core.session.retrieve') as mock_retrieve:
+        with patch('core.session.retrieve_recursive_bfs') as mock_retrieve:
             from core.retrieval import RetrievalResult
             
             # Create a very long content that exceeds budget
