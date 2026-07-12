@@ -30,6 +30,7 @@ def get_candidates(db_path="data/graph.db", days_old=7):
             FROM {cdb.NODES_TABLE}
             WHERE tags LIKE '%vault:private%'
             AND timestamp < ?
+            AND (decayed IS NULL OR decayed = 0)
             ORDER BY timestamp
             """,
             (cutoff_date,),
