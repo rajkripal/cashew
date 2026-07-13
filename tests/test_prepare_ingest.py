@@ -321,7 +321,55 @@ class TestExtractPrepareIngest:
             new_count = cursor.fetchone()[0]
             assert new_count >= output["new_nodes"]
             conn.close()
-            
+
+        finally:
+            os.unlink(extractions_file)
+
+    def test_extract_ingest_embeds_and_links(self, temp_db):
+        """Regression: --ingest must run the same post-write pipeline as LLM
+        extraction. Before the fix, ingested nodes got no embedding and no
+        similarity edges, making them invisible to retrieval."""
+        # Near-duplicate of a _SAMPLE_NODES sentence — guaranteed to clear the
+        # cross-link threshold, so at least one similarity edge must appear.
+        test_extractions = {
+            "insights": [{
+                "content": "Raj chose SQLite over Postgres for a side project to keep operations simple, confirmed again this week",
+                "type": "decision",
+            }]
+        }
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(test_extractions, f)
+            extractions_file = f.name
+
+        try:
+            result = subprocess.run([
+                sys.executable,
+                str(cashew_dir / "scripts" / "cashew_context.py"),
+                "extract", "--ingest", extractions_file, "--db", temp_db
+            ], capture_output=True, text=True, env={**os.environ, "KMP_DUPLICATE_LIB_OK": "TRUE"})
+
+            assert result.returncode == 0, result.stderr
+            output = json.loads(result.stdout)
+            assert output["success"] is True
+            assert output["new_nodes"] == 1
+            assert output["new_edges"] >= 1
+
+            conn = _get_connection(temp_db)
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT n.id FROM thought_nodes n
+                WHERE n.source_file = 'openclaw_extraction'""")
+            node_ids = [row[0] for row in cursor.fetchall()]
+            assert node_ids
+
+            for node_id in node_ids:
+                cursor.execute("SELECT COUNT(*) FROM embeddings WHERE node_id = ?", (node_id,))
+                assert cursor.fetchone()[0] == 1, f"node {node_id} was not embedded"
+                cursor.execute("SELECT COUNT(*) FROM derivation_edges WHERE child_id = ?", (node_id,))
+                assert cursor.fetchone()[0] >= 1, f"node {node_id} has no similarity edges"
+            conn.close()
+
         finally:
             os.unlink(extractions_file)
 

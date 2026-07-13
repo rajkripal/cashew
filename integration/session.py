@@ -100,6 +100,9 @@ def extract_from_conversation(db_path: str, conversation_text: str, session_id: 
                           novelty_rejections=novelty_rejections)
         
         # Format response
+        summary = f"Extracted {len(result.new_nodes)} new thoughts and created {len(result.new_edges)} connections"
+        if result.llm_kept_nothing:
+            summary = "LLM judged nothing worth keeping (0 nodes) — intentional empty extraction, not a failure"
         response = {
             "success": True,
             "new_nodes": len(result.new_nodes),
@@ -107,7 +110,8 @@ def extract_from_conversation(db_path: str, conversation_text: str, session_id: 
             "updated_nodes": len(result.updated_nodes),
             "node_ids": result.new_nodes,
             "edges": result.new_edges,
-            "summary": f"Extracted {len(result.new_nodes)} new thoughts and created {len(result.new_edges)} connections"
+            "llm_kept_nothing": result.llm_kept_nothing,
+            "summary": summary
         }
         
         return response

@@ -41,12 +41,16 @@ class ExtractionResult:
     new_nodes: List[str]
     new_edges: List[Tuple[str, str, str]]  # (parent_id, child_id, reasoning)
     updated_nodes: List[str]
-    
+    # True when the LLM parsed fine but judged nothing worth keeping —
+    # distinguishes an intentional empty extraction from a silent failure.
+    llm_kept_nothing: bool = False
+
     def to_dict(self) -> dict:
         return {
             "new_nodes": self.new_nodes,
             "new_edges": self.new_edges,
-            "updated_nodes": self.updated_nodes
+            "updated_nodes": self.updated_nodes,
+            "llm_kept_nothing": self.llm_kept_nothing
         }
 
 @dataclass
@@ -683,9 +687,27 @@ def _create_edge(db_path: str, parent_id: str, child_id: str, reasoning: str):
         INSERT INTO derivation_edges (parent_id, child_id, weight, reasoning)
         VALUES (?, ?, 0.8, ?)
     """, (parent_id, child_id, f"extracted_from - {reasoning}"))
-    
+
     conn.commit()
     conn.close()
+
+
+def embed_and_link(db_path: str, node_ids: List[str]) -> List[Tuple[str, str, str]]:
+    """Embed newly created nodes and link each to its top-3 similar neighbors.
+
+    Shared post-write pipeline: every path that creates nodes (LLM extraction,
+    verbatim ingest) must run this, or the nodes are invisible to similarity
+    retrieval and never get cross-linked.
+    """
+    embed_nodes(db_path)
+    new_edges = []
+    for node_id in node_ids:
+        similar_nodes = _find_similar_nodes(db_path, node_id)
+        for similar_id, similarity in similar_nodes[:3]:
+            reasoning = f"Session extraction similarity: {similarity:.3f}"
+            _create_edge(db_path, similar_id, node_id, reasoning)
+            new_edges.append((similar_id, node_id, reasoning))
+    return new_edges
 
 def _llm_infer_referent_time(content: str, model_fn: Callable[[str], str]) -> Optional[str]:
     """Best-effort LLM inference of event time from prose.
@@ -745,7 +767,8 @@ def end_session(db_path: str, session_id: str, conversation_text: str,
         return ExtractionResult(new_nodes=[], new_edges=[], updated_nodes=[])
     
     extractions = []
-    
+    llm_parsed = False
+
     if model_fn:
         # Use LLM for structured extraction
         extraction_prompt = f"""You are extracting knowledge from a conversation into a personal thought graph. Extract ONLY genuinely new, specific, substantive knowledge — not summaries or meta-comments.
@@ -794,6 +817,7 @@ Conversation to extract from:
             if start != -1 and end != -1:
                 json_str = cleaned[start:end+1]
                 extractions = _json.loads(json_str)
+                llm_parsed = True
                 logging.info(f"Extracted {len(extractions)} items via LLM")
             else:
                 logging.warning("No JSON array found in LLM response, using heuristics")
@@ -853,26 +877,17 @@ Conversation to extract from:
             _set_node_tags(db_path, node_id, tags)
         
         new_nodes.append(node_id)
-    
-    # Embed new nodes
-    embed_nodes(db_path)
-    
-    # Find similar existing nodes and create edges
-    for node_id in new_nodes:
-        similar_nodes = _find_similar_nodes(db_path, node_id)
-        
-        for similar_id, similarity in similar_nodes[:3]:  # Link to top 3 similar
-            reasoning = f"Session extraction similarity: {similarity:.3f}"
-            _create_edge(db_path, similar_id, node_id, reasoning)
-            new_edges.append((similar_id, node_id, reasoning))
-    
+
+    new_edges.extend(embed_and_link(db_path, new_nodes))
+
     logging.info(f"Session {session_id} ended: extracted {len(new_nodes)} nodes, "
                 f"created {len(new_edges)} edges")
-    
+
     return ExtractionResult(
         new_nodes=new_nodes,
         new_edges=new_edges,
-        updated_nodes=updated_nodes
+        updated_nodes=updated_nodes,
+        llm_kept_nothing=llm_parsed and not new_nodes
     )
 
 def _find_cluster_for_thinking(db_path: str, focus_domain: Optional[str] = None) -> List[str]:

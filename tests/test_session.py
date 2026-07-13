@@ -334,10 +334,57 @@ class TestSessionIntegration:
     def test_end_session_minimal_content(self, test_db_path):
         """Test ending session with minimal content"""
         result = end_session(test_db_path, "test_minimal", "ok", model_fn=None)
-        
+
         assert isinstance(result, ExtractionResult)
         assert len(result.new_nodes) == 0
         assert len(result.new_edges) == 0
+
+    @patch('core.session.embed_nodes')
+    def test_end_session_llm_empty_array_sets_kept_nothing(self, mock_embed, test_db_path):
+        """Regression: LLM returning [] is an intentional keep-nothing verdict.
+
+        Before the flag existed this was indistinguishable from a silent
+        pipeline failure (the todo-squash completion-node no-op)."""
+        result = end_session(
+            test_db_path, "test_kept_nothing",
+            "Completed TODO on 2026-07-12: retrieval eval harness shipped as PR #124.",
+            model_fn=lambda prompt: "[]")
+
+        assert result.new_nodes == []
+        assert result.llm_kept_nothing is True
+
+    @patch('core.session.embed_nodes')
+    def test_end_session_all_keep_false_sets_kept_nothing(self, mock_embed, test_db_path):
+        """All items marked keep=false is also a keep-nothing verdict"""
+        response = '[{"content": "ephemeral status line", "type": "fact", "domain": "raj", "keep": false}]'
+        result = end_session(
+            test_db_path, "test_keep_false",
+            "Ran the deploy script and it finished without errors today.",
+            model_fn=lambda prompt: response)
+
+        assert result.new_nodes == []
+        assert result.llm_kept_nothing is True
+
+    @patch('core.session.embed_nodes')
+    @patch('core.session._find_similar_nodes')
+    def test_end_session_kept_nothing_false_when_nodes_extracted(self, mock_similar, mock_embed, test_db_path, mock_model_fn):
+        """Normal extraction must not set the keep-nothing flag"""
+        mock_similar.return_value = []
+        conversation = "User: We decided to start a new project next week using Python."
+        result = end_session(test_db_path, "test_kept_something", conversation, mock_model_fn)
+
+        assert len(result.new_nodes) >= 1
+        assert result.llm_kept_nothing is False
+
+    @patch('core.session.embed_nodes')
+    def test_end_session_kept_nothing_false_on_heuristics(self, mock_embed, test_db_path):
+        """Heuristic path (no LLM) never claims an LLM verdict"""
+        result = end_session(
+            test_db_path, "test_heuristic_flag",
+            "Some rambling text with no extractable decision markers whatsoever.",
+            model_fn=None)
+
+        assert result.llm_kept_nothing is False
     
     @patch('core.embeddings.embed_nodes')
     @patch('core.session._create_edge')

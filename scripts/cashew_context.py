@@ -240,7 +240,7 @@ def _cmd_extract_ingest(args):
         print(f"❌ Error: Invalid JSON format (expected array or dict with 'insights' key)")
         return 1
 
-    from core.session import _ensure_schema, _create_node, _get_connection
+    from core.session import _ensure_schema, _create_node, _get_connection, embed_and_link
     _ensure_schema(args.db)
 
     new_nodes = 0
@@ -281,8 +281,13 @@ def _cmd_extract_ingest(args):
         conn.commit()
         conn.close()
         print(f"   Tagged {len(new_node_ids)} nodes with: {extract_tags}")
-    
-    print(json.dumps({"success": True, "new_nodes": new_nodes}))
+
+    # Same post-write pipeline as LLM extraction: without it, ingested nodes
+    # have no embeddings and no similarity edges, making them unretrievable.
+    new_edges = embed_and_link(args.db, new_node_ids)
+
+    print(json.dumps({"success": True, "new_nodes": new_nodes,
+                      "new_edges": len(new_edges)}))
     return 0
 
 
