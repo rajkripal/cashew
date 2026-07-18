@@ -1,0 +1,6 @@
+Raj: I decided to go with the CLOCK_MONOTONIC fix instead of adding a retry loop.
+The retry loop was masking the real bug and would've added another timer to reason about.
+Bunny: Makes sense, that matches the pattern you used in the last two timer bugs too.
+Raj: Yeah, I'm trying to be consistent about that going forward - monotonic clocks for
+anything timeout-related, no exceptions. Also, reminder to myself: I need to write the
+regression test before I forget, it's checked in but untested right now.
