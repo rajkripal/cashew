@@ -1,7 +1,7 @@
 #!/bin/bash
 # Auto-redeploy cashew dashboard to Cloudflare Pages
 # Exports current graph.db → dashboard JSON, then deploys
-set -e
+set -eo pipefail
 
 CASHEW_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DASHBOARD_DIR="$CASHEW_DIR/dashboard"
