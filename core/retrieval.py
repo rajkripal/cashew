@@ -441,6 +441,11 @@ def retrieve_recursive_bfs(db_path: str, query: str, top_k: int = 10, n_seeds: i
             _vec_cache[node_id] = vec
         if vec is None:
             return seed_scores.get(node_id, 0.0)
+        if vec.shape[0] != query_vec.shape[0]:
+            # Legacy/mismatched-dim vector (e.g. a stale MiniLM-384 row in a
+            # gte-large-1024 brain) — np.dot would raise "shapes not aligned"
+            # and crash the whole BFS walk. Skip it like the missing-vector case.
+            return seed_scores.get(node_id, 0.0)
         nv = np.linalg.norm(vec)
         if nv == 0:
             return seed_scores.get(node_id, 0.0)
@@ -600,6 +605,11 @@ def retrieve_bfs_streaming(db_path: str, query: str, n_seeds: int = 5,
             vec = np.frombuffer(row[0], dtype=np.float32) if row and row[0] is not None else None
             _vec_cache[node_id] = vec
         if vec is None:
+            return seed_scores.get(node_id, 0.0)
+        if vec.shape[0] != query_vec.shape[0]:
+            # Legacy/mismatched-dim vector (e.g. a stale MiniLM-384 row in a
+            # gte-large-1024 brain) — np.dot would raise "shapes not aligned"
+            # and crash the whole BFS walk. Skip it like the missing-vector case.
             return seed_scores.get(node_id, 0.0)
         nv = np.linalg.norm(vec)
         if nv == 0:
