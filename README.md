@@ -131,6 +131,11 @@ retriever = ContextRetriever("path/to/graph.db", embeddings)
 context = retriever.generate_context(hints=["work", "projects"])
 ```
 
+For adapters that coordinate SQLite themselves, `core.integrity` provides a
+connection-owned read-only audit and bounded targeted repair API. The caller
+owns the backup, maintenance lock, journal policy, transaction, and final
+verification; see [`docs/integrity-repair.md`](docs/integrity-repair.md).
+
 ## Architecture
 
 - **Single SQLite file.** No external servers, no separate indexes. Your entire brain is one portable file.
