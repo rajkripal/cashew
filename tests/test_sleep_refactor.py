@@ -132,9 +132,14 @@ def _make_test_db(with_embeddings=True) -> str:
 @pytest.fixture(autouse=True)
 def _pin_expected_dim_to_384():
     """All test embeddings in this file are 384-dim. Pin
-    `_resolve_expected_dim` so tests pass regardless of the host's
-    configured default embedding model."""
-    with patch("core.sleep._resolve_expected_dim", return_value=384):
+    the MiniLM profile and encoder so tests neither use host model settings
+    nor load a native embedding model."""
+    with (
+        patch("core.sleep._resolve_expected_dim", return_value=384),
+        patch("core.config.get_embedding_model", return_value="all-MiniLM-L6-v2"),
+        patch("core.embedding_service.LocalBackend.encode",
+              side_effect=lambda texts: np.array([_make_embedding(i + 100) for i in range(len(texts))])),
+    ):
         yield
 
 
@@ -162,20 +167,20 @@ def db_with_embeddings():
 
     # Insert embeddings — controlled similarity values:
     # v1 (nodes 0,2,6): identical → dedup  (sim = 1.0)
-    # v2 (nodes 1,3,7): mixed vector with sim ≈ 0.92 → cross-link with v1
-    #   (in the [CROSS_LINK_THRESHOLD, DEDUP_THRESHOLD) = [0.90, 0.94) band)
+    # v2 (nodes 1,3,7): mixed vector with sim ≈ 0.80 → cross-link with v1
+    #   (in the [CROSS_LINK_THRESHOLD, DEDUP_THRESHOLD) = [0.70, 0.90) band)
     # v3 (nodes 4,5,8,9): random → low or no similarity
     ref_vec = _make_embedding(0)
     orth = _make_embedding(999)
     # Make orth orthogonal to ref_vec
     orth = orth - np.dot(orth, ref_vec) * ref_vec
     orth = orth / np.linalg.norm(orth)
-    mixed = 0.92 * ref_vec + np.sqrt(1 - 0.92**2) * orth
+    mixed = 0.80 * ref_vec + np.sqrt(1 - 0.80**2) * orth
     random_vec = _make_embedding(42)
 
     vecs_by_group = [
         ref_vec,    # group 0: dedup (identical to ref)
-        mixed,      # group 1: cross-link candidate with ref (~0.75)
+        mixed,      # group 1: cross-link candidate with ref (~0.80)
         ref_vec,    # group 2: dedup
         mixed,      # group 3: cross-link
         random_vec, # group 4: orthogonal (no link)
@@ -216,7 +221,8 @@ def test_run_sleep_cycle_no_embeddings_table():
 
         result = run_sleep_cycle(db_path=path)
         assert "error" in result
-        assert "no embeddings table" in result["error"]
+        assert result["status"] == "unavailable"
+        assert result["error"] == "no_embeddings_table"
     finally:
         os.unlink(path)
 
@@ -658,7 +664,10 @@ def test_run_sleep_cycle_vectorized(db_with_embeddings):
             cross_source_only=True,
         )
 
-    assert "error" not in result
+    assert result["status"] == "completed"
+    assert result["error"] is None
+    assert result["dream_generation"] == "skipped"
+    assert result["cross_link_directed_rows"] >= result["cross_links_created"]
     assert result["nodes_selected"] > 0
     assert result["total_nodes"] > 0
     assert result["cross_link_candidates"] >= 0
@@ -693,11 +702,30 @@ def test_run_sleep_cycle_background_dream(db_with_embeddings):
             cross_source_only=False,
         )
 
-    assert "error" not in result
+    assert result["status"] == "completed"
+    assert result["error"] is None
     assert result["cross_link_candidates"] > 0, (
         "Need cross-link candidates for dream_pending, check similarity setup"
     )
     assert result["dream_pending"] is True
+    assert result["dream_generation"] == "pending"
+
+
+def test_run_sleep_cycle_reports_contained_dream_failure(db_with_embeddings, monkeypatch):
+    """An eligible synchronous dream that produces no node is failed, not skipped."""
+    monkeypatch.setattr("core.sleep._generate_dream", lambda *args, **kwargs: None)
+    with patch("core.sleep.config") as mock_cfg:
+        mock_cfg.gc_mode = "off"
+        mock_cfg.gc_threshold = 0.05
+        mock_cfg.gc_grace_days = 7
+        mock_cfg.gc_think_cycle_penalty = 1.5
+        result = run_sleep_cycle(
+            db_path=db_with_embeddings, limit=100,
+            model_fn=lambda _prompt: "unused", background_dream=False,
+        )
+    assert result["dream_generation"] == "failed"
+    assert result["status"] == "partial"
+    assert result["error"] == "dream_failed"
     assert result["dream_id"] is None  # not yet produced (async)
 
 

@@ -156,79 +156,66 @@ class TestPermanenceIntegrity:
         assert integrity["integrity_ok"] is True
 
 
-def test_embed_orphans_uses_configured_model(monkeypatch, tmp_path):
-    """Regression: _embed_orphans must embed with the CONFIGURED model, not the
-    hardcoded DEFAULT — otherwise a model override embeds orphans at the wrong dim."""
+def test_embed_orphans_uses_injected_model_and_batch_protocol(tmp_path):
+    """Orphan repair uses the caller-owned client and records its model."""
     import sqlite3
     import numpy as np
-    import sentence_transformers
     from core import sleep as S
-    from core import config as C
-
     captured = {}
 
-    class FakeST:
-        def __init__(self, name):
-            captured["name"] = name
-        def encode(self, text, normalize_embeddings=True):
-            return np.array([0.1, 0.2, 0.3], dtype=np.float32)
-
-    monkeypatch.setattr(sentence_transformers, "SentenceTransformer", FakeST)
-    monkeypatch.setattr(C, "get_embedding_model", lambda: "sentinel/custom-model")
+    class FakeClient:
+        def encode(self, texts):
+            captured["texts"] = texts
+            return np.array([[0.1, 0.2, 0.3]], dtype=np.float32)
 
     db = str(tmp_path / "orphan.db")
     conn = sqlite3.connect(db)
+    pytest.importorskip("sqlite_vec")
+    from core.embeddings import _load_vec
+    _load_vec(conn)
     conn.execute("CREATE TABLE thought_nodes (id TEXT PRIMARY KEY, content TEXT, decayed INTEGER DEFAULT 0)")
     conn.execute("CREATE TABLE embeddings (node_id TEXT PRIMARY KEY, vector BLOB, model TEXT, updated_at TEXT)")
+    conn.execute("CREATE VIRTUAL TABLE vec_embeddings USING vec0(node_id text primary key, embedding float[3])")
     conn.execute("INSERT INTO thought_nodes (id, content) VALUES ('n1', 'an orphan node')")
     conn.commit()
 
-    n = S._embed_orphans(conn)
+    n = S._embed_orphans(conn, embedding_client=FakeClient(),
+                          embedding_model="sentinel/custom-model",
+                          expected_dimension=3)
     assert n == 1
-    # Constructed with the configured model, and stored under that name.
-    assert captured["name"] == "sentinel/custom-model"
+    assert captured["texts"] == ["an orphan node"]
     stored = conn.execute("SELECT model FROM embeddings WHERE node_id='n1'").fetchone()[0]
     assert stored == "sentinel/custom-model"
     conn.close()
 
 
-def test_embed_orphans_writes_vec_index_row(monkeypatch, tmp_path):
-    """Regression: _embed_orphans must write BYTES to vec_embeddings (like
-    embed_nodes), not a Python list. A list raises sqlite3.ProgrammingError,
-    which the OperationalError handler does NOT catch, so the orphan silently
-    ends up with an embeddings row but no vec-index row (invisible to the
-    primary search path, and never retried since it's no longer an orphan)."""
+def test_embed_orphans_writes_vec_index_row(tmp_path):
+    """A valid injected vector is written as bytes to both stores."""
     import sqlite3
     import numpy as np
-    import sentence_transformers
     from core import sleep as S
-    from core import config as C
 
-    class FakeST:
-        def __init__(self, name):
-            pass
-        def encode(self, text, normalize_embeddings=True):
-            return np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float32)
-
-    monkeypatch.setattr(sentence_transformers, "SentenceTransformer", FakeST)
-    monkeypatch.setattr(C, "get_embedding_model", lambda: "test-model")
+    class FakeClient:
+        def encode(self, texts):
+            return np.array([[0.1, 0.2, 0.3, 0.4]], dtype=np.float32)
 
     db = str(tmp_path / "orphan.db")
     conn = sqlite3.connect(db)
+    pytest.importorskip("sqlite_vec")
+    from core.embeddings import _load_vec
+    _load_vec(conn)
     conn.execute("CREATE TABLE thought_nodes (id TEXT PRIMARY KEY, content TEXT, decayed INTEGER DEFAULT 0)")
     conn.execute("CREATE TABLE embeddings (node_id TEXT PRIMARY KEY, vector BLOB, model TEXT, updated_at TEXT)")
-    # Plain BLOB table standing in for the sqlite-vec virtual table: accepts
-    # bytes, rejects a Python list — exactly the bug boundary.
-    conn.execute("CREATE TABLE vec_embeddings (node_id TEXT PRIMARY KEY, embedding BLOB)")
+    conn.execute("CREATE VIRTUAL TABLE vec_embeddings USING vec0(node_id text primary key, embedding float[4])")
     conn.execute("INSERT INTO thought_nodes (id, content) VALUES ('n1', 'an orphan node')")
     conn.commit()
 
-    n = S._embed_orphans(conn)
-    assert n == 1  # pre-fix the ProgrammingError escapes and embedded stays 0
+    n = S._embed_orphans(conn, embedding_client=FakeClient(),
+                          embedding_model="test-model", expected_dimension=4)
+    assert n == 1
     row = conn.execute("SELECT embedding FROM vec_embeddings WHERE node_id='n1'").fetchone()
     assert row is not None and isinstance(row[0], (bytes, bytearray))
     conn.close()
-
 
 def test_promote_core_memories_never_promotes_decayed_node():
     """Regression: a decayed node must never be marked permanent, even if it
