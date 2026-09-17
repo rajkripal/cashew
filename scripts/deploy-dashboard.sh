@@ -23,6 +23,7 @@ KMP_DUPLICATE_LIB_OK=TRUE python3 scripts/export_dashboard.py "$DB_PATH" "$DASHB
 
 # Deploy to Cloudflare Pages
 echo "🚀 Deploying to Cloudflare Pages..."
+set -o pipefail
 npx wrangler pages deploy "$DASHBOARD_DIR" --project-name cashew-dashboard 2>&1 | tail -5
 
 echo "✅ Dashboard deployed: https://cashew-dashboard.pages.dev"
