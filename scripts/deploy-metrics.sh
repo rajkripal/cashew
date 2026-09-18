@@ -43,6 +43,9 @@ fi
 # Deploy to Cloudflare Pages
 echo "🚀 Deploying to Cloudflare Pages..."
 cd "$METRICS_DIR"
-npx wrangler pages deploy . --project-name cashew-metrics --commit-dirty=true 2>&1
+if ! npx wrangler pages deploy . --project-name cashew-metrics --commit-dirty=true 2>&1; then
+    echo "❌ wrangler pages deploy failed, metrics dashboard not deployed"
+    exit 1
+fi
 
 echo "✅ Metrics dashboard deployed: https://cashew-metrics.pages.dev"
