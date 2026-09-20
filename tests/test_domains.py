@@ -10,7 +10,7 @@ import os
 import json
 from datetime import datetime, timezone
 
-from core.retrieval import retrieve, format_context
+from core.retrieval import retrieve_recursive_bfs, format_context
 from core.session import start_session
 from integration.session import get_ai_context, get_user_context
 
@@ -115,7 +115,7 @@ def test_domain_filtering_retrieve(temp_db):
     create_test_node(temp_db, "bunny2", "Bunny's knowledge about tools", "fact", "bunny")
     
     # Test retrieving only raj domain
-    raj_results = retrieve(temp_db, "work engineering", top_k=10, domain="raj")
+    raj_results = retrieve_recursive_bfs(temp_db, "work engineering", top_k=10, domain="raj")
     raj_ids = [r.node_id for r in raj_results]
     
     assert len(raj_results) > 0
@@ -125,7 +125,7 @@ def test_domain_filtering_retrieve(temp_db):
     assert "bunny2" not in raj_ids
     
     # Test retrieving only bunny domain
-    bunny_results = retrieve(temp_db, "communication tools", top_k=10, domain="bunny")
+    bunny_results = retrieve_recursive_bfs(temp_db, "communication tools", top_k=10, domain="bunny")
     bunny_ids = [r.node_id for r in bunny_results]
     
     assert len(bunny_results) > 0
@@ -142,7 +142,7 @@ def test_unfiltered_retrieval_returns_both_domains(temp_db):
     create_test_node(temp_db, "bunny1", "Important operational decision", "decision", "bunny")
     
     # Test retrieving without domain filter
-    all_results = retrieve(temp_db, "important", top_k=10)
+    all_results = retrieve_recursive_bfs(temp_db, "important", top_k=10)
     
     assert len(all_results) >= 2
     domains = set(r.domain for r in all_results)
@@ -180,7 +180,7 @@ def test_format_context_includes_domain_labels(temp_db):
     create_test_node(temp_db, "bunny1", "Test bunny content", "decision", "bunny")
     
     # Retrieve and format
-    results = retrieve(temp_db, "test content", top_k=10)
+    results = retrieve_recursive_bfs(temp_db, "test content", top_k=10)
     formatted = format_context(results)
     
     assert "(Domain: raj)" in formatted
@@ -215,7 +215,7 @@ def test_backward_compatibility(temp_db):
     create_test_node(temp_db, "bunny1", "Test bunny decision", "decision", "bunny")
     
     # Test that retrieve works without domain parameter
-    results = retrieve(temp_db, "test", top_k=10)
+    results = retrieve_recursive_bfs(temp_db, "test", top_k=10)
     assert len(results) >= 2
     
     # Test that start_session works without domain parameter
@@ -230,7 +230,7 @@ def test_backward_compatibility(temp_db):
 def test_empty_database_handling(temp_db):
     """Test handling of empty database"""
     # Test retrieval on empty database
-    results = retrieve(temp_db, "nonexistent", domain="raj")
+    results = retrieve_recursive_bfs(temp_db, "nonexistent", domain="raj")
     assert len(results) == 0
     
     # Test context generation on empty database

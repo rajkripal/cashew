@@ -16,7 +16,7 @@ import sys
 import argparse
 
 from .config import config, get_token_budget, get_top_k, get_walk_depth, get_user_domain, get_ai_domain
-from .retrieval import retrieve, retrieve_recursive_bfs, RetrievalResult
+from .retrieval import retrieve_recursive_bfs, RetrievalResult
 from .embeddings import embed_text, embed_nodes
 from .stats import get_active_node_count
 from .model_profiles import get_active_profile
