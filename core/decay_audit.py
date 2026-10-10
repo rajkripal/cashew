@@ -21,6 +21,7 @@ DECAY_REASONS = (
     "organic_cascade",        # core/decay.py cascade_decay child propagation
     "dedup_loser",            # core/sleep.py deduplicate_nodes loser
     "gc_fitness",             # core/sleep.py garbage_collect fitness prune
+    "completed_todo",         # core/sleep.py commitment cited by a Completed: node
 )
 
 _SUMMARY_LEN = 80

@@ -798,6 +798,101 @@ def _run_dedup(
     return stats
 
 
+# ── Phase 3b: close completed TODOs ──────────────────────────────────────
+
+_COMPLETED_PREFIX = "Completed:"
+_NODE_ID_RE = re.compile(r"(?<![0-9a-f])[0-9a-f]{12}(?![0-9a-f])")
+# The leading clause ends at the first sentence end or dash separator.
+_CLAUSE_END_RE = re.compile(r"\.\s|\.$| \u2014 | - ")
+_NOT_DONE_RE = re.compile(
+    r"attempted|partial|not closed|still open|still pending|blocked|not done",
+    re.IGNORECASE,
+)
+
+
+def _closing_ids(content: str) -> List[str]:
+    """IDs a Completed: note closes: those in its leading clause only.
+
+    Later IDs are context ("tracked separately under X"). A leading clause
+    that hedges (attempted, partial, blocked, ...) closes nothing.
+    """
+    body = content.lstrip()[len(_COMPLETED_PREFIX):]
+    m = _CLAUSE_END_RE.search(body)
+    clause = body[: m.start()] if m else body
+    if _NOT_DONE_RE.search(clause):
+        return []
+    return list(dict.fromkeys(_NODE_ID_RE.findall(clause)))
+
+
+def _close_completed_todos(
+    conn: sqlite3.Connection, *, dry_run: bool = False
+) -> List[Tuple[str, str]]:
+    """Decay commitment nodes cited by ID in a live ``Completed:`` node's
+    leading clause (see :func:`_closing_ids`).
+
+    A cited node is decayed only if it exists, is live, is not permanent,
+    has node_type 'commitment', and is not itself a ``Completed:`` node.
+    Returns the (completion_id, decayed_id) pairs. Idempotent: a decayed
+    node is never selected again. ``dry_run`` reports without writing.
+    """
+    completions = conn.execute(
+        "SELECT id, content FROM thought_nodes "
+        "WHERE (decayed IS NULL OR decayed = 0) AND content LIKE 'Completed:%'"
+    ).fetchall()
+
+    pairs: List[Tuple[str, str]] = []
+    seen: Set[str] = set()
+    for cid, content in completions:
+        if not content.lstrip().startswith(_COMPLETED_PREFIX):
+            continue
+        for tid in _closing_ids(content):
+            if tid == cid or tid in seen:
+                continue
+            row = conn.execute(
+                "SELECT content, node_type, decayed, permanent "
+                "FROM thought_nodes WHERE id = ?",
+                (tid,),
+            ).fetchone()
+            if row is None:
+                continue
+            t_content, t_type, t_decayed, t_permanent = row
+            if t_decayed or (t_permanent or 0) >= 1 or t_type != "commitment":
+                continue
+            if (t_content or "").lstrip().startswith(_COMPLETED_PREFIX):
+                continue
+            seen.add(tid)
+            pairs.append((cid, tid))
+
+    for cid, tid in pairs:
+        logger.info("sleep: completed TODO %s -> decayed %s", cid, tid)
+        if dry_run:
+            continue
+        log_decay_event(conn, tid, "completed_todo", related_nodes={"completion_id": cid})
+        conn.execute("UPDATE thought_nodes SET decayed = 1 WHERE id = ?", (tid,))
+
+    if pairs and not dry_run:
+        conn.commit()
+    logger.info(
+        "sleep: %s %d completed TODOs",
+        "would decay" if dry_run else "decayed", len(pairs),
+    )
+    return pairs
+
+
+def close_completed_todos(
+    db_path: Optional[str] = None, dry_run: bool = False
+) -> List[Tuple[str, str]]:
+    """Run the completed-TODO closure on its own (see Phase 3b)."""
+    conn = sqlite3.connect(db_path or get_db_path())
+    conn.execute("PRAGMA busy_timeout = 5000")
+    try:
+        if not dry_run:
+            ensure_decay_audit_schema(conn)
+        return _close_completed_todos(conn, dry_run=dry_run)
+    finally:
+        conn.close()
+
+
 # ── Phase 4: node metrics ────────────────────────────────────────────────
 
 
@@ -1628,7 +1723,7 @@ def _empty_sleep_result(
         "cross_link_directed_rows": 0, "cross_link_capped": False,
         "cross_link_same_source_skipped": 0, "dedup_candidates": 0,
         "dedup_components": 0, "dedup_nodes_merged": 0,
-        "nodes_gc_decayed": 0, "nodes_made_permanent": 0,
+        "nodes_gc_decayed": 0, "todos_closed": 0, "nodes_made_permanent": 0,
         "core_promoted": 0, "core_demoted": 0, "orphans_embedded": 0,
         "orphan_write_failed": 0, "orphan_vec_unavailable": 0,
         "vec_rows_compacted": 0, "dream_id": None, "dream_pending": False,
@@ -1893,6 +1988,10 @@ def run_sleep_cycle(
             "dedup_nodes_merged": dedup_stats.get("nodes_merged", 0),
         })
 
+        # Phase 3b: close TODOs cited by a Completed: node
+        todos_closed = len(_close_completed_todos(conn))
+        progress["todos_closed"] = todos_closed
+
         # Phase 4: metrics
         metrics = _compute_metrics(conn)
 
@@ -2009,7 +2108,7 @@ def run_sleep_cycle(
             dream_generation = "failed"
         phase_committed = bool(
             cross_stats.get("created", 0) or cross_stats.get("repaired", 0)
-            or dedup_stats.get("nodes_merged", 0) or gc_count
+            or dedup_stats.get("nodes_merged", 0) or todos_closed or gc_count
             or perm_stats.get("nodes_promoted", 0) or core_stats.get("promoted", 0)
             or core_stats.get("demoted", 0)
             or orphans
@@ -2046,6 +2145,7 @@ def run_sleep_cycle(
             "dedup_components": dedup_stats["components"],
             "dedup_nodes_merged": dedup_stats["nodes_merged"],
             "nodes_gc_decayed": gc_count,
+            "todos_closed": todos_closed,
             "vec_rows_compacted": vec_compacted,
             "nodes_made_permanent": perm_stats.get("nodes_promoted", 0),
             "core_promoted": core_stats.get("promoted", 0),
@@ -2218,6 +2318,7 @@ class SleepProtocol:
             "permanence_stats": {},
             "dream_nodes_created": 1 if result.get("dream_id") else 0,
             "nodes_decayed": result.get("nodes_gc_decayed", 0),
+            "todos_closed": result.get("todos_closed", 0),
             "core_promotions": result.get("core_promoted", 0),
             "core_demotions": result.get("core_demoted", 0),
             "clusters_found": 0,
@@ -2257,17 +2358,29 @@ class SleepProtocol:
 
 def main():
     parser = argparse.ArgumentParser(description="Cashew Sleep Protocol")
-    parser.add_argument("command", choices=["run", "status"], help="Command to run")
+    parser.add_argument("command", choices=["run", "status", "close-todos"],
+                        help="Command to run")
     parser.add_argument("--frequency", type=int, default=10, help="Sleep every N thoughts")
     parser.add_argument("--gc-nodes", type=int, default=20, help="Nodes to consider for GC")
     parser.add_argument("--limit", type=int, default=None,
                         help="Max nodes to process (work cap). Default: process all.")
     parser.add_argument("--background-dream", action="store_true",
                         help="Run dream phase in daemon thread")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="close-todos: report pairs without writing")
+    parser.add_argument("--db", default=None, help="Database path")
 
     args = parser.parse_args()
 
-    protocol = SleepProtocol()
+    if args.command == "close-todos":
+        pairs = close_completed_todos(args.db, dry_run=args.dry_run)
+        for cid, tid in pairs:
+            print(f"{cid} -> {tid}")
+        verb = "would decay" if args.dry_run else "decayed"
+        print(f"{verb} {len(pairs)} completed TODOs")
+        return 0
+
+    protocol = SleepProtocol(args.db)
     protocol.sleep_frequency = args.frequency
 
     if args.command == "run":
