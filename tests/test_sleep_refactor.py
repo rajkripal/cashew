@@ -685,6 +685,30 @@ def test_run_sleep_cycle_vectorized(db_with_embeddings):
     conn.close()
 
 
+def test_run_sleep_cycle_closes_completed_todos(db_with_embeddings):
+    """The cycle decays a commitment cited by ID in a Completed: node."""
+    conn = sqlite3.connect(db_with_embeddings)
+    _insert_node(conn, "aaaaaaaaaaa1", "TODO: ship it", node_type="commitment")
+    _insert_node(conn, "f00000000001", "Completed: shipped (aaaaaaaaaaa1)")
+    _insert_embedding(conn, "aaaaaaaaaaa1", _make_embedding(901))
+    _insert_embedding(conn, "f00000000001", _make_embedding(902))
+    conn.commit()
+    conn.close()
+
+    with patch("core.sleep.config") as mock_cfg:
+        mock_cfg.gc_mode = "off"
+        result = run_sleep_cycle(db_path=db_with_embeddings, limit=5)
+
+    assert result["status"] == "completed"
+    assert result["todos_closed"] == 1
+    conn = sqlite3.connect(db_with_embeddings)
+    decayed = conn.execute(
+        "SELECT decayed FROM thought_nodes WHERE id = 'aaaaaaaaaaa1'"
+    ).fetchone()[0]
+    conn.close()
+    assert decayed == 1
+
+
 def test_run_sleep_cycle_background_dream(db_with_embeddings):
     """background_dream=True should not error."""
     with patch("core.sleep.config") as mock_cfg:
