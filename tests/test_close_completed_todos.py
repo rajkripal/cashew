@@ -145,3 +145,41 @@ def test_dry_run_writes_nothing(db):
     assert pairs == [(DONE_1, TODO_A)]
     assert _decayed(db) == set()
     assert _audit(db) == []
+
+
+def test_id_in_later_sentence_not_closed(db):
+    _add(db, TODO_A, "TODO: a")
+    _add(db, TODO_B, "TODO: b")
+    _add(db, DONE_1, f"Completed: closed {TODO_A}. Still tracked: {TODO_B}.", "fact")
+    assert close_completed_todos(db) == [(DONE_1, TODO_A)]
+
+
+def test_id_after_dash_separator_not_closed(db):
+    _add(db, TODO_A, "TODO: a")
+    _add(db, TODO_B, "TODO: b")
+    _add(db, OLD_TODO, "TODO: d")
+    _add(db, DONE_1, f"Completed: closed {TODO_A} (desc) \u2014 see {TODO_B}", "fact")
+    _add(db, DONE_2, f"Completed: closed something - see {OLD_TODO}", "fact")
+    assert close_completed_todos(db) == [(DONE_1, TODO_A)]
+
+
+@pytest.mark.parametrize("hedge", [
+    "attempted commitment", "Partially closed", "not closed:", "still open:",
+    "still pending:", "blocked on", "NOT DONE:",
+])
+def test_hedged_leading_clause_closes_nothing(db, hedge):
+    _add(db, TODO_A, "TODO: a")
+    _add(db, DONE_1, f"Completed: {hedge} {TODO_A} (desc)", "fact")
+    assert close_completed_todos(db) == []
+
+
+def test_id_list_in_leading_parenthetical_closed(db):
+    _add(db, TODO_A, "TODO: a")
+    _add(db, TODO_B, "TODO: b")
+    _add(db, OLD_TODO, "TODO: d")
+    _add(db, DONE_1,
+         f"Completed: closed commitments {TODO_A}, {TODO_B}, {OLD_TODO} "
+         "(dim-mismatch bug). Result: fixed in #130.", "fact")
+    assert close_completed_todos(db) == [
+        (DONE_1, TODO_A), (DONE_1, TODO_B), (DONE_1, OLD_TODO)
+    ]

@@ -802,12 +802,33 @@ def _run_dedup(
 
 _COMPLETED_PREFIX = "Completed:"
 _NODE_ID_RE = re.compile(r"(?<![0-9a-f])[0-9a-f]{12}(?![0-9a-f])")
+# The leading clause ends at the first sentence end or dash separator.
+_CLAUSE_END_RE = re.compile(r"\.\s|\.$| \u2014 | - ")
+_NOT_DONE_RE = re.compile(
+    r"attempted|partial|not closed|still open|still pending|blocked|not done",
+    re.IGNORECASE,
+)
+
+
+def _closing_ids(content: str) -> List[str]:
+    """IDs a Completed: note closes: those in its leading clause only.
+
+    Later IDs are context ("tracked separately under X"). A leading clause
+    that hedges (attempted, partial, blocked, ...) closes nothing.
+    """
+    body = content.lstrip()[len(_COMPLETED_PREFIX):]
+    m = _CLAUSE_END_RE.search(body)
+    clause = body[: m.start()] if m else body
+    if _NOT_DONE_RE.search(clause):
+        return []
+    return list(dict.fromkeys(_NODE_ID_RE.findall(clause)))
 
 
 def _close_completed_todos(
     conn: sqlite3.Connection, *, dry_run: bool = False
 ) -> List[Tuple[str, str]]:
-    """Decay commitment nodes cited by ID in a live ``Completed:`` node.
+    """Decay commitment nodes cited by ID in a live ``Completed:`` node's
+    leading clause (see :func:`_closing_ids`).
 
     A cited node is decayed only if it exists, is live, is not permanent,
     has node_type 'commitment', and is not itself a ``Completed:`` node.
@@ -824,7 +845,7 @@ def _close_completed_todos(
     for cid, content in completions:
         if not content.lstrip().startswith(_COMPLETED_PREFIX):
             continue
-        for tid in dict.fromkeys(_NODE_ID_RE.findall(content)):
+        for tid in _closing_ids(content):
             if tid == cid or tid in seen:
                 continue
             row = conn.execute(
