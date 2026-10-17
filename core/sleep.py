@@ -37,7 +37,7 @@ import numpy as np
 logger = logging.getLogger("cashew.sleep")
 
 from .config import get_db_path, config, DEFAULT_EMBEDDING_MODEL
-from .decay_audit import log_decay_event, gc_decay_audit, ensure_decay_audit_schema
+from .decay_audit import log_decay_event, ensure_decay_audit_schema
 
 # ── module-level defaults (tunable) ──────────────────────────────────────
 
@@ -2069,24 +2069,6 @@ def run_sleep_cycle(
 
         conn.close()
         elapsed = round(time.perf_counter() - t_start, 1)
-
-        # Decay-audit GC (one-shot per cycle)
-        audit_conn = None
-        try:
-            audit_conn = sqlite3.connect(db_path)
-            audit_conn.execute("PRAGMA busy_timeout = 5000")
-            if journal_policy == "manage":
-                _set_wal(audit_conn)
-            ensure_decay_audit_schema(audit_conn)
-            audit_pruned = gc_decay_audit(audit_conn, retention_days=7)
-            audit_conn.commit()
-            if audit_pruned:
-                logger.info("sleep: decay-audit GC pruned %d rows", audit_pruned)
-        except Exception as e:
-            logger.warning("sleep: decay-audit GC failed: %s", e)
-        finally:
-            if audit_conn is not None:
-                audit_conn.close()
 
         # Vec-index compaction (one-shot per cycle): decay never touched the vec
         # index, so prune rows for nodes decayed this cycle (and any backlog) to

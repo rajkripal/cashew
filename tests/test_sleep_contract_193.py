@@ -1591,3 +1591,25 @@ def test_repair_preserves_model_identity_per_row(tmp_path):
     assert conn.execute('SELECT node_id FROM vec_embeddings').fetchall() == [('n2',)]
     assert conn.execute("SELECT model, vector FROM embeddings WHERE node_id='n1'").fetchone() == ('old-model', vector)
     conn.close()
+
+
+def test_sleep_cycle_keeps_old_decay_audit_rows(tmp_path, monkeypatch):
+    path = _cycle_db(tmp_path, "audit-keep.db")
+    conn = sqlite3.connect(str(path))
+    ensure_decay_audit_schema(conn)
+    conn.execute(
+        "INSERT INTO decay_audit(node_id, decay_reason, decay_timestamp) "
+        "VALUES ('gone', 'gc_fitness', '2026-01-01T00:00:00+00:00')"
+    )
+    conn.commit()
+    conn.close()
+    _neutralize_post_pair_phases(monkeypatch)
+
+    result = run_sleep_cycle(db_path=str(path), limit=2, journal_policy="preserve")
+
+    assert result["status"] == "completed"
+    check = sqlite3.connect(str(path))
+    assert check.execute(
+        "SELECT count(*) FROM decay_audit WHERE node_id='gone'"
+    ).fetchone()[0] == 1
+    check.close()
