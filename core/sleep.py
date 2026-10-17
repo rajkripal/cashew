@@ -1106,7 +1106,11 @@ def _promote_core_memories(conn: sqlite3.Connection, metrics: Dict[str, dict]) -
     if demoted:
         dp = ",".join("?" * len(demoted))
         conn.execute(
-            f"UPDATE thought_nodes SET node_type='derived' "
+            # Promotion granted permanent=1, so demotion takes it back.
+            # Leaving it set made demotion a one-way door: ex-core nodes
+            # stayed immune to decay forever. A node that still meets the
+            # access threshold regains permanence in _evaluate_permanence.
+            f"UPDATE thought_nodes SET node_type='derived', permanent=0 "
             f"WHERE id IN ({dp}) AND node_type != 'seed'",
             list(demoted),
         )

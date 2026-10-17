@@ -4,6 +4,7 @@ Cashew Session Integration Layer
 Glue between thought graph and AI assistant session lifecycle
 """
 
+import os
 import sqlite3
 import json
 import hashlib
@@ -414,8 +415,13 @@ def _format_context_string(results: List[RetrievalResult]) -> str:
     return "\n".join(lines)
 
 def _update_access_tracking(db_path: str, node_ids: List[str]):
-    """Update last_accessed and access_count for retrieved nodes"""
-    if not node_ids:
+    """Update last_accessed and access_count for retrieved nodes.
+
+    Skipped when CASHEW_NO_TOUCH is set, for automated callers (cron jobs)
+    whose queries would otherwise inflate access counts and, through the
+    access threshold, make nodes permanent.
+    """
+    if not node_ids or os.environ.get("CASHEW_NO_TOUCH"):
         return
     
     conn = _get_connection(db_path)
