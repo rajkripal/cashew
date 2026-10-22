@@ -82,7 +82,7 @@ class ClaudeCodeBackend(LLMBackend):
     """Shell out to headless `claude -p`. Runs under the Claude Code subscription."""
 
     def __init__(self, model: Optional[str] = None):
-        super().__init__(model or os.environ.get("CASHEW_CLAUDE_MODEL", "claude-opus-4-7"))
+        super().__init__(model or os.environ.get("CASHEW_CLAUDE_MODEL", "claude-opus-5-5"))
         self._bin = shutil.which("claude")
         if not self._bin:
             raise RuntimeError("`claude` CLI not found on PATH")
