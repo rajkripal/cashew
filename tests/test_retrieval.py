@@ -206,6 +206,59 @@ class TestRetrieval:
         ranked = [r["id"] for r in done[0]["ranked"]]
         assert ranked and ranked[0] == "close", f"streaming ranked 'far' first: {ranked}"
 
+    def test_ranking_skips_mismatched_dim_vector_instead_of_crashing(self, monkeypatch):
+        """Regression for the reported crash:
+        'shapes (1024,) and (384,) not aligned: 1024 (dim 0) != 384 (dim 0)'.
+
+        A partially re-embedded brain can have some nodes still holding a
+        vector from an old, differently-sized embedding model (e.g. a
+        384-dim MiniLM row sitting next to current 1024-dim gte-large rows).
+        cosine_sim's np.dot must not blow up on that row — it should skip it
+        like the missing-vector case and keep ranking the rest of the graph.
+
+        Fully controlled (own vectors + query) so it doesn't depend on the
+        embedding model."""
+        import tempfile, sqlite3
+        import numpy as np
+        import core.retrieval as R
+
+        fd, db = tempfile.mkstemp(suffix='.db'); os.close(fd)
+        conn = sqlite3.connect(db); cur = conn.cursor()
+        cur.execute("CREATE TABLE thought_nodes (id TEXT PRIMARY KEY, content TEXT, node_type TEXT, "
+                    "timestamp TEXT, confidence REAL, mood_state TEXT, metadata TEXT, source_file TEXT, decayed INTEGER DEFAULT 0)")
+        cur.execute("CREATE TABLE derivation_edges (parent_id TEXT, child_id TEXT, relation TEXT, weight REAL, "
+                    "reasoning TEXT, PRIMARY KEY(parent_id, child_id, relation))")
+        cur.execute("CREATE TABLE embeddings (node_id TEXT PRIMARY KEY, embedding BLOB, model TEXT, vector BLOB, updated_at TEXT)")
+
+        # 'current' is a normal 4-dim vector aligned with the query.
+        # 'stale' simulates a leftover row from an old, smaller-dim model —
+        # this is the shape mismatch that used to crash cosine_sim.
+        cur.execute("INSERT INTO thought_nodes (id, content, node_type, timestamp, confidence) VALUES (?,?,?,?,?)",
+                    ("current", "content current", "fact", "2026-01-01T00:00:00", 0.9))
+        cur.execute("INSERT INTO embeddings (node_id, vector, model) VALUES (?,?,?)",
+                    ("current", np.array([0, 1, 0, 0], dtype=np.float32).tobytes(), "test"))
+        cur.execute("INSERT INTO thought_nodes (id, content, node_type, timestamp, confidence) VALUES (?,?,?,?,?)",
+                    ("stale", "content stale", "fact", "2026-01-01T00:00:00", 0.9))
+        cur.execute("INSERT INTO embeddings (node_id, vector, model) VALUES (?,?,?)",
+                    ("stale", np.array([1, 1, 1], dtype=np.float32).tobytes(), "old-minilm"))
+        conn.commit(); conn.close()
+
+        monkeypatch.setattr(R, "embed_text", lambda t: [0.0, 1.0, 0.0, 0.0])
+        monkeypatch.setattr(R, "embedding_search",
+                            lambda db_path, q, top_k=10: [("stale", 0.5), ("current", 0.5)])
+
+        # Before the fix, this raised: ValueError: shapes (4,) and (3,) not aligned.
+        results = R.retrieve_recursive_bfs(db, "anything", top_k=5, n_seeds=2)
+        ids = [r.node_id for r in results]
+
+        done = [e for e in R.retrieve_bfs_streaming(db, "anything", n_seeds=2)
+                if e.get("event") == "done"]
+        os.unlink(db)
+
+        assert ids, "expected results despite the stale-dim row"
+        assert "current" in ids
+        assert done, "streaming should not crash on the mismatched-dim row either"
+
     def test_graph_walk_finds_connected_nodes(self, test_graph_db):
         """Test that graph walking finds connected nodes from entry points"""
         # Start from weather1, should reach connected nodes in both directions
