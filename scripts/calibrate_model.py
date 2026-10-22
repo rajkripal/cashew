@@ -18,6 +18,7 @@ It reports:
 import argparse
 import sqlite3
 import sys
+from collections import Counter
 
 import numpy as np
 
@@ -33,7 +34,27 @@ def _load_vectors(db_path: str) -> np.ndarray:
     if not rows:
         print(f"No embeddings found in {db_path}", file=sys.stderr)
         sys.exit(1)
-    M = np.stack([np.frombuffer(r[0], dtype=np.float32) for r in rows]).astype(np.float32)
+
+    vectors = [np.frombuffer(r[0], dtype=np.float32) for r in rows]
+
+    # A brain mid-migration (e.g. MiniLM-384 -> gte-large-1024) can hold
+    # vectors of more than one length. np.stack requires uniform shape, so
+    # pick the majority dim and skip the rest rather than crashing outright
+    # (see scripts/reembed_stale_dims.py to fix the stale rows for real).
+    dims = [v.shape[0] for v in vectors]
+    dim_counts = Counter(dims)
+    majority_dim, majority_count = dim_counts.most_common(1)[0]
+    if len(dim_counts) > 1:
+        skipped = len(vectors) - majority_count
+        print(
+            f"warning: {skipped} vector(s) skipped for mismatched dim "
+            f"({dict(dim_counts)}); using majority dim {majority_dim}. "
+            "Run scripts/reembed_stale_dims.py to fix stale rows.",
+            file=sys.stderr,
+        )
+        vectors = [v for v in vectors if v.shape[0] == majority_dim]
+
+    M = np.stack(vectors).astype(np.float32)
     M /= np.clip(np.linalg.norm(M, axis=1, keepdims=True), 1e-8, None)
     return M
 
