@@ -1,0 +1,87 @@
+{
+  "_comment": "First-cut retrieval eval needle set. Each entry is a natural-language query a user might issue, mapped to the node id(s) in data/graph.db that should be retrieved. Expected node picks are Raj's judgment calls translated from real node content -- review and correct them, this is not ground truth yet.",
+  "_generated": "2026-07-10",
+  "_source_db": "data/graph.db",
+  "needles": [
+    {
+      "query": "should the brain or markdown files be the source of truth for status and decisions?",
+      "expected": ["3e33fcb70f72"]
+    },
+    {
+      "query": "what's left before we can call the LoCoMo benchmark done?",
+      "expected": ["09d6c8986e04"]
+    },
+    {
+      "query": "why is the brain-vs-no-brain comparison stat broken?",
+      "expected": ["2e20db73b62d"]
+    },
+    {
+      "query": "what are cashew's non-negotiable design principles?",
+      "expected": ["5817030ea33c"]
+    },
+    {
+      "query": "did we ever duplicate the extraction type list across files?",
+      "expected": ["6bd873226ee8"]
+    },
+    {
+      "query": "what was Raj like studying for exams in school?",
+      "expected": ["70c4be62cab1"]
+    },
+    {
+      "query": "who does Raj live with and does he have a pet?",
+      "expected": ["7cef07dc460a"]
+    },
+    {
+      "query": "what's Raj's backup plan if he gets laid off from Meta?",
+      "expected": ["8d5e7334a53f"]
+    },
+    {
+      "query": "does Raj think AI tools should be interchangeable or locked in?",
+      "expected": ["e93757713b25"]
+    },
+    {
+      "query": "what did cashew prove about self-organizing knowledge systems?",
+      "expected": ["9402951522fd"]
+    },
+    {
+      "query": "why does Raj open-source his CLAUDE.md configs?",
+      "expected": ["046f16ab3489"]
+    },
+    {
+      "query": "did Raj reject any cheap feature proposals for cashew?",
+      "expected": ["fa0aa68a653f"]
+    },
+    {
+      "query": "did Raj tell Meta about cashew proactively?",
+      "expected": ["10a22d47f291"]
+    },
+    {
+      "query": "how should we handle pinning a transitive dependency during an API migration?",
+      "expected": ["dbd64a61958b"]
+    },
+    {
+      "query": "is sqlite-vec actually a search index or just a vector store?",
+      "expected": ["0438cabc2a47"]
+    },
+    {
+      "query": "what happens to the loser node when two permanent nodes collide in dedup?",
+      "expected": ["48464eab0728"]
+    },
+    {
+      "query": "how much did Raj spend in May and June 2026?",
+      "expected": ["4fa18c4ddcfd"]
+    },
+    {
+      "query": "did Raj file a conflict of interest disclosure at Meta over cashew?",
+      "expected": ["79195230081c"]
+    },
+    {
+      "query": "is Raj's E4 level at Meta due to promo delays or something else?",
+      "expected": ["b1ea2df29a01"]
+    },
+    {
+      "query": "should ADHD self-suspicion be weighed against a prior anxiety diagnosis?",
+      "expected": ["94421dff62b7"]
+    }
+  ]
+}
