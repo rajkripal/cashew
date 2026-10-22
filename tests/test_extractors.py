@@ -4,6 +4,7 @@ Tests for cashew extractor plugins.
 """
 
 import json
+import os
 import sqlite3
 import tempfile
 import unittest
@@ -664,14 +665,8 @@ class TestExtractorRegistry(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.registry.register(extractor2)
 
-    def test_state_persistence(self):
-        """Test that extractor state is persisted."""
-        # Create a test file
-        test_file = Path(self.data_dir) / "test.md"
-        test_file.write_text("This is test content with sufficient length for extraction processing.")
-        
-        # Create test database
-        db_path = Path(self.data_dir) / "test.db"
+    def _make_db(self, db_path):
+        """Create a minimal test database."""
         conn = sqlite3.connect(db_path)
         conn.execute('''
             CREATE TABLE thought_nodes (
@@ -694,20 +689,104 @@ class TestExtractorRegistry(unittest.TestCase):
         ''')
         conn.commit()
         conn.close()
-        
+
+    def test_state_persistence_json(self):
+        """Legacy JSON state persistence (no db_path)."""
+        test_file = Path(self.data_dir) / "test.md"
+        test_file.write_text("This is test content with sufficient length for extraction processing.")
+
+        db_path = Path(self.data_dir) / "test.db"
+        self._make_db(db_path)
+
         extractor = MarkdownDirExtractor()
         self.registry.register(extractor)
-        
+
         # Run the extractor to save state
-        result = self.registry.run("markdown", str(test_file.parent), None, str(db_path))
-        
-        # Create new registry and extractor
+        self.registry.run("markdown", str(test_file.parent), None, str(db_path))
+
+        # Create new registry (no db_path -> JSON path)
         new_registry = ExtractorRegistry(self.data_dir)
         new_extractor = MarkdownDirExtractor()
         new_registry.register(new_extractor)
-        
-        # State should be restored - check that the file is in processed state
+
         self.assertIn("test.md", new_extractor._processed)
+
+    def test_state_persistence_db(self):
+        """State is stored in DB and survives a fresh registry with db_path."""
+        test_file = Path(self.data_dir) / "test.md"
+        test_file.write_text("This is test content with sufficient length for extraction processing.")
+
+        db_path = Path(self.data_dir) / "test.db"
+        self._make_db(db_path)
+
+        registry = ExtractorRegistry(self.data_dir, db_path=str(db_path))
+        registry.register(MarkdownDirExtractor())
+        registry.run("markdown", str(test_file.parent), None, str(db_path))
+
+        # State must be in DB
+        conn = sqlite3.connect(db_path)
+        row = conn.execute(
+            "SELECT state_json FROM extractor_state WHERE extractor_name = 'markdown'"
+        ).fetchone()
+        conn.close()
+        self.assertIsNotNone(row)
+        state = json.loads(row[0])
+        processed = state.get("processed", {})
+        self.assertTrue(any("test.md" in k for k in processed))
+
+        # New registry (same db_path) should restore state
+        new_registry = ExtractorRegistry(self.data_dir, db_path=str(db_path))
+        new_extractor = MarkdownDirExtractor()
+        new_registry.register(new_extractor)
+        self.assertIn("test.md", new_extractor._processed)
+
+    def test_state_db_lifecycle_matches_db(self):
+        """Wiping the DB also wipes extractor state (the core bug fix)."""
+        test_file = Path(self.data_dir) / "test.md"
+        test_file.write_text("This is test content with sufficient length for extraction processing.")
+
+        db_path = Path(self.data_dir) / "test.db"
+        self._make_db(db_path)
+
+        registry = ExtractorRegistry(self.data_dir, db_path=str(db_path))
+        registry.register(MarkdownDirExtractor())
+        registry.run("markdown", str(test_file.parent), None, str(db_path))
+
+        # Simulate wiping the DB (delete file, recreate fresh)
+        os.remove(db_path)
+        self._make_db(db_path)
+
+        # Fresh registry on the wiped DB must NOT see any state
+        new_registry = ExtractorRegistry(self.data_dir, db_path=str(db_path))
+        new_extractor = MarkdownDirExtractor()
+        new_registry.register(new_extractor)
+        self.assertNotIn("test.md", new_extractor._processed)
+
+    def test_legacy_json_shim(self):
+        """Legacy JSON state is imported into DB on first load."""
+        db_path = Path(self.data_dir) / "test.db"
+        self._make_db(db_path)
+
+        # Write a legacy JSON state file directly (format matches get_state())
+        state_dir = Path(self.data_dir) / "extractor_state"
+        state_dir.mkdir(exist_ok=True)
+        legacy_state = {"processed": {"old_file.md": 12345.0}}
+        (state_dir / "markdown.json").write_text(json.dumps(legacy_state))
+
+        # Registry with db_path should pick it up and import to DB
+        registry = ExtractorRegistry(self.data_dir, db_path=str(db_path))
+        extractor = MarkdownDirExtractor()
+        registry.register(extractor)
+
+        self.assertIn("old_file.md", extractor._processed)
+
+        # And it should now be in the DB
+        conn = sqlite3.connect(db_path)
+        row = conn.execute(
+            "SELECT state_json FROM extractor_state WHERE extractor_name = 'markdown'"
+        ).fetchone()
+        conn.close()
+        self.assertIsNotNone(row)
 
 
 class TestCLIIntegration(unittest.TestCase):
