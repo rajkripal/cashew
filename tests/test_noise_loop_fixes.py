@@ -56,3 +56,30 @@ def test_no_touch_env_skips_access_tracking(tmp_path, monkeypatch):
     check = sqlite3.connect(str(path))
     assert check.execute("SELECT access_count FROM thought_nodes").fetchone()[0] == 1
     check.close()
+
+
+def test_fitness_counts_inbound_links(tmp_path):
+    from core.sleep import _compute_metrics
+
+    _, conn = _db(tmp_path)
+    conn.execute(
+        "CREATE TABLE derivation_edges(parent_id TEXT, child_id TEXT, "
+        "weight REAL, reasoning TEXT)"
+    )
+    conn.executemany(
+        "INSERT INTO thought_nodes(id, content) VALUES (?, ?)",
+        [("old", "old"), ("new", "new"), ("a", "a"), ("b", "b")],
+    )
+    conn.executemany(
+        "INSERT INTO derivation_edges VALUES (?, ?, 0.8, 'extracted_from')",
+        [("old", "new")],
+    )
+    conn.executemany(
+        "INSERT INTO derivation_edges VALUES (?, ?, 0.9, 'cross_link - similarity=0.91')",
+        [("a", "b"), ("b", "a")],
+    )
+
+    m = _compute_metrics(conn)
+
+    assert m["new"]["fitness"] == m["old"]["fitness"] == 1.0
+    assert m["a"]["branching_factor"] == 1

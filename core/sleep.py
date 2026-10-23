@@ -897,12 +897,22 @@ def close_completed_todos(
 
 
 def _compute_metrics(conn: sqlite3.Connection) -> Dict[str, dict]:
-    """Compute branching factor + cross-link count for all active nodes."""
+    """Compute branching factor + cross-link count for all active nodes.
+
+    Branching counts a node's distinct neighbors in either direction.
+    Extraction writes one row from the older similar node to the new one,
+    so counting only rows where the node is the parent left every new
+    node at fitness 0 (collectable on its first sleep) while crediting
+    its older neighbors. Links have no direction anywhere else.
+    """
     t0 = time.perf_counter()
     rows = conn.execute(
         "SELECT tn.id, "
-        "  (SELECT COUNT(*) FROM derivation_edges "
-        "   WHERE parent_id = tn.id) AS branching, "
+        "  (SELECT COUNT(*) FROM ("
+        "     SELECT child_id FROM derivation_edges WHERE parent_id = tn.id"
+        "     UNION"
+        "     SELECT parent_id FROM derivation_edges WHERE child_id = tn.id"
+        "   )) AS branching, "
         "  (SELECT COUNT(*) FROM derivation_edges "
         "   WHERE (parent_id = tn.id OR child_id = tn.id)"
         "     AND reasoning LIKE '%cross_link%') AS cross_links "
