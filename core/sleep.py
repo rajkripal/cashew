@@ -57,6 +57,8 @@ ORPHANS_PER_BATCH     = 100    # conservative caller-facing encode batch
 GC_K_NODES            = 50     # random sample size for garbage collection
 GC_THRESHOLD          = 0.0    # fitness below this → collectable (config overrides)
 GC_ACCESS_FLOOR       = 3      # nodes retrieved at least this often are never GC'd
+MAX_LLM_MERGES_PER_CYCLE = 25  # model calls dedup may spend writing merged text
+PINNED                = 2      # permanent value for a manually pinned node
 DEFAULT_SLEEP_LOG_PATH = "./data/sleep_log.json"
 
 # ── Temporal-anchor detection (preserved from upstream) ──────────────────
@@ -643,12 +645,20 @@ def _batch_cross_links(
 
 def _merge_cluster(
     conn: sqlite3.Connection, cluster_ids: List[str],
+    model_fn=None, reembed: bool = False, stats: Optional[dict] = None,
 ) -> Optional[str]:
     """Merge a cluster of near-duplicate nodes into the keeper.
 
     Keeper: a permanent node always wins so duplicates collapse into it;
-    otherwise highest access_count, tiebreak oldest timestamp. Rewires loser
-    edges onto the keeper, then decays the losers.
+    otherwise highest access_count, tiebreak newest timestamp (an updated fact
+    must not lose to the value it replaced). Rewires loser edges onto the
+    keeper, then decays the losers.
+
+    With ``model_fn``, the keeper's content is rewritten as one statement
+    combining the cluster and stating the newest value of anything that
+    changed, and its timestamp moves to the cluster's newest. A failed or unusable answer keeps the keeper's own text.
+    A manually pinned keeper is never rewritten. ``reembed`` drops the
+    keeper's stale embedding so the orphan phase encodes the new text.
 
     A permanent loser (only possible when the keeper is itself permanent, i.e.
     two permanent duplicates) is absorbed: its permanent flag is cleared before
@@ -657,34 +667,51 @@ def _merge_cluster(
     """
     if len(cluster_ids) < 2:
         return None
-
-    # permanent >= 1 covers both auto-promoted (1) and manually-pinned (2).
-    perm = {
-        r[0] for r in conn.execute(
-            "SELECT id FROM thought_nodes WHERE id IN ({}) AND permanent >= 1".format(
-                ",".join("?" * len(cluster_ids))
-            ),
-            cluster_ids,
-        ).fetchall()
+    stats = stats if stats is not None else {}
+    ph = ",".join("?" * len(cluster_ids))
+    has_referent = "referent_time" in {
+        r[1] for r in conn.execute("PRAGMA table_info(thought_nodes)")
     }
+    referent_col = "referent_time" if has_referent else "NULL"
 
-    keeper = conn.execute(
-        "SELECT id FROM thought_nodes WHERE id IN ({}) "
+    rows = conn.execute(
+        f"SELECT id, content, node_type, timestamp, {referent_col}, "
+        f"COALESCE(permanent, 0) FROM thought_nodes WHERE id IN ({ph}) "
         "ORDER BY COALESCE(permanent, 0) DESC, COALESCE(access_count, 0) DESC, "
-        "COALESCE(timestamp, '9999') ASC LIMIT 1".format(
-            ",".join("?" * len(cluster_ids))
-        ),
+        "COALESCE(timestamp, '') DESC, id",
         cluster_ids,
-    ).fetchone()
-    if not keeper:
+    ).fetchall()
+    if len(rows) < 2:
         return None
 
-    keeper_id = keeper[0]
-    losers = [n for n in cluster_ids if n != keeper_id]
-    if not losers:
-        return None
+    keeper_id, keeper_perm = rows[0][0], rows[0][5]
+    # permanent >= 1 covers both auto-promoted (1) and manually-pinned (2).
+    perm = {r[0] for r in rows if r[5] >= 1}
+    losers = [r[0] for r in rows[1:]]
     loser_set = set(losers)
     lp = ",".join("?" * len(losers))
+
+    merged = None
+    if model_fn is not None and keeper_perm != PINNED:
+        stats["llm_merge_calls"] = stats.get("llm_merge_calls", 0) + 1
+        merged = _merged_text(rows, model_fn)
+    if merged:
+        stats["llm_merges"] = stats.get("llm_merges", 0) + 1
+        newest_ts = max((r[3] for r in rows if r[3]), default=rows[0][3])
+        newest_ref = max((r[4] for r in rows if r[4]), default=None)
+        if has_referent:
+            conn.execute(
+                "UPDATE thought_nodes SET content=?, timestamp=?, "
+                "referent_time=COALESCE(?, referent_time) WHERE id=?",
+                (merged, newest_ts, newest_ref, keeper_id),
+            )
+        else:
+            conn.execute(
+                "UPDATE thought_nodes SET content=?, timestamp=? WHERE id=?",
+                (merged, newest_ts, keeper_id),
+            )
+        if reembed:
+            _drop_embedding(conn, keeper_id)
 
     # Read all edges touching a loser, rewire the loser endpoint to the keeper.
     edges = conn.execute(
@@ -722,10 +749,15 @@ def _merge_cluster(
 
     # Audit each loser before decaying so the row records why it went.
     for lid in losers:
+        meta = {}
+        if lid in perm:
+            meta["absorbed_permanent"] = True
+        if merged:
+            meta["merged_text"] = True
         log_decay_event(
             conn, lid, "dedup_loser",
             related_nodes={"keeper": keeper_id},
-            metadata={"absorbed_permanent": True} if lid in perm else None,
+            metadata=meta or None,
         )
     conn.execute(
         "UPDATE thought_nodes SET decayed=1 WHERE id IN ({})".format(lp),
@@ -734,11 +766,70 @@ def _merge_cluster(
     return keeper_id
 
 
+def _drop_embedding(conn: sqlite3.Connection, node_id: str) -> None:
+    """Remove a node's vectors so the orphan phase re-encodes it.
+
+    The vec row goes too: vec0 rejects INSERT OR REPLACE on an existing key,
+    so a leftover row would make the orphan dual-write fail.
+    """
+    conn.execute("DELETE FROM embeddings WHERE node_id=?", (node_id,))
+    if _vec_write_capability(conn):
+        conn.execute("DELETE FROM vec_embeddings WHERE node_id=?", (node_id,))
+
+
+def _merged_text(rows: List[tuple], model_fn) -> Optional[str]:
+    """Ask the model for one statement covering a duplicate cluster.
+
+    ``rows`` are (id, content, node_type, timestamp, referent_time, permanent).
+    Returns None when the call fails or the answer is not a usable statement.
+    """
+    def when(r: tuple) -> str:
+        return str(r[4] or r[3] or "")
+
+    notes = sorted(rows, key=when)
+    prompt = (
+        "These notes were stored separately in a memory graph but are near "
+        "duplicates. Write ONE note that replaces all of them.\n\n"
+        "Rules:\n"
+        "- Keep every distinct fact, name, number and date. Drop only repetition.\n"
+        "- The notes are listed oldest first with the date each refers to. When "
+        "they disagree, state the most recent value as current and briefly note "
+        "the earlier one, e.g. \"had 17 postcards; 25 as of 2023-11-30\".\n"
+        "- Write a single self-contained statement in the same voice and style "
+        "as the notes. No preamble, no markdown, no list.\n\n"
+        "Output only the note, on a single line.\n\n"
+        + "\n\n".join(
+            f"NOTE {i} ({r[2]}, dated {when(r)[:16] or 'unknown'}):\n{r[1]}"
+            for i, r in enumerate(notes, 1)
+        )
+        + "\n"
+    )
+    try:
+        response = model_fn(prompt)
+    except Exception:
+        logger.warning("sleep: merge LLM call failed", exc_info=True)
+        return None
+    if not isinstance(response, str):
+        return None
+    text = " ".join(response.split()).strip("\"'` ")
+    longest = max(len(r[1] or "") for r in rows)
+    total = sum(len(r[1] or "") for r in rows)
+    if len(text) < min(20, longest) or len(text) > total + 200 or text[0] in "#*-":
+        logger.warning("sleep: merge LLM answer rejected (%d chars)", len(text))
+        return None
+    return text
+
+
 def _run_dedup(
     conn: sqlite3.Connection, ids: List[str], dedup_pairs: np.ndarray,
+    model_fn=None, reembed: bool = False,
 ) -> dict:
-    """Build dedup graph, extract connected components, merge each."""
-    stats = {"components": 0, "nodes_merged": 0}
+    """Build dedup graph, extract connected components, merge each.
+
+    ``model_fn`` writes merged text for up to MAX_LLM_MERGES_PER_CYCLE
+    clusters; the rest merge by keeper choice alone.
+    """
+    stats = {"components": 0, "nodes_merged": 0, "llm_merge_calls": 0, "llm_merges": 0}
     if len(dedup_pairs) == 0:
         return stats
 
@@ -783,17 +874,21 @@ def _run_dedup(
     logger.info("sleep: %d dedup components to merge", len(components))
 
     for comp in components:
-        result = _merge_cluster(conn, comp)
+        fn = model_fn if stats["llm_merge_calls"] < MAX_LLM_MERGES_PER_CYCLE else None
+        result = _merge_cluster(conn, comp, model_fn=fn, reembed=reembed, stats=stats)
         if result:
             stats["components"] += 1
             stats["nodes_merged"] += len(comp) - 1
+        # Commit per cluster so no write lock is held across a model call.
+        if fn is not None:
+            conn.commit()
 
     if stats["components"] > 0:
         conn.commit()
 
     logger.info(
-        "sleep: dedup %d components merged, %d nodes decayed",
-        stats["components"], stats["nodes_merged"],
+        "sleep: dedup %d components merged (%d with merged text), %d nodes decayed",
+        stats["components"], stats["llm_merges"], stats["nodes_merged"],
     )
     return stats
 
@@ -1736,7 +1831,7 @@ def _empty_sleep_result(
         "cross_links_repaired": 0, "cross_links_skipped": 0,
         "cross_link_directed_rows": 0, "cross_link_capped": False,
         "cross_link_same_source_skipped": 0, "dedup_candidates": 0,
-        "dedup_components": 0, "dedup_nodes_merged": 0,
+        "dedup_components": 0, "dedup_nodes_merged": 0, "dedup_llm_merges": 0,
         "nodes_gc_decayed": 0, "todos_closed": 0, "nodes_made_permanent": 0,
         "core_promoted": 0, "core_demoted": 0, "orphans_embedded": 0,
         "orphan_write_failed": 0, "orphan_vec_unavailable": 0,
@@ -1994,12 +2089,16 @@ def run_sleep_cycle(
         })
 
         # Phase 3: dedup
-        dedup_stats = {"components": 0, "nodes_merged": 0}
+        dedup_stats = {"components": 0, "nodes_merged": 0, "llm_merges": 0}
         if len(dedup_pairs) > 0:
-            dedup_stats = _run_dedup(conn, valid_ids, dedup_pairs)
+            dedup_stats = _run_dedup(
+                conn, valid_ids, dedup_pairs,
+                model_fn=model_fn, reembed=embedding_client is not None,
+            )
         progress.update({
             "dedup_components": dedup_stats.get("components", 0),
             "dedup_nodes_merged": dedup_stats.get("nodes_merged", 0),
+            "dedup_llm_merges": dedup_stats.get("llm_merges", 0),
         })
 
         # Phase 3b: close TODOs cited by a Completed: node
@@ -2140,6 +2239,7 @@ def run_sleep_cycle(
             "cross_link_capped": cross_stats.get("capped", False),
             "dedup_components": dedup_stats["components"],
             "dedup_nodes_merged": dedup_stats["nodes_merged"],
+            "dedup_llm_merges": dedup_stats.get("llm_merges", 0),
             "nodes_gc_decayed": gc_count,
             "todos_closed": todos_closed,
             "vec_rows_compacted": vec_compacted,
