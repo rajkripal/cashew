@@ -692,7 +692,10 @@ def _merge_cluster(
     lp = ",".join("?" * len(losers))
 
     merged = None
-    if model_fn is not None and keeper_perm != PINNED:
+    # Dreams are speculation; merging one with a fact would write the
+    # speculation into the fact. Clusters with a dream use the keeper rule.
+    has_dream = any(r[2] == "dream" for r in rows)
+    if model_fn is not None and keeper_perm != PINNED and not has_dream:
         stats["llm_merge_calls"] = stats.get("llm_merge_calls", 0) + 1
         merged = _merged_text(rows, model_fn)
     if merged:

@@ -173,3 +173,15 @@ def test_sleep_cycle_merges_and_reembeds_keeper(tmp_path):
     assert _node(conn, "new")[0] == MERGED
     blob = conn.execute("SELECT vector FROM embeddings WHERE node_id='new'").fetchone()[0]
     assert np.array_equal(np.frombuffer(blob, dtype=np.float32), fresh)
+
+
+def test_cluster_with_a_dream_is_not_llm_merged(tmp_path):
+    _, conn = _db(tmp_path)
+    conn.execute("UPDATE thought_nodes SET node_type='dream' WHERE id='old'")
+    calls = []
+
+    assert _merge_cluster(conn, ["old", "new"], model_fn=lambda p: calls.append(p) or MERGED) == "new"
+
+    assert calls == []
+    assert _node(conn, "new")[0] == NEW[1]
+    assert _node(conn, "old")[3] == 1
