@@ -785,17 +785,16 @@ For each item, classify as:
 Each content field must be a specific, standalone statement that makes sense without the conversation context.
 
 For each item, assign:
-- "domain": who this thought belongs to. Use "{get_user_domain()}" for the human's knowledge, experiences, decisions, beliefs, facts about their life, work, relationships. Use "{get_ai_domain()}" for the AI assistant's operational knowledge, engineering decisions about the system, behavioral rules, or self-reflective observations about the AI's own processes.
+- "domain": who this thought belongs to. Use "{get_user_domain()}" for the human's knowledge, experiences, decisions, beliefs, facts about their life, work, relationships, and information given to them in the conversation. Use "{get_ai_domain()}" for the AI assistant's operational knowledge, engineering decisions about the system, behavioral rules, or self-reflective observations about the AI's own processes.
 - "tags": short descriptive labels (e.g. "career", "family", "engineering", "philosophy", "health", "finance", "project:cashew"). Lowercase, specific, reusable. Multiple tags encouraged.
-- "keep": true or false. Before emitting each item, ask yourself: should this node exist in the graph forever? If you would not want future-you to read it, set keep=false. There is no hedging. Either it is worth a permanent node or it is not. Items with keep=false will be dropped — do not pad the array.
+- "keep": true or false. Set keep=true when the item is a specific, standalone fact, decision, preference, or piece of information worth remembering, no matter which speaker said it. Set keep=false for meta-comments, summaries, pleasantries, and vague or generic statements. You do not need to judge whether it matters forever: nodes that are never used decay on their own. Items with keep=false will be dropped — do not pad the array.
 
 BAD: "They discussed embeddings" (meta-comment)
 BAD: "The conversation covered several topics" (summary)
 GOOD: "Alice prefers async standups over morning syncs — finds them less overwhelming than real-time meetings"
 GOOD: "Project Orion Q3 deadline pushed back by two months due to a late GraphQL migration dependency"
 
-Personal knowledge (preferences, projects, people, infrastructure, decisions)
-should be weighted above system-internal discussion. Architecture details
+Architecture details
 belong in the '{get_ai_domain()}' domain when they describe the system itself,
 even if discussed collaboratively with the user.
 

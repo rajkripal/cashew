@@ -354,6 +354,18 @@ class TestSessionIntegration:
         assert result.llm_kept_nothing is True
 
     @patch('core.session.embed_nodes')
+    def test_extraction_keep_gate_is_speaker_neutral(self, mock_embed, test_db_path):
+        """The keep gate must not ask for permanence or rank one speaker's
+        content above the other's. Decay handles forgetting."""
+        seen = []
+        end_session(test_db_path, "test_prompt", "User: what should I read next?\nAssistant: Try Dune.",
+                    model_fn=lambda p: seen.append(p) or "[]")
+        prompt = seen[0]
+        assert "no matter which speaker said it" in prompt
+        assert "forever?" not in prompt
+        assert "weighted above" not in prompt
+
+    @patch('core.session.embed_nodes')
     def test_end_session_all_keep_false_sets_kept_nothing(self, mock_embed, test_db_path):
         """All items marked keep=false is also a keep-nothing verdict"""
         response = '[{"content": "ephemeral status line", "type": "fact", "domain": "raj", "keep": false}]'
